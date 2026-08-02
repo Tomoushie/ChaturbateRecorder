@@ -23,6 +23,7 @@ namespace ChaturbateRecorderApp.Config
         public static string DonateQrPath      = Path.Combine(AppDir, "donate_qr.png");
         public static string DonateQrExpectedSha256 = "FD21762BBE7C23A1CBDB5AB18210FDC2F6466B6840E20D2E795548D80F73CB71";
         public static string DonateUrl         = "https://paypal.me/tomoushie";
+        public static string WebsiteUrl        = "https://tomoushie.github.io/ChaturbateRecorder/";
         public static int    ThumbnailOffsetSeconds = 10;
 
         // --- Confidentialité / session (13.0, 16.0) ---

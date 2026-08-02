@@ -35,6 +35,7 @@ namespace ChaturbateRecorderApp
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
         private Button donateButton = null!;
+        private Button websiteButton = null!;
         private PictureBox qrPictureBox = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
@@ -640,6 +641,18 @@ namespace ChaturbateRecorderApp
             }
         }
 
+        private void OnWebsiteClick(object? sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(AppConfig.WebsiteUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Impossible d'ouvrir le site web : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void OnThemeChanged(object? sender, EventArgs e)
         {
             var theme = themeCombo.SelectedItem?.ToString() == "Sombre" ? AppTheme.Dark : AppTheme.Light;
@@ -849,6 +862,7 @@ namespace ChaturbateRecorderApp
             // --- GroupBox : Soutenir le projet ---
             var grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
+            websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 22) };
             qrPictureBox = new PictureBox
             {
                 Location = new Point(250, 12),
@@ -864,8 +878,9 @@ namespace ChaturbateRecorderApp
             };
 
             donateButton.Click += OnDonateClick;
+            websiteButton.Click += OnWebsiteClick;
 
-            grpDonate.Controls.AddRange(new Control[] { donateButton, qrPictureBox, donateLabel });
+            grpDonate.Controls.AddRange(new Control[] { donateButton, websiteButton, qrPictureBox, donateLabel });
 
             // --- GroupBox : Logs ---
             var grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
