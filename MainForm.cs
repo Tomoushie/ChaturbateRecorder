@@ -324,50 +324,59 @@ namespace ChaturbateRecorderApp
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// Génère la miniature en arrière-plan (Task.Run) : l'appel ffmpeg
+        /// tournait auparavant en synchrone sur le thread UI (jusqu'à 15s de
+        /// gel possible), ce qui contredit le principe "ffmpeg jamais sur le
+        /// thread principal" (2.2). Même traitement que ReencodeCaptureAsync.
+        /// </summary>
         private void GenerateThumbnail(RecordingJob job)
         {
-            try
+            var videoFile = FindLatestCaptureFile(job);
+            if (videoFile == null)
             {
-                var videoFile = FindLatestCaptureFile(job);
-                if (videoFile == null)
-                {
-                    AppendJobLog(job, "Aucune vidéo trouvée.");
-                    return;
-                }
-
-                var thumbnail = Path.Combine(videoFile.DirectoryName!, Path.GetFileNameWithoutExtension(videoFile.Name) + ".jpg");
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = AppConfig.FFmpegPath,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                };
-                foreach (var a in new[]
-                {
-                    "-ss", AppConfig.ThumbnailOffsetSeconds.ToString(),
-                    "-i", videoFile.FullName,
-                    "-frames:v", "1",
-                    "-q:v", "2",
-                    thumbnail,
-                    "-y",
-                    "-loglevel", "error"
-                })
-                {
-                    psi.ArgumentList.Add(a);
-                }
-
-                using var p = Process.Start(psi);
-                p?.WaitForExit(15000);
-
-                AppendJobLog(job, File.Exists(thumbnail)
-                    ? $"Miniature créée : {thumbnail}"
-                    : "Erreur création miniature.");
+                AppendJobLog(job, "Aucune vidéo trouvée.");
+                return;
             }
-            catch (Exception ex)
+
+            var thumbnail = Path.Combine(videoFile.DirectoryName!, Path.GetFileNameWithoutExtension(videoFile.Name) + ".jpg");
+
+            Task.Run(() =>
             {
-                Logger.Log($"Erreur lors de la génération de la miniature : {ex.Message}", LogLevel.WARN);
-            }
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = AppConfig.FFmpegPath,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    };
+                    foreach (var a in new[]
+                    {
+                        "-ss", AppConfig.ThumbnailOffsetSeconds.ToString(),
+                        "-i", videoFile.FullName,
+                        "-frames:v", "1",
+                        "-q:v", "2",
+                        thumbnail,
+                        "-y",
+                        "-loglevel", "error"
+                    })
+                    {
+                        psi.ArgumentList.Add(a);
+                    }
+
+                    using var p = Process.Start(psi);
+                    p?.WaitForExit(15000);
+
+                    SafeInvoke(() => AppendJobLog(job, File.Exists(thumbnail)
+                        ? $"Miniature créée : {thumbnail}"
+                        : "Erreur création miniature."));
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Erreur lors de la génération de la miniature : {ex.Message}", LogLevel.WARN);
+                }
+            });
         }
 
         /// <summary>
@@ -555,7 +564,7 @@ namespace ChaturbateRecorderApp
             try
             {
                 job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
-                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl);
+                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds);
             }
             catch (Exception ex)
             {

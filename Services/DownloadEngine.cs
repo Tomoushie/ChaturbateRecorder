@@ -4,6 +4,8 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ChaturbateRecorderApp.Services
 {
@@ -27,6 +29,9 @@ namespace ChaturbateRecorderApp.Services
         private Process? _process;
         private StreamWriter? _logWriter;
         private bool _wasStoppedManually;
+        private bool _watchdogTriggered;
+        private DateTime _lastOutputUtc;
+        private CancellationTokenSource? _watchdogCts;
         private readonly object _sync = new();
 
         public DownloadState State { get; private set; } = DownloadState.Idle;
@@ -38,7 +43,7 @@ namespace ChaturbateRecorderApp.Services
         private static readonly Regex ProgressRegex =
             new(@"\[download\]\s+([\d\.]+)%", RegexOptions.Compiled);
 
-        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null)
+        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120)
         {
             lock (_sync)
             {
@@ -46,6 +51,7 @@ namespace ChaturbateRecorderApp.Services
                     throw new InvalidOperationException("Un téléchargement est déjà en cours.");
 
                 _wasStoppedManually = false;
+                _watchdogTriggered = false;
             }
 
             var psi = new ProcessStartInfo
@@ -120,6 +126,10 @@ namespace ChaturbateRecorderApp.Services
                 _process.BeginErrorReadLine();
                 State = DownloadState.Running;
                 OnStateChanged?.Invoke(State);
+
+                _lastOutputUtc = DateTime.UtcNow;
+                _watchdogCts = new CancellationTokenSource();
+                _ = RunWatchdogAsync(watchdogTimeoutSeconds, _watchdogCts.Token);
             }
             catch (Exception ex)
             {
@@ -130,9 +140,44 @@ namespace ChaturbateRecorderApp.Services
             }
         }
 
+        /// <summary>
+        /// Watchdog anti-freeze : si yt-dlp/ffmpeg ne produisent plus aucune
+        /// ligne de sortie pendant `timeoutSeconds`, on considère le process
+        /// figé et on le tue proprement (arbre complet), avec un log explicite.
+        /// Distinct d'un arrêt manuel (_wasStoppedManually) : le job final
+        /// passe à Failed, pas à Stopped.
+        /// </summary>
+        private async Task RunWatchdogAsync(int timeoutSeconds, CancellationToken token)
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10), token);
+                    if (State != DownloadState.Running) return;
+
+                    var idleSeconds = (DateTime.UtcNow - _lastOutputUtc).TotalSeconds;
+                    if (idleSeconds >= timeoutSeconds)
+                    {
+                        Logger.Log($"Watchdog : aucune sortie depuis {idleSeconds:F0}s (seuil {timeoutSeconds}s) — process considéré figé, arrêt forcé.", LogLevel.ERROR);
+                        lock (_sync) { _watchdogTriggered = true; }
+                        try { _process?.Kill(entireProcessTree: true); }
+                        catch (Exception ex) { Logger.Log($"Erreur lors de l'arrêt forcé par le watchdog : {ex.Message}", LogLevel.ERROR); }
+                        return;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Arrêt normal (process terminé ou Stop() appelé) : rien à faire.
+            }
+        }
+
         private void HandleLine(string? line)
         {
             if (string.IsNullOrEmpty(line)) return;
+
+            _lastOutputUtc = DateTime.UtcNow;
 
             try { _logWriter?.WriteLine(line); }
             catch { /* fichier log verrouillé/inaccessible : on continue quand même, le log UI reste utilisable */ }
@@ -149,12 +194,16 @@ namespace ChaturbateRecorderApp.Services
 
         private void HandleExited()
         {
+            _watchdogCts?.Cancel();
+
             DownloadState finalState;
             lock (_sync)
             {
                 finalState = _wasStoppedManually
                     ? DownloadState.Stopped
-                    : (_process!.ExitCode == 0 ? DownloadState.Completed : DownloadState.Failed);
+                    : _watchdogTriggered
+                        ? DownloadState.Failed
+                        : (_process!.ExitCode == 0 ? DownloadState.Completed : DownloadState.Failed);
                 State = finalState;
             }
 

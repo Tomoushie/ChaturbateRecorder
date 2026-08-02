@@ -25,6 +25,9 @@ namespace ChaturbateRecorderApp.Config
         public static string DonateUrl         = "https://paypal.me/tomoushie";
         public static string WebsiteUrl        = "https://tomoushie.github.io/ChaturbateRecorder/";
         public static int    ThumbnailOffsetSeconds = 10;
+        // Watchdog anti-freeze (2.1) : durée max sans nouvelle ligne de sortie
+        // yt-dlp/ffmpeg avant de considérer le process figé et le tuer.
+        public static int    YtDlpWatchdogTimeoutSeconds = 120;
 
         // --- Confidentialité / session (13.0, 16.0) ---
         // CookiesFilePath : fichier cookies.txt (format Netscape) exporté depuis

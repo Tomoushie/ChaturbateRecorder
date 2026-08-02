@@ -36,6 +36,12 @@ namespace ChaturbateRecorderApp.Config
                 "Site web du projet (GitHub Pages) et bouton \"Site web\" dans l'appli.",
                 "Guide de démarrage pas-à-pas au premier lancement, réutilisable via \"Guide de démarrage\".",
             }),
+            ("1.3.0", new[]
+            {
+                "Watchdog anti-freeze sur yt-dlp/ffmpeg : arrêt automatique et log explicite si plus aucune sortie pendant un délai configurable (120s par défaut).",
+                "Génération de miniature déplacée hors du thread UI (ne bloque plus l'interface pendant l'extraction ffmpeg).",
+                "Logs structurés au format JSON (JSONL), avec horodatage ISO 8601 et source auto-détectée.",
+            }),
         };
     }
 }
