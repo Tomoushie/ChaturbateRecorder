@@ -28,15 +28,15 @@ namespace ChaturbateRecorderApp
         private Button addFavoriteButton = null!;
         private FlowLayoutPanel jobsListPanel = null!;
         private Panel advancedOptionsPanel = null!;
-        private GroupBox grpRecord = null!;
-        private GroupBox grpProgress = null!;
-        private GroupBox grpHistory = null!;
+        private RoundedGroupPanel grpRecord = null!;
+        private RoundedGroupPanel grpProgress = null!;
+        private RoundedGroupPanel grpHistory = null!;
         private ListView historyListView = null!;
         private Button refreshHistoryButton = null!;
         private Button openHistoryFolderButton = null!;
-        private GroupBox grpFavorites = null!;
-        private GroupBox grpDonate = null!;
-        private GroupBox grpLogs = null!;
+        private RoundedGroupPanel grpFavorites = null!;
+        private RoundedGroupPanel grpDonate = null!;
+        private RoundedGroupPanel grpLogs = null!;
         private ComboBox qualityCombo = null!;
         private ComboBox codecCombo = null!;
         private ComboBox formatCombo = null!;
@@ -336,7 +336,7 @@ namespace ChaturbateRecorderApp
                 case DownloadState.Stopped:
                     row.StopButton.Text = "Retirer";
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
-                    row.ProgressBar.Value = state == DownloadState.Completed ? 100 : 0;
+                    AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
                     row.ProgressBar.SetBarColor(state switch
                     {
                         DownloadState.Completed => CompletedColor,
@@ -439,6 +439,35 @@ namespace ChaturbateRecorderApp
                     timer.Dispose();
                     bar.SetBarColor(settleColor);
                 }
+            };
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Remplissage animé (8.3) : anime la Value de la barre vers sa cible
+        /// au lieu d'un saut instantané, visible à la fin d'un job (la barre
+        /// reste en Marquee pendant l'enregistrement, donc c'est ici que le
+        /// passage en mode "Blocks" devient visible pour la première fois).
+        /// </summary>
+        private void AnimateProgressBarFill(ProgressBar bar, int target)
+        {
+            var timer = new System.Windows.Forms.Timer { Interval = 12 };
+            timer.Tick += (s, e) =>
+            {
+                if (bar.IsDisposed) { timer.Stop(); timer.Dispose(); return; }
+
+                var current = bar.Value;
+                if (current == target)
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    return;
+                }
+
+                var step = Math.Max(1, Math.Abs(target - current) / 6);
+                bar.Value = current < target
+                    ? Math.Min(target, current + step)
+                    : Math.Max(target, current - step);
             };
             timer.Start();
         }
@@ -1190,8 +1219,8 @@ namespace ChaturbateRecorderApp
             modeToggleButton = new Button { Location = new Point(380, 9), Size = new Size(100, 24) };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
-            // --- GroupBox : Enregistrement ---
-            grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 50), Size = new Size(660, 272) };
+            // --- Panel : Enregistrement ---
+            grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 50), Size = new Size(660, 272) };
             var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
             startButton = new Button { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
@@ -1305,8 +1334,8 @@ namespace ChaturbateRecorderApp
                 advancedOptionsPanel
             });
 
-            // --- GroupBox : Enregistrements en cours (plusieurs jobs possibles) ---
-            grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
+            // --- Panel : Enregistrements en cours (plusieurs jobs possibles) ---
+            grpProgress = new RoundedGroupPanel { Title = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
             jobsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
@@ -1317,8 +1346,8 @@ namespace ChaturbateRecorderApp
             };
             grpProgress.Controls.Add(jobsListPanel);
 
-            // --- GroupBox : Historique des enregistrements (4.4) ---
-            grpHistory = new GroupBox { Text = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 130) };
+            // --- Panel : Historique des enregistrements (4.4) ---
+            grpHistory = new RoundedGroupPanel { Title = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 130) };
             historyListView = new ListView
             {
                 Location = new Point(12, 22),
@@ -1341,8 +1370,8 @@ namespace ChaturbateRecorderApp
 
             grpHistory.Controls.AddRange(new Control[] { historyListView, refreshHistoryButton, openHistoryFolderButton });
 
-            // --- GroupBox : Favoris ---
-            grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
+            // --- Panel : Favoris ---
+            grpFavorites = new RoundedGroupPanel { Title = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
             favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(480, 98) };
             loadFavoriteButton = new Button { Text = "Charger", Location = new Point(502, 22), Size = new Size(140, 26) };
             removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(502, 54), Size = new Size(140, 26) };
@@ -1353,8 +1382,8 @@ namespace ChaturbateRecorderApp
 
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
 
-            // --- GroupBox : Soutenir le projet ---
-            grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
+            // --- Panel : Soutenir le projet ---
+            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
             websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 22) };
             qrPictureBox = new PictureBox
@@ -1376,8 +1405,8 @@ namespace ChaturbateRecorderApp
 
             grpDonate.Controls.AddRange(new Control[] { donateButton, websiteButton, qrPictureBox, donateLabel });
 
-            // --- GroupBox : Logs ---
-            grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
+            // --- Panel : Logs ---
+            grpLogs = new RoundedGroupPanel { Title = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
             logListBox = new ListBox
             {
                 Location = new Point(12, 22),

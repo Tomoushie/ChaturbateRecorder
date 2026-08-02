@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -8,30 +9,35 @@ namespace ChaturbateRecorderApp.UI
 
     /// <summary>
     /// Applique un thème clair/sombre en parcourant récursivement tous les
-    /// contrôles du formulaire, y compris ceux imbriqués dans des GroupBox.
-    /// Palette "Windows 11" (7.5) : boutons en couleur d'accent, texte clair
-    /// dessus dans les deux thèmes. Boutons sans bordure et à coins arrondis
-    /// (7.1). Titres de section (GroupBox) en gras (7.2).
+    /// contrôles du formulaire, y compris ceux imbriqués dans des
+    /// RoundedGroupPanel (8.1, remplace les anciens GroupBox). Palette
+    /// "Windows 11" (7.5) : boutons en couleur d'accent, texte clair dessus
+    /// dans les deux thèmes. Boutons sans bordure, coins arrondis, et états
+    /// survol/appui distincts façon "Fluent" (7.1/8.4).
     /// </summary>
     public static class ThemeManager
     {
         public static void Apply(Control root, AppTheme theme)
         {
-            Color bg, panel, fg, btn, btnFg;
+            Color bg, panel, fg, btn, btnFg, border, shadow;
 
             if (theme == AppTheme.Dark)
             {
-                bg    = Color.FromArgb(0x1E, 0x1E, 0x1E);
-                panel = Color.FromArgb(0x2D, 0x2D, 0x2D);
-                fg    = Color.FromArgb(0xE6, 0xE6, 0xE6);
-                btn   = Color.FromArgb(0x3A, 0x96, 0xDD);
+                bg     = Color.FromArgb(0x1E, 0x1E, 0x1E);
+                panel  = Color.FromArgb(0x2D, 0x2D, 0x2D);
+                fg     = Color.FromArgb(0xE6, 0xE6, 0xE6);
+                btn    = Color.FromArgb(0x3A, 0x96, 0xDD);
+                border = Color.FromArgb(0x45, 0x45, 0x45);
+                shadow = Color.FromArgb(60, 0, 0, 0);
             }
             else
             {
-                bg    = Color.FromArgb(0xF3, 0xF3, 0xF3);
-                panel = Color.White;
-                fg    = Color.FromArgb(0x1A, 0x1A, 0x1A);
-                btn   = Color.FromArgb(0x00, 0x78, 0xD4);
+                bg     = Color.FromArgb(0xF3, 0xF3, 0xF3);
+                panel  = Color.White;
+                fg     = Color.FromArgb(0x1A, 0x1A, 0x1A);
+                btn    = Color.FromArgb(0x00, 0x78, 0xD4);
+                border = Color.FromArgb(0xD9, 0xD9, 0xD9);
+                shadow = Color.FromArgb(28, 0, 0, 0);
             }
 
             // Les boutons sont en couleur d'accent (bleu) dans les deux thèmes :
@@ -42,17 +48,21 @@ namespace ChaturbateRecorderApp.UI
             root.BackColor = bg;
             root.ForeColor = fg;
 
-            ApplyRecursive(root, bg, panel, fg, btn, btnFg);
+            ApplyRecursive(root, bg, panel, fg, btn, btnFg, border, shadow);
         }
 
-        private static void ApplyRecursive(Control control, Color bg, Color panel, Color fg, Color btn, Color btnFg)
+        private static void ApplyRecursive(Control control, Color bg, Color panel, Color fg, Color btn, Color btnFg, Color border, Color shadow)
         {
             switch (control)
             {
-                case GroupBox gb:
-                    gb.ForeColor = fg;
-                    gb.BackColor = bg;
-                    gb.Font = new Font(gb.Font.FontFamily, gb.Font.Size, FontStyle.Bold);
+                case RoundedGroupPanel rgp:
+                    rgp.ForeColor = fg;
+                    rgp.BackColor = bg;
+                    rgp.TitleColor = fg;
+                    rgp.BorderColor = border;
+                    rgp.ShadowColor = shadow;
+                    rgp.Font = new Font(rgp.Font.FontFamily, rgp.Font.Size, FontStyle.Bold);
+                    rgp.Invalidate();
                     break;
                 case Panel pnl:
                     // Panels génériques (contentPanel, advancedOptionsPanel, lignes
@@ -65,6 +75,12 @@ namespace ChaturbateRecorderApp.UI
                     b.ForeColor = btnFg;
                     b.FlatStyle = FlatStyle.Flat;
                     b.FlatAppearance.BorderSize = 0;
+                    // États survol/appui (8.4) : éclairci au survol, assombri à
+                    // l'appui — WinForms les gère nativement une fois définis,
+                    // pas besoin de gérer MouseEnter/MouseDown à la main.
+                    b.FlatAppearance.MouseOverBackColor = Lighten(btn, 24);
+                    b.FlatAppearance.MouseDownBackColor = Darken(btn, 24);
+                    b.Padding = new Padding(8, 0, 8, 0);
                     b.Cursor = Cursors.Hand;
                     ApplyRoundedRegion(b, 6);
                     break;
@@ -96,8 +112,14 @@ namespace ChaturbateRecorderApp.UI
             }
 
             foreach (Control child in control.Controls)
-                ApplyRecursive(child, bg, panel, fg, btn, btnFg);
+                ApplyRecursive(child, bg, panel, fg, btn, btnFg, border, shadow);
         }
+
+        private static Color Lighten(Color c, int amount) => Color.FromArgb(
+            Math.Min(255, c.R + amount), Math.Min(255, c.G + amount), Math.Min(255, c.B + amount));
+
+        private static Color Darken(Color c, int amount) => Color.FromArgb(
+            Math.Max(0, c.R - amount), Math.Max(0, c.G - amount), Math.Max(0, c.B - amount));
 
         /// <summary>
         /// Coins arrondis (7.1) via une Region calculée sur la taille actuelle

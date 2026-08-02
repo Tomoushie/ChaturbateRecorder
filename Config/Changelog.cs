@@ -77,6 +77,12 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : le texte de plusieurs boutons (\"Démarrer\", \"Tout arrêter\", \"Parcourir...\", \"Supprimer favori\", \"Rechercher une mise à jour\") était tronqué — largeurs ajustées.",
                 "Correctif thème sombre : le fond de certains panneaux restait clair au lieu de suivre le thème actif.",
             }),
+            ("1.11.0", new[]
+            {
+                "Sections de l'interface : les cadres classiques (GroupBox) sont remplacés par des panneaux à bordure arrondie et ombre légère, façon carte \"Fluent\".",
+                "Barre de progression : remplissage animé (au lieu d'un saut instantané) à la fin d'un enregistrement.",
+                "Boutons : couleurs distinctes au survol et à l'appui de la souris.",
+            }),
         };
     }
 }
