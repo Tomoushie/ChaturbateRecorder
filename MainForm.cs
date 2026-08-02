@@ -17,12 +17,10 @@ namespace ChaturbateRecorderApp
     {
         // --- Contrôles ---
         private Panel contentPanel = null!;
-        private ComboBox themeCombo = null!;
-        private Label themeLabel = null!;
-        private ComboBox languageCombo = null!;
-        private Label languageLabel = null!;
+        private Button paramsButton = null!;
         private Button checkUpdateButton = null!;
         private Button tutorialButton = null!;
+        private Button reportBugButton = null!;
         private Button modeToggleButton = null!;
         private Label urlLabel = null!;
         private TextBox urlTextBox = null!;
@@ -46,15 +44,6 @@ namespace ChaturbateRecorderApp
         private ComboBox codecCombo = null!;
         private Label formatLabel = null!;
         private ComboBox formatCombo = null!;
-        private Label saveDirLabel = null!;
-        private TextBox saveDirTextBox = null!;
-        private Button browseDirButton = null!;
-        private Label cookiesLabel = null!;
-        private TextBox cookiesTextBox = null!;
-        private Button browseCookiesButton = null!;
-        private Label proxyLabel = null!;
-        private TextBox proxyTextBox = null!;
-        private CheckBox autoReconnectCheckbox = null!;
         private ListBox favoritesListBox = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
@@ -91,6 +80,15 @@ namespace ChaturbateRecorderApp
         private AppTheme _currentTheme = AppTheme.Light;
         private AppLanguage _currentLanguage = AppLanguage.French;
         private NotifyIcon _notifyIcon = null!;
+        private ToolStripMenuItem _trayOpenItem = null!;
+        private ToolStripMenuItem _traySettingsItem = null!;
+        private ToolStripMenuItem _trayCloseItem = null!;
+        // Réduction dans la zone de notification (19.0) : le X masque la
+        // fenêtre au lieu de fermer l'app, pour ne pas interrompre les
+        // enregistrements en cours. Seul "Fermer" du menu de la zone de
+        // notification déclenche la fermeture réelle (ce booléen le distingue
+        // d'un clic sur le X, qui lève le même événement OnFormClosing).
+        private bool _isReallyClosing;
 
         private readonly UserSettings _settings;
 
@@ -864,7 +862,7 @@ namespace ChaturbateRecorderApp
                 CaptureDir = AppConfig.CaptureDir,
                 CodecChoice = codecChoice,
                 ContainerExt = containerExt,
-                AutoReconnectEnabled = autoReconnectCheckbox.Checked,
+                AutoReconnectEnabled = _settings.AutoReconnectDefault,
             };
 
             var row = BuildJobRow(job);
@@ -908,66 +906,6 @@ namespace ChaturbateRecorderApp
                 if (row.Job.Engine.State == DownloadState.Running)
                     row.Job.Engine.Stop();
             }
-        }
-
-        private void OnBrowseCaptureDirClick(object? sender, EventArgs e)
-        {
-            using var dialog = new FolderBrowserDialog
-            {
-                Description = "Choisis le dossier de sauvegarde des enregistrements",
-                UseDescriptionForTitle = true,
-                SelectedPath = Directory.Exists(AppConfig.CaptureDir) ? AppConfig.CaptureDir : AppConfig.AppDir,
-            };
-
-            if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-            var chosen = dialog.SelectedPath;
-            if (!PathValidator.IsValidPath(chosen))
-            {
-                MessageBox.Show("Dossier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            AppConfig.CaptureDir = chosen;
-            Directory.CreateDirectory(AppConfig.CaptureDir);
-            saveDirTextBox.Text = AppConfig.CaptureDir;
-
-            _settings.CaptureDir = AppConfig.CaptureDir;
-            SettingsManager.Save(_settings);
-
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] Dossier de sauvegarde changé : {AppConfig.CaptureDir}");
-        }
-
-        private void OnBrowseCookiesClick(object? sender, EventArgs e)
-        {
-            using var dialog = new OpenFileDialog
-            {
-                Title = "Choisis un fichier cookies.txt (format Netscape, exporté depuis ton navigateur)",
-                Filter = "Fichiers cookies (*.txt)|*.txt|Tous les fichiers (*.*)|*.*",
-            };
-
-            if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-            if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true))
-            {
-                MessageBox.Show("Fichier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            AppConfig.CookiesFilePath = dialog.FileName;
-            cookiesTextBox.Text = AppConfig.CookiesFilePath;
-
-            _settings.CookiesFilePath = AppConfig.CookiesFilePath;
-            SettingsManager.Save(_settings);
-
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] Fichier cookies changé : {AppConfig.CookiesFilePath}");
-        }
-
-        private void OnProxyTextChanged(object? sender, EventArgs e)
-        {
-            AppConfig.ProxyUrl = proxyTextBox.Text.Trim();
-            _settings.ProxyUrl = AppConfig.ProxyUrl;
-            SettingsManager.Save(_settings);
         }
 
         private void OnAddFavoriteClick(object? sender, EventArgs e)
@@ -1019,21 +957,20 @@ namespace ChaturbateRecorderApp
             }
         }
 
-        private void OnThemeChanged(object? sender, EventArgs e)
+        /// <summary>
+        /// Rappelé par SettingsForm (19.0) quand le thème est changé depuis la
+        /// fenêtre Paramètres — la logique d'animation/transition reste ici
+        /// puisqu'elle porte sur MainForm, pas sur la fenêtre de paramètres.
+        /// </summary>
+        private void HandleThemeChangedFromSettings(AppTheme theme)
         {
-            // Par index plutôt que par texte comparé à "Sombre" : les items du
-            // ComboBox sont désormais traduits (20.0), leur texte dépend de la
-            // langue active et ne peut plus servir à identifier le thème choisi.
-            var theme = themeCombo.SelectedIndex == 1 ? AppTheme.Dark : AppTheme.Light;
             AnimateThemeTransition(_currentTheme, theme);
             _currentTheme = theme;
         }
 
-        private void OnLanguageChanged(object? sender, EventArgs e)
+        /// <summary>Rappelé par SettingsForm (19.0) quand la langue est changée.</summary>
+        private void HandleLanguageChangedFromSettings(AppLanguage language)
         {
-            var language = languageCombo.SelectedIndex == 1 ? AppLanguage.English : AppLanguage.French;
-            if (language == _currentLanguage) return;
-
             _currentLanguage = language;
             ApplyLanguage(language);
 
@@ -1045,25 +982,26 @@ namespace ChaturbateRecorderApp
         /// Traduction de l'UI principale (20.0) : réassigne le Text de chaque
         /// libellé/bouton/case à cocher fixe, les items des ComboBox (en
         /// conservant l'index sélectionné, jamais comparés par texte — voir
-        /// OnThemeChanged) et les en-têtes de colonnes. Les messages d'erreur,
-        /// notifications, logs, le guide de démarrage et l'historique des
-        /// nouveautés restent en français (voir UI/Localization.cs).
+        /// HandleThemeChangedFromSettings) et les en-têtes de colonnes. Les
+        /// messages d'erreur, notifications, logs, le guide de démarrage et
+        /// l'historique des nouveautés restent en français (voir
+        /// UI/Localization.cs). Thème/langue/dossier/cookies/proxy/reconnexion
+        /// automatique vivent désormais dans SettingsForm (19.0), traduits par
+        /// sa propre méthode ApplyLanguage quand cette fenêtre est ouverte.
         /// </summary>
         private void ApplyLanguage(AppLanguage lang)
         {
             string L(string key) => Localization.Get(key, lang);
 
-            themeLabel.Text = L("theme.label");
-            languageLabel.Text = L("language.label");
-
-            var themeIndex = themeCombo.SelectedIndex;
-            themeCombo.Items.Clear();
-            themeCombo.Items.AddRange(new object[] { L("theme.light"), L("theme.dark") });
-            themeCombo.SelectedIndex = themeIndex < 0 ? 0 : themeIndex;
-
+            paramsButton.Text = L("button.settings");
             checkUpdateButton.Text = L("button.checkUpdate");
             tutorialButton.Text = L("button.tutorial");
+            reportBugButton.Text = L("button.reportBug");
             modeToggleButton.Text = _advancedMode ? L("mode.switchToSimple") : L("mode.switchToAdvanced");
+
+            _trayOpenItem.Text = L("tray.open");
+            _traySettingsItem.Text = L("tray.settings");
+            _trayCloseItem.Text = L("tray.close");
 
             grpRecord.Title = L("panel.record");
             urlLabel.Text = L("label.url");
@@ -1088,12 +1026,6 @@ namespace ChaturbateRecorderApp
             formatCombo.Items.Clear();
             formatCombo.Items.AddRange(new object[] { L("format.mp4"), L("format.mkv"), L("format.mov") });
             formatCombo.SelectedIndex = formatIndex < 0 ? 0 : formatIndex;
-
-            saveDirLabel.Text = L("label.saveDir");
-            browseDirButton.Text = L("button.browse");
-            cookiesLabel.Text = L("label.cookies");
-            proxyLabel.Text = L("label.proxy");
-            autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
 
             grpProgress.Title = L("panel.progress");
 
@@ -1217,9 +1149,10 @@ namespace ChaturbateRecorderApp
 
             SetIcon(startButton, "play");
             SetIcon(stopAllButton, "stop");
-            SetIcon(browseDirButton, "folder");
+            SetIcon(paramsButton, "sliders");
             SetIcon(checkUpdateButton, "update");
             SetIcon(tutorialButton, "book");
+            SetIcon(reportBugButton, "alert");
             SetIcon(websiteButton, "globe");
 
             foreach (var row in _jobRows)
@@ -1234,8 +1167,10 @@ namespace ChaturbateRecorderApp
         /// <summary>
         /// Mode simple / avancé (3.2). En mode simple : uniquement URL,
         /// Démarrer/Tout arrêter et la liste des enregistrements en cours.
-        /// En mode avancé : tout (qualité/codec/format, dossier, cookies/proxy,
-        /// thème, guide, mises à jour, favoris, don, logs). Le choix est
+        /// En mode avancé : tout (qualité/codec/format, guide, mises à jour,
+        /// rapport de bug, favoris, don, logs). Thème/langue/dossier/cookies/
+        /// proxy/reconnexion automatique ont déménagé dans SettingsForm (19.0),
+        /// accessible via "Paramètres" dans les deux modes. Le choix est
         /// mémorisé entre les lancements.
         /// </summary>
         private void ApplyUiMode(bool advanced, bool animate = true)
@@ -1243,17 +1178,14 @@ namespace ChaturbateRecorderApp
             _advancedMode = advanced;
 
             const int grpRecordY = 75;
-            const int grpRecordHeightAdvanced = 310;
+            const int grpRecordHeightAdvanced = 172;
             const int grpRecordHeightSimple = 110;
             const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
 
             advancedOptionsPanel.Visible = advanced;
-            themeLabel.Visible = advanced;
-            themeCombo.Visible = advanced;
-            languageLabel.Visible = advanced;
-            languageCombo.Visible = advanced;
             tutorialButton.Visible = advanced;
             checkUpdateButton.Visible = advanced;
+            reportBugButton.Visible = advanced;
             grpHistory.Visible = advanced;
             grpFavorites.Visible = advanced;
             grpDonate.Visible = advanced;
@@ -1285,7 +1217,12 @@ namespace ChaturbateRecorderApp
             ClientSize = new Size(700, naturalHeight);
             contentPanel.AutoScrollMinSize = new Size(700, naturalHeight);
 
-            modeToggleButton.Text = advanced ? "Mode simple" : "Mode avancé";
+            // Par Localization (pas de littéral français en dur) : ce texte doit
+            // rester dans la langue active même quand on change de mode après
+            // avoir choisi l'anglais — bug corrigé au passage (19.0).
+            modeToggleButton.Text = advanced
+                ? Localization.Get("mode.switchToSimple", _currentLanguage)
+                : Localization.Get("mode.switchToAdvanced", _currentLanguage);
 
             _settings.AdvancedMode = advanced;
             SettingsManager.Save(_settings);
@@ -1329,8 +1266,31 @@ namespace ChaturbateRecorderApp
             }
         }
 
+        /// <summary>
+        /// Réduction dans la zone de notification (19.0) : le X masque la
+        /// fenêtre au lieu de fermer l'application, pour ne pas interrompre les
+        /// enregistrements en cours en arrière-plan. Seul "Fermer" du menu de
+        /// la zone de notification (_isReallyClosing = true avant Close())
+        /// déclenche la fermeture réelle ci-dessous.
+        /// </summary>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (!_isReallyClosing && e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                Hide();
+
+                if (!_settings.HasSeenTrayHint)
+                {
+                    ShowNotification(
+                        "Toujours actif",
+                        "Chaturbate Recorder continue de tourner dans la zone de notification. Clic droit sur l'icône pour ouvrir, accéder aux paramètres ou fermer complètement.");
+                    _settings.HasSeenTrayHint = true;
+                    SettingsManager.Save(_settings);
+                }
+                return;
+            }
+
             foreach (var row in _jobRows)
                 row.Job.Engine.Stop();
 
@@ -1340,6 +1300,47 @@ namespace ChaturbateRecorderApp
             _notifyIcon.Dispose();
 
             base.OnFormClosing(e);
+        }
+
+        /// <summary>Restaure/focalise la fenêtre principale (19.0, tray "Ouvrir").</summary>
+        private void ShowMainWindow()
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            BringToFront();
+            Activate();
+        }
+
+        private void ShowSettingsDialog()
+        {
+            using var dialog = new SettingsForm(_settings, _currentTheme, _currentLanguage,
+                HandleThemeChangedFromSettings, HandleLanguageChangedFromSettings,
+                msg => AppendLog($"[{DateTime.Now:HH:mm:ss}] {msg}"));
+            dialog.ShowDialog(this);
+        }
+
+        /// <summary>
+        /// Signaler un bug (18.0) : ouvre un nouveau ticket GitHub pré-rempli
+        /// (titre + version/OS/dossier de capture) dans le navigateur, plutôt
+        /// que de collecter/envoyer quoi que ce soit depuis l'appli elle-même.
+        /// </summary>
+        private void OnReportBugClick(object? sender, EventArgs e)
+        {
+            try
+            {
+                var title = Uri.EscapeDataString("[Bug] ");
+                var body = Uri.EscapeDataString(
+                    $"**Version** : v{CurrentVersion}\n" +
+                    $"**Système** : {Environment.OSVersion.VersionString}\n" +
+                    $"**Dossier de capture** : {AppConfig.CaptureDir}\n\n" +
+                    "**Décris le problème rencontré :**\n\n");
+                var url = $"https://github.com/Tomoushie/ChaturbateRecorder/issues/new?title={title}&body={body}";
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Impossible d'ouvrir le formulaire de rapport de bug : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -1388,9 +1389,11 @@ namespace ChaturbateRecorderApp
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
             catch (Exception ex) { Logger.Log($"Impossible de charger l'icône : {ex.Message}", LogLevel.WARN); }
 
-            // Icône de la zone de notification (3.3) : uniquement pour porter les
-            // notifications de type "toast" (ShowBalloonTip) — enregistrement
-            // terminé/en erreur, favori ajouté.
+            // Icône de la zone de notification (3.3) : porte les notifications
+            // "toast" (ShowBalloonTip) et, depuis 19.0, un menu clic droit
+            // (Ouvrir/Paramètres/Fermer) puisque la fenêtre principale peut
+            // désormais être masquée (réduite dans la zone de notification)
+            // sans que l'application ne quitte.
             _notifyIcon = new NotifyIcon
             {
                 Icon = Icon ?? SystemIcons.Application,
@@ -1398,41 +1401,36 @@ namespace ChaturbateRecorderApp
                 Visible = true,
             };
 
-            // Barre du haut sur deux lignes (20.0) : thème+langue en haut,
-            // guide/mode/mises à jour en dessous — une seule ligne n'a plus
-            // assez de place une fois le sélecteur de langue ajouté.
-            themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
-            themeCombo = new ComboBox
-            {
-                Location = new Point(70, 9),
-                Size = new Size(100, 24),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
-            themeCombo.SelectedItem = "Clair";
-            themeCombo.SelectedIndexChanged += OnThemeChanged;
+            _trayOpenItem = new ToolStripMenuItem("Ouvrir", null, (s, e) => ShowMainWindow());
+            _traySettingsItem = new ToolStripMenuItem("Paramètres", null, (s, e) => { ShowMainWindow(); ShowSettingsDialog(); });
+            _trayCloseItem = new ToolStripMenuItem("Fermer", null, (s, e) => { _isReallyClosing = true; Close(); });
 
-            languageLabel = new Label { Text = "Langue :", Location = new Point(185, 12), AutoSize = true };
-            languageCombo = new ComboBox
-            {
-                Location = new Point(250, 9),
-                Size = new Size(110, 24),
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            // Noms de langue non traduits (20.0) : chaque langue s'affiche dans
-            // sa propre langue, convention standard d'un sélecteur de langue.
-            languageCombo.Items.AddRange(new object[] { "Français", "English" });
-            languageCombo.SelectedIndex = _currentLanguage == AppLanguage.English ? 1 : 0;
-            languageCombo.SelectedIndexChanged += OnLanguageChanged;
+            var trayMenu = new ContextMenuStrip();
+            trayMenu.Items.Add(_trayOpenItem);
+            trayMenu.Items.Add(_traySettingsItem);
+            trayMenu.Items.Add(new ToolStripSeparator());
+            trayMenu.Items.Add(_trayCloseItem);
+            _notifyIcon.ContextMenuStrip = trayMenu;
+            _notifyIcon.DoubleClick += (s, e) => ShowMainWindow();
+
+            // Barre du haut sur deux lignes : Paramètres/Mode toujours visibles
+            // (rangée 1), Guide/Mises à jour/Signaler un bug réservés au mode
+            // avancé (rangée 2). Thème/langue ont déménagé dans SettingsForm
+            // (19.0), ce qui simplifie cette barre par rapport à la v1.13.0.
+            paramsButton = new Button { Location = new Point(12, 9), Size = new Size(130, 24) };
+            paramsButton.Click += (s, e) => ShowSettingsDialog();
+
+            modeToggleButton = new Button { Location = new Point(152, 9), Size = new Size(130, 24) };
+            modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
             tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, 39), Size = new Size(190, 24) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
-            modeToggleButton = new Button { Location = new Point(212, 39), Size = new Size(130, 24) };
-            modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
-
-            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(352, 39), Size = new Size(215, 24) };
+            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(212, 39), Size = new Size(215, 24) };
             checkUpdateButton.Click += OnCheckUpdateClick;
+
+            reportBugButton = new Button { Location = new Point(437, 39), Size = new Size(160, 24) };
+            reportBugButton.Click += OnReportBugClick;
 
             // --- Panel : Enregistrement ---
             // Ancrage Left+Right (fenêtre redimensionnable, v1.7.0) : le panneau
@@ -1450,7 +1448,7 @@ namespace ChaturbateRecorderApp
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
             // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
             // en Mode simple (3.2), coordonnées relatives au panneau lui-même.
-            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 200) };
+            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 66) };
 
             qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
             qualityCombo = new ComboBox
@@ -1497,65 +1495,17 @@ namespace ChaturbateRecorderApp
             });
             formatCombo.SelectedIndex = 0;
 
-            saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 66), AutoSize = true };
-            saveDirTextBox = new TextBox
-            {
-                Location = new Point(12, 84),
-                Size = new Size(500, 24),
-                ReadOnly = true,
-                Text = AppConfig.CaptureDir,
-            };
-            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(522, 84), Size = new Size(126, 24) };
-
-            cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 120), AutoSize = true };
-            cookiesTextBox = new TextBox
-            {
-                Location = new Point(12, 138),
-                Size = new Size(260, 24),
-                ReadOnly = true,
-                Text = AppConfig.CookiesFilePath
-            };
-            browseCookiesButton = new Button { Text = "...", Location = new Point(278, 138), Size = new Size(40, 24) };
-
-            proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 120), AutoSize = true };
-            proxyTextBox = new TextBox
-            {
-                Location = new Point(330, 138),
-                Size = new Size(306, 24),
-                Text = AppConfig.ProxyUrl,
-                PlaceholderText = "ex: socks5://127.0.0.1:9050",
-            };
-
-            autoReconnectCheckbox = new CheckBox
-            {
-                Text = "Reconnexion automatique si le live se termine de façon inattendue",
-                Location = new Point(12, 172),
-                AutoSize = true,
-            };
-
             startButton.Click += OnStartClick;
             stopAllButton.Click += OnStopAllClick;
             addFavoriteButton.Click += OnAddFavoriteClick;
-            browseDirButton.Click += OnBrowseCaptureDirClick;
-            browseCookiesButton.Click += OnBrowseCookiesClick;
-            proxyTextBox.Leave += OnProxyTextChanged;
 
+            // Dossier de sauvegarde/cookies/proxy/reconnexion automatique ont
+            // déménagé dans SettingsForm (19.0) : ce panneau ne contient plus
+            // que les choix par enregistrement (qualité/codec/format).
             advancedOptionsPanel.Controls.AddRange(new Control[]
             {
                 qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
-                saveDirLabel, saveDirTextBox, browseDirButton,
-                cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox,
-                autoReconnectCheckbox
             });
-            // Ancrage (fenêtre redimensionnable, v1.7.0) posé APRÈS l'ajout au
-            // parent : Control.Anchor calcule la marge par rapport aux bords à
-            // partir du Parent courant — posé plus tôt (ex: dans l'initialiseur
-            // d'objet, avant Controls.Add), le Parent est encore null et la
-            // marge calculée est fausse (bouton/zone de texte projeté hors de la
-            // fenêtre au premier redimensionnement).
-            saveDirTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            browseDirButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            proxyTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             grpRecord.Controls.AddRange(new Control[]
             {
@@ -1662,7 +1612,7 @@ namespace ChaturbateRecorderApp
             grpLogs.Controls.Add(logListBox);
             logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            contentPanel.Controls.AddRange(new Control[] { themeLabel, themeCombo, languageLabel, languageCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
             Controls.Add(contentPanel);
 
             // Ancrage des panneaux eux-mêmes, posé après leur ajout à

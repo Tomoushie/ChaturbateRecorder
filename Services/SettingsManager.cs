@@ -15,6 +15,13 @@ namespace ChaturbateRecorderApp.Services
         public bool? AdvancedMode { get; set; }
         // "fr" ou "en" (20.0) — absent/inconnu -> français par défaut.
         public string? Language { get; set; }
+        // Déplacée dans la fenêtre Paramètres (19.0) : désormais mémorisée
+        // entre les lancements (ne l'était pas quand la case vivait dans le
+        // formulaire principal).
+        public bool AutoReconnectDefault { get; set; }
+        // Affichée une seule fois, la première fois que la fenêtre principale
+        // est masquée dans la zone de notification (19.0) au lieu de fermer.
+        public bool HasSeenTrayHint { get; set; }
     }
 
     /// <summary>

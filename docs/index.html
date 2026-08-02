@@ -26,6 +26,7 @@
   a:hover { text-decoration: underline; }
 
   header {
+    position: relative;
     padding: 72px 24px 56px;
     text-align: center;
     background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
@@ -46,6 +47,21 @@
   }
   h1 { font-size: 2.1rem; margin: 0 0 8px; }
   header p.tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 28px; }
+
+  .lang-toggle {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .lang-toggle:hover { border-color: var(--muted); color: var(--text); }
 
   .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn {
@@ -113,58 +129,56 @@
 <body>
 
 <header>
+  <button class="lang-toggle" id="langToggle" type="button"></button>
   <div class="logo"></div>
   <h1>Chaturbate Recorder</h1>
-  <p class="tagline">Enregistreur de lives multi-stream pour Windows — sécurité, qualité et confidentialité configurables.</p>
+  <p class="tagline" id="tagline"></p>
   <div class="cta-row">
-    <a class="btn btn-primary" href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest">Télécharger la dernière version</a>
-    <a class="btn btn-secondary" href="https://github.com/Tomoushie/ChaturbateRecorder">Code source (GitHub)</a>
+    <a class="btn btn-primary" id="ctaDownload" href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest"></a>
+    <a class="btn btn-secondary" id="ctaSource" href="https://github.com/Tomoushie/ChaturbateRecorder"></a>
   </div>
 </header>
 
 <main>
   <section>
-    <h2>Fonctionnalités</h2>
+    <h2 id="featuresTitle"></h2>
     <div class="grid">
       <div class="card">
-        <h3>Multi-stream</h3>
-        <p>Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.</p>
+        <h3 id="feat1Title"></h3>
+        <p id="feat1Desc"></p>
       </div>
       <div class="card">
-        <h3>Qualité &amp; codec au choix</h3>
-        <p>Meilleure qualité, moyenne ou minimale ; réencodage optionnel en H.264/H.265 sans jamais toucher au fichier original.</p>
+        <h3 id="feat2Title"></h3>
+        <p id="feat2Desc"></p>
       </div>
       <div class="card">
-        <h3>Format de sortie</h3>
-        <p>MP4, MKV (plus robuste face à un arrêt brutal) ou MOV.</p>
+        <h3 id="feat3Title"></h3>
+        <p id="feat3Desc"></p>
       </div>
       <div class="card">
-        <h3>Sécurité intégrée</h3>
-        <p>Vérification du hash et de la signature de yt-dlp/ffmpeg, sandbox de chemins, détection d'ACL permissives, blocage des emplacements d'exécution suspects.</p>
+        <h3 id="feat4Title"></h3>
+        <p id="feat4Desc"></p>
       </div>
       <div class="card">
-        <h3>Confidentialité</h3>
-        <p>Support d'un proxy SOCKS5/HTTP et import de cookies navigateur pour le contenu réservé aux comptes connectés.</p>
+        <h3 id="feat5Title"></h3>
+        <p id="feat5Desc"></p>
       </div>
       <div class="card">
-        <h3>Mises à jour intégrées</h3>
-        <p>Bouton "Rechercher une mise à jour" qui vérifie les releases GitHub et installe la nouvelle version automatiquement.</p>
+        <h3 id="feat6Title"></h3>
+        <p id="feat6Desc"></p>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>Installation</h2>
-    <p>Télécharge le ZIP de la <a href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest">dernière release</a>, extrais-le où tu veux, et lance <code>ChaturbateRecorder.exe</code>.</p>
-    <div class="note">
-      Nécessite le <a href="https://dotnet.microsoft.com/download/dotnet/10.0">.NET 10 Desktop Runtime</a>.
-      yt-dlp.exe et ffmpeg.exe ne sont pas inclus (voir le README du dépôt) pour rester neutre vis-à-vis de leurs licences respectives — place tes propres binaires dans un dossier <code>Tools\</code> à côté de l'exécutable.
-    </div>
+    <h2 id="installTitle"></h2>
+    <p id="installText"></p>
+    <div class="note" id="installNote"></div>
   </section>
 
   <section>
-    <h2>Code source</h2>
-    <p>Le projet est open source sur <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>. Contributions, retours et rapports de bugs sont les bienvenus via les issues du dépôt.</p>
+    <h2 id="sourceTitle"></h2>
+    <p id="sourceText"></p>
   </section>
 </main>
 
@@ -172,9 +186,96 @@
   <p>
     <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>
     ·
-    <a href="https://paypal.me/tomoushie">Soutenir le projet</a>
+    <a href="https://paypal.me/tomoushie" id="footerDonate"></a>
   </p>
 </footer>
+
+<script>
+  // Bascule FR/EN (25.0) : même esprit que le sélecteur de langue de
+  // l'application (mémorisé, bascule sans rechargement), en plus simple
+  // puisque cette page est un simple fichier statique sans build.
+  var STRINGS = {
+    fr: {
+      langToggle: "English",
+      tagline: "Enregistreur de lives multi-stream pour Windows — sécurité, qualité et confidentialité configurables.",
+      ctaDownload: "Télécharger la dernière version",
+      ctaSource: "Code source (GitHub)",
+      featuresTitle: "Fonctionnalités",
+      feat1Title: "Multi-stream",
+      feat1Desc: "Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.",
+      feat2Title: "Qualité & codec au choix",
+      feat2Desc: "Meilleure qualité, moyenne ou minimale ; réencodage optionnel en H.264/H.265 sans jamais toucher au fichier original.",
+      feat3Title: "Format de sortie",
+      feat3Desc: "MP4, MKV (plus robuste face à un arrêt brutal) ou MOV.",
+      feat4Title: "Sécurité intégrée",
+      feat4Desc: "Vérification du hash et de la signature de yt-dlp/ffmpeg, sandbox de chemins, détection d'ACL permissives, blocage des emplacements d'exécution suspects.",
+      feat5Title: "Confidentialité",
+      feat5Desc: "Support d'un proxy SOCKS5/HTTP et import de cookies navigateur pour le contenu réservé aux comptes connectés.",
+      feat6Title: "Mises à jour intégrées",
+      feat6Desc: "Bouton \"Rechercher une mise à jour\" qui vérifie les releases GitHub et installe la nouvelle version automatiquement.",
+      installTitle: "Installation",
+      installText: "Télécharge le ZIP de la <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">dernière release</a>, extrais-le où tu veux, et lance <code>ChaturbateRecorder.exe</code>.",
+      installNote: "Nécessite le <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe et ffmpeg.exe ne sont pas inclus (voir le README du dépôt) pour rester neutre vis-à-vis de leurs licences respectives — place tes propres binaires dans un dossier <code>Tools\\</code> à côté de l'exécutable.",
+      sourceTitle: "Code source",
+      sourceText: "Le projet est open source sur <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, retours et rapports de bugs sont les bienvenus via les issues du dépôt.",
+      footerDonate: "Soutenir le projet",
+    },
+    en: {
+      langToggle: "Français",
+      tagline: "Multi-stream live recorder for Windows — configurable security, quality, and privacy.",
+      ctaDownload: "Download the latest version",
+      ctaSource: "Source code (GitHub)",
+      featuresTitle: "Features",
+      feat1Title: "Multi-stream",
+      feat1Desc: "Records multiple lives in parallel without opening multiple instances of the app.",
+      feat2Title: "Choice of quality & codec",
+      feat2Desc: "Best, medium, or minimum quality; optional H.264/H.265 re-encoding that never touches the original file.",
+      feat3Title: "Output format",
+      feat3Desc: "MP4, MKV (more resilient to an abrupt stop), or MOV.",
+      feat4Title: "Built-in security",
+      feat4Desc: "Hash and signature verification for yt-dlp/ffmpeg, path sandboxing, permissive-ACL detection, blocking of suspicious execution locations.",
+      feat5Title: "Privacy",
+      feat5Desc: "SOCKS5/HTTP proxy support and browser cookie import for content restricted to logged-in accounts.",
+      feat6Title: "Built-in updates",
+      feat6Desc: "\"Check for updates\" button that checks GitHub releases and installs the new version automatically.",
+      installTitle: "Installation",
+      installText: "Download the ZIP of the <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">latest release</a>, extract it wherever you like, and launch <code>ChaturbateRecorder.exe</code>.",
+      installNote: "Requires the <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe and ffmpeg.exe are not included (see the repo's README) to stay neutral regarding their respective licenses — place your own binaries in a <code>Tools\\</code> folder next to the executable.",
+      sourceTitle: "Source code",
+      sourceText: "The project is open source on <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, feedback, and bug reports are welcome via the repo's issues.",
+      footerDonate: "Support the project",
+    },
+  };
+
+  function setLanguage(lang) {
+    var s = STRINGS[lang];
+    document.documentElement.lang = lang;
+    document.getElementById("langToggle").textContent = s.langToggle;
+    document.getElementById("tagline").textContent = s.tagline;
+    document.getElementById("ctaDownload").textContent = s.ctaDownload;
+    document.getElementById("ctaSource").textContent = s.ctaSource;
+    document.getElementById("featuresTitle").textContent = s.featuresTitle;
+    for (var i = 1; i <= 6; i++) {
+      document.getElementById("feat" + i + "Title").textContent = s["feat" + i + "Title"];
+      document.getElementById("feat" + i + "Desc").textContent = s["feat" + i + "Desc"];
+    }
+    document.getElementById("installTitle").textContent = s.installTitle;
+    document.getElementById("installText").innerHTML = s.installText;
+    document.getElementById("installNote").innerHTML = s.installNote;
+    document.getElementById("sourceTitle").textContent = s.sourceTitle;
+    document.getElementById("sourceText").innerHTML = s.sourceText;
+    document.getElementById("footerDonate").textContent = s.footerDonate;
+    localStorage.setItem("lang", lang);
+  }
+
+  var saved = localStorage.getItem("lang");
+  var initial = saved || (navigator.language && navigator.language.toLowerCase().indexOf("fr") === 0 ? "fr" : "en");
+  setLanguage(initial);
+
+  document.getElementById("langToggle").addEventListener("click", function () {
+    setLanguage(document.documentElement.lang === "fr" ? "en" : "fr");
+  });
+</script>
 
 </body>
 </html>

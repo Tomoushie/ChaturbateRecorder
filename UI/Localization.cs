@@ -75,6 +75,17 @@ namespace ChaturbateRecorderApp.UI
             ["label.donate"] = ("Scanne le QR code avec ton téléphone, ou clique sur le bouton.", "Scan the QR code with your phone, or click the button."),
 
             ["panel.logs"] = ("Logs", "Logs"),
+
+            // 19.0 : fenêtre Paramètres + menu de la zone de notification.
+            ["button.settings"] = ("Paramètres", "Settings"),
+            ["window.settings"] = ("Paramètres", "Settings"),
+            ["button.close"] = ("Fermer", "Close"),
+            ["tray.open"] = ("Ouvrir", "Open"),
+            ["tray.settings"] = ("Paramètres", "Settings"),
+            ["tray.close"] = ("Fermer", "Close"),
+
+            // 18.0 : bouton de rapport de bug.
+            ["button.reportBug"] = ("Signaler un bug", "Report a bug"),
         };
 
         public static string Get(string key, AppLanguage lang)

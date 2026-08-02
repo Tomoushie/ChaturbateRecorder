@@ -99,6 +99,13 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : élargir la fenêtre ne redimensionnait pas le contenu (panneaux, listes, champs) qui restait figé à sa largeur d'origine.",
                 "Correctif : les boutons \"Site web\", \"Ouvrir dossier\" et \"Supprimer favori\" avaient leur texte rogné.",
             }),
+            ("1.14.0", new[]
+            {
+                "Nouvelle fenêtre \"Paramètres\" : thème, langue, dossier de sauvegarde, cookies, proxy et reconnexion automatique par défaut (désormais mémorisée) y sont regroupés, séparément de la fenêtre principale.",
+                "Fermer la fenêtre principale la réduit maintenant dans la zone de notification au lieu de quitter l'application — les enregistrements en cours continuent en arrière-plan. Menu clic droit sur l'icône : Ouvrir / Paramètres / Fermer.",
+                "Bouton \"Signaler un bug\" qui ouvre un ticket GitHub pré-rempli (version, système, dossier de capture).",
+                "Le site du projet (tomoushie.github.io/ChaturbateRecorder) est désormais disponible en français et en anglais, via un bouton de bascule.",
+            }),
         };
     }
 }
