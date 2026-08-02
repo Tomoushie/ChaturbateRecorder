@@ -16,6 +16,7 @@ namespace ChaturbateRecorderApp
     public class MainForm : Form
     {
         // --- Contrôles ---
+        private Panel contentPanel = null!;
         private ComboBox themeCombo = null!;
         private Label themeLabel = null!;
         private Button checkUpdateButton = null!;
@@ -1037,18 +1038,26 @@ namespace ChaturbateRecorderApp
             var progressY = grpRecordY + grpRecord.Height + 8;
             grpProgress.Location = new Point(12, progressY);
 
+            int naturalHeight;
             if (advanced)
             {
                 grpHistory.Location = new Point(12, progressY + grpProgress.Height + 8);
                 grpFavorites.Location = new Point(12, grpHistory.Bottom + 8);
                 grpDonate.Location = new Point(12, grpFavorites.Bottom + 8);
                 grpLogs.Location = new Point(12, grpDonate.Bottom + 8);
-                ClientSize = new Size(700, grpLogs.Bottom + 20);
+                naturalHeight = grpLogs.Bottom + 20;
             }
             else
             {
-                ClientSize = new Size(700, progressY + grpProgress.Height + 20);
+                naturalHeight = progressY + grpProgress.Height + 20;
             }
+
+            // Taille "naturelle" du contenu : appliquée à la fenêtre pour un
+            // confort immédiat au changement de mode, et comme plancher de
+            // défilement (AutoScrollMinSize) si l'utilisateur réduit ensuite
+            // la fenêtre manuellement en dessous de cette taille.
+            ClientSize = new Size(700, naturalHeight);
+            contentPanel.AutoScrollMinSize = new Size(700, naturalHeight);
 
             modeToggleButton.Text = advanced ? "Mode simple" : "Mode avancé";
 
@@ -1130,8 +1139,16 @@ namespace ChaturbateRecorderApp
             Text = $"Chaturbate Recorder v{CurrentVersion}";
             ClientSize = new Size(700, 960);
             StartPosition = FormStartPosition.CenterScreen;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
+            MinimumSize = new Size(500, 300);
+
+            // Panneau conteneur avec défilement automatique : la fenêtre est
+            // redimensionnable librement (agrandir/réduire/maximiser), et si
+            // elle devient plus petite que la taille naturelle du contenu
+            // (calculée dans ApplyUiMode via AutoScrollMinSize), des barres de
+            // défilement apparaissent au lieu de couper le contenu.
+            contentPanel = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
 
             // Réutilise l'icône déjà embarquée dans l'exe (via <ApplicationIcon> dans
             // le .csproj) pour la fenêtre/barre des tâches — pas de fichier séparé à
@@ -1365,7 +1382,8 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            Controls.Add(contentPanel);
 
             ResumeLayout(false);
             PerformLayout();
