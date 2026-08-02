@@ -17,6 +17,7 @@ namespace ChaturbateRecorderApp
     {
         // --- Contrôles ---
         private ComboBox themeCombo = null!;
+        private Button checkUpdateButton = null!;
         private TextBox urlTextBox = null!;
         private Button startButton = null!;
         private Button stopAllButton = null!;
@@ -645,6 +646,42 @@ namespace ChaturbateRecorderApp
             ThemeManager.Apply(this, theme);
         }
 
+        private async void OnCheckUpdateClick(object? sender, EventArgs e)
+        {
+            checkUpdateButton.Enabled = false;
+            try
+            {
+                var update = await UpdateChecker.CheckForUpdateAsync(CurrentVersion);
+                if (update == null)
+                {
+                    MessageBox.Show(this, $"Tu utilises déjà la dernière version (v{CurrentVersion}).", "Mises à jour", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var runningJobs = _jobRows.Count(r => r.Job.Engine.State == DownloadState.Running);
+                var warning = runningJobs > 0
+                    ? $"\n\n⚠ {runningJobs} enregistrement(s) en cours seront interrompus par le redémarrage."
+                    : "";
+
+                var result = MessageBox.Show(this,
+                    $"Version v{update.Version} disponible (actuelle : v{CurrentVersion}).\n\nTélécharger et installer maintenant ? L'application redémarrera automatiquement.{warning}",
+                    "Mise à jour disponible", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result != DialogResult.Yes) return;
+
+                AppendLog($"[{DateTime.Now:HH:mm:ss}] Téléchargement de la mise à jour v{update.Version}...");
+                await UpdateInstaller.DownloadAndInstallAsync(update.DownloadUrl, AppConfig.AppDir);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Échec de la vérification des mises à jour : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                checkUpdateButton.Enabled = true;
+            }
+        }
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             foreach (var row in _jobRows)
@@ -684,6 +721,9 @@ namespace ChaturbateRecorderApp
             themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
             themeCombo.SelectedItem = "Clair";
             themeCombo.SelectedIndexChanged += OnThemeChanged;
+
+            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(500, 9), Size = new Size(172, 24) };
+            checkUpdateButton.Click += OnCheckUpdateClick;
 
             // --- GroupBox : Enregistrement ---
             var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
@@ -837,7 +877,7 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            Controls.AddRange(new Control[] { themeLabel, themeCombo, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
+            Controls.AddRange(new Control[] { themeLabel, themeCombo, checkUpdateButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
 
             ResumeLayout(false);
             PerformLayout();

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chaturbate Recorder</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b36;
+    --text: #e6e8eb;
+    --muted: #9aa3b2;
+    --accent: #dc2828;
+    --accent-dark: #a91f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    padding: 72px 24px 56px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: #2d2d30;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .logo::after {
+    content: "";
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  h1 { font-size: 2.1rem; margin: 0 0 8px; }
+  header p.tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 28px; }
+
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); text-decoration: none; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-secondary:hover { border-color: var(--muted); text-decoration: none; }
+
+  main { max-width: 880px; margin: 0 auto; padding: 56px 24px; }
+
+  section { margin-bottom: 56px; }
+  h2 { font-size: 1.4rem; margin-bottom: 18px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+  .note {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--text); }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --border: #e3e5e8;
+      --text: #1b1e24;
+      --muted: #5c6370;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"></div>
+  <h1>Chaturbate Recorder</h1>
+  <p class="tagline">Enregistreur de lives multi-stream pour Windows — sécurité, qualité et confidentialité configurables.</p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest">Télécharger la dernière version</a>
+    <a class="btn btn-secondary" href="https://github.com/Tomoushie/ChaturbateRecorder">Code source (GitHub)</a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>Fonctionnalités</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Multi-stream</h3>
+        <p>Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.</p>
+      </div>
+      <div class="card">
+        <h3>Qualité &amp; codec au choix</h3>
+        <p>Meilleure qualité, moyenne ou minimale ; réencodage optionnel en H.264/H.265 sans jamais toucher au fichier original.</p>
+      </div>
+      <div class="card">
+        <h3>Format de sortie</h3>
+        <p>MP4, MKV (plus robuste face à un arrêt brutal) ou MOV.</p>
+      </div>
+      <div class="card">
+        <h3>Sécurité intégrée</h3>
+        <p>Vérification du hash et de la signature de yt-dlp/ffmpeg, sandbox de chemins, détection d'ACL permissives, blocage des emplacements d'exécution suspects.</p>
+      </div>
+      <div class="card">
+        <h3>Confidentialité</h3>
+        <p>Support d'un proxy SOCKS5/HTTP et import de cookies navigateur pour le contenu réservé aux comptes connectés.</p>
+      </div>
+      <div class="card">
+        <h3>Mises à jour intégrées</h3>
+        <p>Bouton "Rechercher une mise à jour" qui vérifie les releases GitHub et installe la nouvelle version automatiquement.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Installation</h2>
+    <p>Télécharge le ZIP de la <a href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest">dernière release</a>, extrais-le où tu veux, et lance <code>ChaturbateRecorder.exe</code>.</p>
+    <div class="note">
+      Nécessite le <a href="https://dotnet.microsoft.com/download/dotnet/10.0">.NET 10 Desktop Runtime</a>.
+      yt-dlp.exe et ffmpeg.exe ne sont pas inclus (voir le README du dépôt) pour rester neutre vis-à-vis de leurs licences respectives — place tes propres binaires dans un dossier <code>Tools\</code> à côté de l'exécutable.
+    </div>
+  </section>
+
+  <section>
+    <h2>Code source</h2>
+    <p>Le projet est open source sur <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>. Contributions, retours et rapports de bugs sont les bienvenus via les issues du dépôt.</p>
+  </section>
+</main>
+
+<footer>
+  <p>
+    <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>
+    ·
+    <a href="https://paypal.me/tomoushie">Soutenir le projet</a>
+  </p>
+</footer>
+
+</body>
+</html>
