@@ -33,10 +33,17 @@
     <!-- Tests/ est un projet à part (ChaturbateRecorderApp.Tests.csproj) : à
          exclure de l'inclusion récursive par défaut du SDK, sinon ce projet-ci
          essaie aussi de compiler les fichiers de test (et leurs packages
-         xUnit, absents ici). -->
+         xUnit, absents ici). Même chose pour ChaturbateRecorder.Security(.Tests)/,
+         package extrait (30.0) vivant dans des .csproj séparés à côté. -->
     <Compile Remove="Tests\**" />
     <Content Remove="Tests\**" />
     <None Remove="Tests\**" />
+    <Compile Remove="ChaturbateRecorder.Security\**" />
+    <Content Remove="ChaturbateRecorder.Security\**" />
+    <None Remove="ChaturbateRecorder.Security\**" />
+    <Compile Remove="ChaturbateRecorder.Security.Tests\**" />
+    <Content Remove="ChaturbateRecorder.Security.Tests\**" />
+    <None Remove="ChaturbateRecorder.Security.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
