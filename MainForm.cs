@@ -18,6 +18,7 @@ namespace ChaturbateRecorderApp
         // --- Contrôles ---
         private ComboBox themeCombo = null!;
         private Button checkUpdateButton = null!;
+        private Button tutorialButton = null!;
         private TextBox urlTextBox = null!;
         private Button startButton = null!;
         private Button stopAllButton = null!;
@@ -98,26 +99,54 @@ namespace ChaturbateRecorderApp
 
             LoadQrImage();
             ThemeManager.Apply(this, AppTheme.Light);
-            ShowChangelogIfUpdated();
+            ShowFirstRunDialogs();
         }
 
         private static string CurrentVersion =>
             typeof(MainForm).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
-        private void ShowChangelogIfUpdated()
+        /// <summary>
+        /// Sur un tout premier lancement (aucune version jamais vue), affiche le
+        /// tutoriel plutôt que le changelog complet — moins redondant pour un
+        /// nouvel utilisateur qui ne connaît encore aucune fonctionnalité.
+        /// Pour une mise à jour (version déjà vue mais différente), affiche le
+        /// changelog de la nouvelle version.
+        /// </summary>
+        private void ShowFirstRunDialogs()
         {
             var version = CurrentVersion;
-            if (_settings.LastSeenVersion == version) return;
 
+            if (_settings.LastSeenVersion == null)
+            {
+                ShowTutorial();
+                _settings.LastSeenVersion = version;
+                _settings.HasSeenTutorial = true;
+                SettingsManager.Save(_settings);
+                return;
+            }
+
+            if (_settings.LastSeenVersion != version)
+            {
+                ShowChangelog(version);
+                _settings.LastSeenVersion = version;
+                SettingsManager.Save(_settings);
+            }
+        }
+
+        private void ShowChangelog(string version)
+        {
             var entry = Changelog.Entries.FirstOrDefault(e => e.Version == version);
             var body = entry.Changes is { Length: > 0 }
                 ? string.Join(Environment.NewLine, entry.Changes.Select(c => "• " + c))
                 : "Aucun détail disponible pour cette version.";
 
             MessageBox.Show(this, body, $"Nouveautés — v{version}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
 
-            _settings.LastSeenVersion = version;
-            SettingsManager.Save(_settings);
+        private void ShowTutorial()
+        {
+            using var tutorial = new TutorialForm();
+            tutorial.ShowDialog(this);
         }
 
         /// <summary>
@@ -738,6 +767,9 @@ namespace ChaturbateRecorderApp
             checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(500, 9), Size = new Size(172, 24) };
             checkUpdateButton.Click += OnCheckUpdateClick;
 
+            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(210, 9), Size = new Size(160, 24) };
+            tutorialButton.Click += (s, e) => ShowTutorial();
+
             // --- GroupBox : Enregistrement ---
             var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
             var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
@@ -892,7 +924,7 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            Controls.AddRange(new Control[] { themeLabel, themeCombo, checkUpdateButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
+            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
 
             ResumeLayout(false);
             PerformLayout();

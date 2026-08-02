@@ -30,6 +30,12 @@ namespace ChaturbateRecorderApp.Config
                 "Icône d'application.",
                 "Publication sur GitHub (dépôt public + première release).",
             }),
+            ("1.2.0", new[]
+            {
+                "Bouton \"Rechercher une mise à jour\" (vérifie et installe les nouvelles releases GitHub).",
+                "Site web du projet (GitHub Pages) et bouton \"Site web\" dans l'appli.",
+                "Guide de démarrage pas-à-pas au premier lancement, réutilisable via \"Guide de démarrage\".",
+            }),
         };
     }
 }
