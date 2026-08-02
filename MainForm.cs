@@ -19,9 +19,12 @@ namespace ChaturbateRecorderApp
         private Panel contentPanel = null!;
         private ComboBox themeCombo = null!;
         private Label themeLabel = null!;
+        private ComboBox languageCombo = null!;
+        private Label languageLabel = null!;
         private Button checkUpdateButton = null!;
         private Button tutorialButton = null!;
         private Button modeToggleButton = null!;
+        private Label urlLabel = null!;
         private TextBox urlTextBox = null!;
         private Button startButton = null!;
         private Button stopAllButton = null!;
@@ -37,13 +40,19 @@ namespace ChaturbateRecorderApp
         private RoundedGroupPanel grpFavorites = null!;
         private RoundedGroupPanel grpDonate = null!;
         private RoundedGroupPanel grpLogs = null!;
+        private Label qualityLabel = null!;
         private ComboBox qualityCombo = null!;
+        private Label codecLabel = null!;
         private ComboBox codecCombo = null!;
+        private Label formatLabel = null!;
         private ComboBox formatCombo = null!;
+        private Label saveDirLabel = null!;
         private TextBox saveDirTextBox = null!;
         private Button browseDirButton = null!;
+        private Label cookiesLabel = null!;
         private TextBox cookiesTextBox = null!;
         private Button browseCookiesButton = null!;
+        private Label proxyLabel = null!;
         private TextBox proxyTextBox = null!;
         private CheckBox autoReconnectCheckbox = null!;
         private ListBox favoritesListBox = null!;
@@ -80,6 +89,7 @@ namespace ChaturbateRecorderApp
         private readonly List<JobRow> _jobRows = new();
         private bool _advancedMode = true;
         private AppTheme _currentTheme = AppTheme.Light;
+        private AppLanguage _currentLanguage = AppLanguage.French;
         private NotifyIcon _notifyIcon = null!;
 
         private readonly UserSettings _settings;
@@ -87,6 +97,7 @@ namespace ChaturbateRecorderApp
         public MainForm()
         {
             _settings = SettingsManager.Load();
+            _currentLanguage = _settings.Language == "en" ? AppLanguage.English : AppLanguage.French;
             if (!string.IsNullOrWhiteSpace(_settings.CaptureDir) && PathValidator.IsValidPath(_settings.CaptureDir))
                 AppConfig.CaptureDir = _settings.CaptureDir;
             if (!string.IsNullOrWhiteSpace(_settings.CookiesFilePath) && File.Exists(_settings.CookiesFilePath))
@@ -122,6 +133,7 @@ namespace ChaturbateRecorderApp
             LoadQrImage();
             ThemeManager.Apply(this, _currentTheme);
             ApplyIcons();
+            ApplyLanguage(_currentLanguage);
             ApplyUiMode(_settings.AdvancedMode ?? true, animate: false);
             RefreshHistoryAsync();
             ShowFirstRunDialogs();
@@ -999,9 +1011,100 @@ namespace ChaturbateRecorderApp
 
         private void OnThemeChanged(object? sender, EventArgs e)
         {
-            var theme = themeCombo.SelectedItem?.ToString() == "Sombre" ? AppTheme.Dark : AppTheme.Light;
+            // Par index plutôt que par texte comparé à "Sombre" : les items du
+            // ComboBox sont désormais traduits (20.0), leur texte dépend de la
+            // langue active et ne peut plus servir à identifier le thème choisi.
+            var theme = themeCombo.SelectedIndex == 1 ? AppTheme.Dark : AppTheme.Light;
             AnimateThemeTransition(_currentTheme, theme);
             _currentTheme = theme;
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            var language = languageCombo.SelectedIndex == 1 ? AppLanguage.English : AppLanguage.French;
+            if (language == _currentLanguage) return;
+
+            _currentLanguage = language;
+            ApplyLanguage(language);
+
+            _settings.Language = language == AppLanguage.English ? "en" : "fr";
+            SettingsManager.Save(_settings);
+        }
+
+        /// <summary>
+        /// Traduction de l'UI principale (20.0) : réassigne le Text de chaque
+        /// libellé/bouton/case à cocher fixe, les items des ComboBox (en
+        /// conservant l'index sélectionné, jamais comparés par texte — voir
+        /// OnThemeChanged) et les en-têtes de colonnes. Les messages d'erreur,
+        /// notifications, logs, le guide de démarrage et l'historique des
+        /// nouveautés restent en français (voir UI/Localization.cs).
+        /// </summary>
+        private void ApplyLanguage(AppLanguage lang)
+        {
+            string L(string key) => Localization.Get(key, lang);
+
+            themeLabel.Text = L("theme.label");
+            languageLabel.Text = L("language.label");
+
+            var themeIndex = themeCombo.SelectedIndex;
+            themeCombo.Items.Clear();
+            themeCombo.Items.AddRange(new object[] { L("theme.light"), L("theme.dark") });
+            themeCombo.SelectedIndex = themeIndex < 0 ? 0 : themeIndex;
+
+            checkUpdateButton.Text = L("button.checkUpdate");
+            tutorialButton.Text = L("button.tutorial");
+            modeToggleButton.Text = _advancedMode ? L("mode.switchToSimple") : L("mode.switchToAdvanced");
+
+            grpRecord.Title = L("panel.record");
+            urlLabel.Text = L("label.url");
+            startButton.Text = L("button.start");
+            stopAllButton.Text = L("button.stopAll");
+            addFavoriteButton.Text = L("button.addFavorite");
+
+            qualityLabel.Text = L("label.quality");
+            var qualityIndex = qualityCombo.SelectedIndex;
+            qualityCombo.Items.Clear();
+            qualityCombo.Items.AddRange(new object[] { L("quality.best"), L("quality.medium"), L("quality.worst") });
+            qualityCombo.SelectedIndex = qualityIndex < 0 ? 0 : qualityIndex;
+
+            codecLabel.Text = L("label.codec");
+            var codecIndex = codecCombo.SelectedIndex;
+            codecCombo.Items.Clear();
+            codecCombo.Items.AddRange(new object[] { L("codec.copy"), L("codec.h264"), L("codec.h265") });
+            codecCombo.SelectedIndex = codecIndex < 0 ? 0 : codecIndex;
+
+            formatLabel.Text = L("label.format");
+            var formatIndex = formatCombo.SelectedIndex;
+            formatCombo.Items.Clear();
+            formatCombo.Items.AddRange(new object[] { L("format.mp4"), L("format.mkv"), L("format.mov") });
+            formatCombo.SelectedIndex = formatIndex < 0 ? 0 : formatIndex;
+
+            saveDirLabel.Text = L("label.saveDir");
+            browseDirButton.Text = L("button.browse");
+            cookiesLabel.Text = L("label.cookies");
+            proxyLabel.Text = L("label.proxy");
+            autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
+
+            grpProgress.Title = L("panel.progress");
+
+            grpHistory.Title = L("panel.history");
+            historyListView.Columns[0].Text = L("column.file");
+            historyListView.Columns[1].Text = L("column.size");
+            historyListView.Columns[2].Text = L("column.duration");
+            historyListView.Columns[3].Text = L("column.date");
+            refreshHistoryButton.Text = L("button.refresh");
+            openHistoryFolderButton.Text = L("button.openFolder");
+
+            grpFavorites.Title = L("panel.favorites");
+            loadFavoriteButton.Text = L("button.load");
+            removeFavoriteButton.Text = L("button.removeFavorite");
+
+            grpDonate.Title = L("panel.donate");
+            donateButton.Text = L("button.donate");
+            websiteButton.Text = L("button.website");
+            donateLabel.Text = L("label.donate");
+
+            grpLogs.Title = L("panel.logs");
         }
 
         /// <summary>
@@ -1129,7 +1232,7 @@ namespace ChaturbateRecorderApp
         {
             _advancedMode = advanced;
 
-            const int grpRecordY = 50;
+            const int grpRecordY = 75;
             const int grpRecordHeightAdvanced = 310;
             const int grpRecordHeightSimple = 110;
             const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
@@ -1137,6 +1240,8 @@ namespace ChaturbateRecorderApp
             advancedOptionsPanel.Visible = advanced;
             themeLabel.Visible = advanced;
             themeCombo.Visible = advanced;
+            languageLabel.Visible = advanced;
+            languageCombo.Visible = advanced;
             tutorialButton.Visible = advanced;
             checkUpdateButton.Visible = advanced;
             grpHistory.Visible = advanced;
@@ -1283,29 +1388,45 @@ namespace ChaturbateRecorderApp
                 Visible = true,
             };
 
+            // Barre du haut sur deux lignes (20.0) : thème+langue en haut,
+            // guide/mode/mises à jour en dessous — une seule ligne n'a plus
+            // assez de place une fois le sélecteur de langue ajouté.
             themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
             themeCombo = new ComboBox
             {
                 Location = new Point(70, 9),
-                Size = new Size(120, 24),
+                Size = new Size(100, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
             themeCombo.SelectedItem = "Clair";
             themeCombo.SelectedIndexChanged += OnThemeChanged;
 
-            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(490, 9), Size = new Size(205, 24) };
-            checkUpdateButton.Click += OnCheckUpdateClick;
+            languageLabel = new Label { Text = "Langue :", Location = new Point(185, 12), AutoSize = true };
+            languageCombo = new ComboBox
+            {
+                Location = new Point(250, 9),
+                Size = new Size(110, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            // Noms de langue non traduits (20.0) : chaque langue s'affiche dans
+            // sa propre langue, convention standard d'un sélecteur de langue.
+            languageCombo.Items.AddRange(new object[] { "Français", "English" });
+            languageCombo.SelectedIndex = _currentLanguage == AppLanguage.English ? 1 : 0;
+            languageCombo.SelectedIndexChanged += OnLanguageChanged;
 
-            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(210, 9), Size = new Size(160, 24) };
+            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, 39), Size = new Size(190, 24) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
-            modeToggleButton = new Button { Location = new Point(380, 9), Size = new Size(100, 24) };
+            modeToggleButton = new Button { Location = new Point(212, 39), Size = new Size(130, 24) };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
+            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(352, 39), Size = new Size(215, 24) };
+            checkUpdateButton.Click += OnCheckUpdateClick;
+
             // --- Panel : Enregistrement ---
-            grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 50), Size = new Size(660, 272) };
-            var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
+            grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 75), Size = new Size(660, 272) };
+            urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
             startButton = new Button { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
             stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
@@ -1316,7 +1437,7 @@ namespace ChaturbateRecorderApp
             // en Mode simple (3.2), coordonnées relatives au panneau lui-même.
             advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 200) };
 
-            var qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
+            qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
             qualityCombo = new ComboBox
             {
                 Location = new Point(12, 30),
@@ -1331,7 +1452,7 @@ namespace ChaturbateRecorderApp
             });
             qualityCombo.SelectedIndex = 0;
 
-            var codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 12), AutoSize = true };
+            codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 12), AutoSize = true };
             codecCombo = new ComboBox
             {
                 Location = new Point(214, 30),
@@ -1346,7 +1467,7 @@ namespace ChaturbateRecorderApp
             });
             codecCombo.SelectedIndex = 0;
 
-            var formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 12), AutoSize = true };
+            formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 12), AutoSize = true };
             formatCombo = new ComboBox
             {
                 Location = new Point(486, 30),
@@ -1361,7 +1482,7 @@ namespace ChaturbateRecorderApp
             });
             formatCombo.SelectedIndex = 0;
 
-            var saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 66), AutoSize = true };
+            saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 66), AutoSize = true };
             saveDirTextBox = new TextBox
             {
                 Location = new Point(12, 84),
@@ -1371,7 +1492,7 @@ namespace ChaturbateRecorderApp
             };
             browseDirButton = new Button { Text = "Parcourir...", Location = new Point(522, 84), Size = new Size(126, 24) };
 
-            var cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 120), AutoSize = true };
+            cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 120), AutoSize = true };
             cookiesTextBox = new TextBox
             {
                 Location = new Point(12, 138),
@@ -1381,7 +1502,7 @@ namespace ChaturbateRecorderApp
             };
             browseCookiesButton = new Button { Text = "...", Location = new Point(278, 138), Size = new Size(40, 24) };
 
-            var proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 120), AutoSize = true };
+            proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 120), AutoSize = true };
             proxyTextBox = new TextBox
             {
                 Location = new Point(330, 138),
@@ -1499,7 +1620,7 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            contentPanel.Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { themeLabel, themeCombo, languageLabel, languageCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
             Controls.Add(contentPanel);
 
             ResumeLayout(false);

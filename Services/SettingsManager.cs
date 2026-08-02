@@ -13,6 +13,8 @@ namespace ChaturbateRecorderApp.Services
         public string? ProxyUrl { get; set; }
         public bool HasSeenTutorial { get; set; }
         public bool? AdvancedMode { get; set; }
+        // "fr" ou "en" (20.0) — absent/inconnu -> français par défaut.
+        public string? Language { get; set; }
     }
 
     /// <summary>

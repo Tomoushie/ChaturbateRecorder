@@ -89,6 +89,10 @@ namespace ChaturbateRecorderApp.Config
                 "Transition animée (au lieu d'un changement instantané) lors du passage entre thème clair et thème sombre.",
                 "Boutons : la couleur au survol et à l'appui change désormais en douceur plutôt que d'un coup.",
             }),
+            ("1.13.0", new[]
+            {
+                "Sélecteur de langue (Français / English) : traduit les libellés, boutons, cases à cocher et en-têtes de colonnes de l'interface principale. Choix mémorisé entre les lancements.",
+            }),
         };
     }
 }
