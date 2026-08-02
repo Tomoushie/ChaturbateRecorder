@@ -42,6 +42,10 @@ namespace ChaturbateRecorderApp.Config
                 "Génération de miniature déplacée hors du thread UI (ne bloque plus l'interface pendant l'extraction ffmpeg).",
                 "Logs structurés au format JSON (JSONL), avec horodatage ISO 8601 et source auto-détectée.",
             }),
+            ("1.4.0", new[]
+            {
+                "Rotation automatique des logs : suppression des fichiers de plus de 14 jours au démarrage, et rotation (renommage horodaté) au-delà de 20 Mo par fichier.",
+            }),
         };
     }
 }

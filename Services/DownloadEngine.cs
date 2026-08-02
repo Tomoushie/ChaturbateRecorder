@@ -28,6 +28,8 @@ namespace ChaturbateRecorderApp.Services
     {
         private Process? _process;
         private StreamWriter? _logWriter;
+        private string _logFilePath = "";
+        private long _logMaxSizeBytes;
         private bool _wasStoppedManually;
         private bool _watchdogTriggered;
         private DateTime _lastOutputUtc;
@@ -43,7 +45,7 @@ namespace ChaturbateRecorderApp.Services
         private static readonly Regex ProgressRegex =
             new(@"\[download\]\s+([\d\.]+)%", RegexOptions.Compiled);
 
-        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120)
+        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120, long logMaxSizeBytes = 0)
         {
             lock (_sync)
             {
@@ -101,6 +103,9 @@ namespace ChaturbateRecorderApp.Services
                 psi.ArgumentList.Add("--proxy");
                 psi.ArgumentList.Add(proxyUrl);
             }
+
+            _logFilePath = logFilePath;
+            _logMaxSizeBytes = logMaxSizeBytes;
 
             try
             {
@@ -182,6 +187,8 @@ namespace ChaturbateRecorderApp.Services
             try { _logWriter?.WriteLine(line); }
             catch { /* fichier log verrouillé/inaccessible : on continue quand même, le log UI reste utilisable */ }
 
+            RotateJobLogIfTooLarge();
+
             OnLogLine?.Invoke(line);
 
             var match = ProgressRegex.Match(line);
@@ -216,6 +223,34 @@ namespace ChaturbateRecorderApp.Services
             try { _logWriter?.Flush(); _logWriter?.Dispose(); }
             catch { /* ignoré */ }
             _logWriter = null;
+        }
+
+        /// <summary>
+        /// Rotation (2.4) du log brut de ce job si sa taille dépasse le seuil
+        /// configuré : ferme l'écriture en cours, renomme le fichier plein
+        /// avec un suffixe horodaté, puis rouvre un nouveau fichier vide sous
+        /// le nom d'origine pour la suite de l'enregistrement.
+        /// </summary>
+        private void RotateJobLogIfTooLarge()
+        {
+            if (_logWriter == null || _logMaxSizeBytes <= 0) return;
+
+            try
+            {
+                if (_logWriter.BaseStream.Length < _logMaxSizeBytes) return;
+
+                _logWriter.Flush();
+                _logWriter.Dispose();
+                _logWriter = null;
+
+                LogRotationManager.RotateIfTooLarge(_logFilePath, _logMaxSizeBytes);
+
+                _logWriter = new StreamWriter(_logFilePath, append: true, Encoding.UTF8) { AutoFlush = true };
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erreur lors de la rotation du log de job : {ex.Message}", LogLevel.WARN);
+            }
         }
 
         /// <summary>

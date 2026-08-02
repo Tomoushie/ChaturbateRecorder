@@ -89,6 +89,8 @@ namespace ChaturbateRecorderApp
             Directory.CreateDirectory(AppConfig.CaptureDir);
             Directory.CreateDirectory(AppConfig.LogDir);
 
+            LogRotationManager.PurgeOldLogs(AppConfig.LogDir, AppConfig.LogRetentionDays);
+
             WarnIfBroadWriteAccess(AppConfig.AppDir);
             WarnIfBroadWriteAccess(AppConfig.CaptureDir);
             WarnIfBroadWriteAccess(AppConfig.LogDir);
@@ -564,7 +566,7 @@ namespace ChaturbateRecorderApp
             try
             {
                 job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
-                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds);
+                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
             }
             catch (Exception ex)
             {

@@ -34,9 +34,12 @@ namespace ChaturbateRecorderApp.Services
 
             try
             {
-                var dir = Path.GetDirectoryName(SessionLogFile);
+                var sessionLogFile = SessionLogFile;
+                var dir = Path.GetDirectoryName(sessionLogFile);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
+
+                LogRotationManager.RotateIfTooLarge(sessionLogFile, Config.AppConfig.LogMaxFileSizeBytes);
 
                 var entry = new LogEntry
                 {
@@ -45,7 +48,7 @@ namespace ChaturbateRecorderApp.Services
                     Source = source,
                     Message = message,
                 };
-                File.AppendAllText(SessionLogFile, JsonSerializer.Serialize(entry) + Environment.NewLine);
+                File.AppendAllText(sessionLogFile, JsonSerializer.Serialize(entry) + Environment.NewLine);
             }
             catch
             {

@@ -29,6 +29,13 @@ namespace ChaturbateRecorderApp.Config
         // yt-dlp/ffmpeg avant de considérer le process figé et le tuer.
         public static int    YtDlpWatchdogTimeoutSeconds = 120;
 
+        // --- Rotation des logs (2.4) ---
+        // Fichiers du dossier de logs non modifiés depuis plus longtemps que ça
+        // sont supprimés automatiquement au démarrage.
+        public static int  LogRetentionDays    = 14;
+        // Taille max d'un fichier de log avant rotation (renommage horodaté).
+        public static long LogMaxFileSizeBytes = 20 * 1024 * 1024;
+
         // --- Confidentialité / session (13.0, 16.0) ---
         // CookiesFilePath : fichier cookies.txt (format Netscape) exporté depuis
         // le navigateur, transmis à yt-dlp via --cookies pour accéder au contenu
