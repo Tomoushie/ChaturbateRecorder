@@ -1,23 +1,21 @@
 # Chaturbate Recorder — projet C# WinForms
 
-Portage complet du script PowerShell en projet .NET 8 / WinForms natif.
+Portage complet du script PowerShell en projet .NET 10 / WinForms natif.
 
-## ⚠️ Important — non compilé ni testé de mon côté
-
-Je n'ai pas d'environnement Windows ni de SDK .NET disponible ici (sandbox Linux
-sans accès réseau pour installer quoi que ce soit). Ce code a été écrit avec le
-plus grand soin et une relecture manuelle attentive, mais **je n'ai pas pu lancer
-`dotnet build` pour le vérifier**. Il faudra probablement corriger quelques
-erreurs de compilation mineures (typos, imports manquants) une fois sur ta
-machine — c'est normal pour un premier build d'un projet de cette taille écrit
-sans compilateur sous la main.
+- 🌐 [Site du projet](https://tomoushie.github.io/ChaturbateRecorder/)
+- 📦 [Dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) (portable ou dépendante du runtime)
+- 📜 [Version PowerShell d'origine](legacy-powershell/) (avant migration .NET, non maintenue)
 
 ## Prérequis
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download) (Windows)
-- `yt-dlp.exe` et `ffmpeg.exe` placés dans un sous-dossier `bin\` à côté de
-  l'exécutable final (ou ajuste `AppConfig.YtDlpPath` / `AppConfig.FFmpegPath`)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (Windows)
+- `yt-dlp.exe` et `ffmpeg.exe` placés dans `Tools\` à la racine du projet (voir
+  `ChaturbateRecorderApp.csproj` — copiés à côté de l'exécutable à chaque
+  build ; ajuste `AppConfig.YtDlpPath` / `AppConfig.FFmpegPath` si tu préfères
+  un autre emplacement)
 - `donate_qr.png` dans `Assets\` (déjà inclus) — sera copié à côté de l'exe au build
+- (optionnel) `ffprobe.exe` à côté de l'exécutable, pour afficher la durée des
+  vidéos dans l'historique des enregistrements
 
 ## Build
 
@@ -61,8 +59,8 @@ Comme pour la version PowerShell, `AppConfig.YtDlpExpectedSha256` et
 binaire refusera donc de démarrer tant qu'ils ne sont pas renseignés :
 
 ```powershell
-Get-FileHash bin\yt-dlp.exe -Algorithm SHA256
-Get-FileHash bin\ffmpeg.exe -Algorithm SHA256
+Get-FileHash Tools\yt-dlp.exe -Algorithm SHA256
+Get-FileHash Tools\ffmpeg.exe -Algorithm SHA256
 ```
 
 Colle les valeurs obtenues dans `Config/AppConfig.cs`.
@@ -81,7 +79,7 @@ Achète un certificat de signature de code auprès d'une autorité reconnue
 ```powershell
 signtool sign /fd SHA256 /a /f "moncert.pfx" /p "motdepasse" `
     /t http://timestamp.digicert.com `
-    bin\Release\net8.0-windows\ChaturbateRecorder.exe
+    bin\Release\net10.0-windows\ChaturbateRecorder.exe
 ```
 
 `signtool.exe` fait partie du Windows SDK (souvent déjà présent si tu as
@@ -97,7 +95,7 @@ $cert = New-SelfSignedCertificate -Type CodeSigning -Subject "CN=TonNom" `
     -CertStoreLocation Cert:\CurrentUser\My
 
 signtool sign /fd SHA256 /sha1 $cert.Thumbprint `
-    bin\Release\net8.0-windows\ChaturbateRecorder.exe
+    bin\Release\net10.0-windows\ChaturbateRecorder.exe
 ```
 
 C'est ce même thumbprint que tu peux ensuite renseigner dans
@@ -110,21 +108,42 @@ activer `EnableCaPinning`.
 ```
 ChaturbateRecorderApp/
 ├── ChaturbateRecorderApp.csproj
-├── Program.cs                     (point d'entrée)
-├── MainForm.cs                    (UI + câblage des événements)
+├── NuGet.Config                    (source nuget.org explicite, voir plus haut)
+├── Program.cs                      (point d'entrée)
+├── MainForm.cs                     (UI + câblage des événements)
+├── Properties/
+│   └── AssemblyInfo.cs             (InternalsVisibleTo pour les tests)
 ├── Config/
-│   └── AppConfig.cs                (config centralisée, équiv. $Config PS1)
+│   ├── AppConfig.cs                 (config centralisée, équiv. $Config PS1)
+│   └── Changelog.cs                 (historique de versions, affiché en local)
 ├── Security/
-│   ├── BinaryVerifier.cs           (hash, Authenticode, pinning CA)
-│   ├── UrlValidator.cs             (sandbox URL)
-│   ├── PathValidator.cs            (sandbox dossier)
-│   └── CertificateValidator.cs     (TLS + SAN serveur distant)
+│   ├── BinaryVerifier.cs            (hash, Authenticode, pinning CA)
+│   ├── UrlValidator.cs              (sandbox URL)
+│   ├── PathValidator.cs             (sandbox dossier)
+│   ├── WorkingDirectoryValidator.cs (dossier d'exécution : réseau/temp/compressé)
+│   ├── AclValidator.cs              (détection d'ACL permissives)
+│   └── CertificateValidator.cs      (TLS + SAN serveur distant)
 ├── Services/
-│   ├── Logger.cs
+│   ├── Logger.cs                    (logs JSON structurés)
+│   ├── LogRotationManager.cs        (purge + rotation des logs)
 │   ├── FavoritesManager.cs
-│   └── DownloadEngine.cs           (vrai Process .NET, remplace Start-Job)
+│   ├── SettingsManager.cs           (paramètres persistés, settings.json)
+│   ├── RecordingJob.cs              (métadonnées d'un enregistrement)
+│   ├── DownloadEngine.cs            (process yt-dlp, watchdog anti-freeze)
+│   ├── UpdateChecker.cs             (vérification des releases GitHub)
+│   └── UpdateInstaller.cs           (téléchargement + remplacement de l'exe)
 ├── UI/
-│   └── ThemeManager.cs
-└── Assets/
-    └── donate_qr.png
+│   ├── ThemeManager.cs
+│   ├── IconManager.cs               (icônes vectorielles, rendu SVG->Bitmap)
+│   ├── ProgressBarColorExtensions.cs (couleur dynamique de la ProgressBar)
+│   └── TutorialForm.cs              (guide de démarrage)
+├── Assets/
+│   ├── donate_qr.png
+│   └── app.ico
+├── Tools/                           (yt-dlp.exe / ffmpeg.exe — non versionnés, voir Prérequis)
+├── Tests/
+│   └── ChaturbateRecorderApp.Tests.csproj  (suite xUnit, voir section Tests)
+├── docs/
+│   └── index.html                   (site du projet, GitHub Pages)
+└── legacy-powershell/                (version d'origine avant migration, voir son propre README)
 ```

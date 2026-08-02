@@ -1,0 +1,13 @@
+{
+    "max_duration": "0",
+    "quality": "best",
+    "platforms": {
+        "chaturbate": {
+            "url_pattern": "https://chaturbate.com/",
+            "api_endpoint": "https://chaturbate.com/api/"
+        }
+    },
+    "output_extension": "mp4",
+    "base_directory": "C:\\Videos\\Recordings",
+    "thumbnail_size": "320x180"
+}
