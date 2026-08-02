@@ -4,9 +4,15 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-02 — version courante : v1.13.1
+## État au 2026-08-02 — version courante : v1.14.0
 
 **Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
+
+v1.14.0 — items 18.0/19.0/25.0 du fichier de notes perso :
+- **19.0** (le plus gros morceau) : `UI/SettingsForm.cs`, nouvelle fenêtre modale séparée qui regroupe thème/langue/dossier de sauvegarde/cookies/proxy/reconnexion automatique par défaut (déplacés hors de `MainForm` — qualité/codec/format y restent, ce sont des choix par enregistrement). Communique avec `MainForm` par callbacks (`Action<AppTheme>`/`Action<AppLanguage>`/`Action<string>`), pas par référence directe aux contrôles. `AutoReconnectDefault` devient un vrai réglage persisté (ne l'était pas avant). Le X de la fenêtre principale masque désormais (`Hide`) au lieu de fermer l'app (`_isReallyClosing` distingue ce cas du clic sur "Fermer" du nouveau menu contextuel de la zone de notification : Ouvrir/Paramètres/Fermer, double-clic = Ouvrir) — un enregistrement en cours continue donc en arrière-plan. Notice affichée une seule fois (`UserSettings.HasSeenTrayHint`).
+- **18.0** : bouton "Signaler un bug" (icône "alert") qui ouvre un ticket GitHub pré-rempli (version/OS/dossier de capture) dans le navigateur — rien n'est collecté depuis l'appli.
+- **25.0** : `docs/index.html` traduit en anglais, bascule FR/EN via un petit bouton sans rechargement de page (comme le sélecteur de langue de l'app), détecte la langue du navigateur au premier chargement, mémorise ensuite (localStorage).
+- Bug corrigé au passage : `modeToggleButton.Text` utilisait un littéral français en dur dans `ApplyUiMode`, écrasant la traduction anglaise à chaque bascule de mode.
 
 v1.13.1 : correctifs signalés par l'utilisateur (pas de nouvelle fonctionnalité) :
 - Miniature/réencodage associés au mauvais fichier vidéo quand un même salon était enregistré plusieurs fois — `FindLatestCaptureFile` (heuristique "fichier le plus récent" ambiguë) remplacé par `FindOwnCaptureFile` (chemin exact via nouveau `RecordingJob.OutputBaseName`, déterministe).
@@ -34,7 +40,10 @@ Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvell
 - 9.1 (couleurs pastel) : écarté par l'utilisateur, palette bleu Windows 11 conservée.
 - 17.0 (extension navigateur) : gros projet à part, reporté à la demande de l'utilisateur.
 - 15.0 (portable vs installeur choisi au 1er lancement) : concept corrigé — c'est un choix de *publication* (deux fichiers de release séparés), pas un dialogue runtime. Déjà en place via les deux formats de release.
-- 20.0 (traduction des messages/notifications/guide/changelog) : hors périmètre du premier passage de traduction (v1.13.0), à proposer seulement si demandé.
+- 20.0 (traduction des messages/notifications/guide/changelog) : hors périmètre du premier passage de traduction (v1.13.0/v1.14.0), à proposer seulement si demandé. Les nouveaux textes ajoutés en v1.14.0 (menu de la zone de notification, fenêtre Paramètres) SONT traduits ; messages d'erreur/notifications/logs restent français.
+
+Restent dans le fichier de notes perso, non traités, à proposer seulement si demandé :
+- 21.0 (portage Macintosh), 22.0 (extension navigateur portée sur Mac/Safari — dépend aussi de 17.0), 23.0 (installateur avec étapes d'installation).
 
 ## Conventions établies dans ce projet
 
@@ -52,6 +61,8 @@ Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvell
    - Ne JAMAIS inclure `yt-dlp.exe`/`ffmpeg.exe` dans les ZIP de release (licence GPL de ffmpeg — voir README)
 
 **Vérification visuelle des changements UI** — WinForms ne peut pas être piloté par `computer-use` (exe non reconnu comme "app installée"). À la place : ajouter temporairement dans le constructeur de `MainForm` un handler `Shown += (s,e) => { ... DrawToBitmap ... Environment.Exit(0); }` qui capture un vrai rendu en PNG dans le scratchpad, à regarder via `Read`. Piège découvert : `Form.DrawToBitmap()` ne rend pas correctement le fond d'un `Panel` avec `AutoScroll=true` imbriqué — capturer directement `contentPanel.DrawToBitmap(...)` à la place donne le rendu réel. Pour vérifier une animation (ex: transition de thème) : `Shown += async (s,e) => { ... await Task.Delay(...); Capture(...); TriggerAnimation(); await Task.Delay(...); Capture(...); Environment.Exit(0); }` — capturer après un délai supérieur à la durée de l'animation donne l'état final, `DrawToBitmap` n'étant pas affecté par `Form.Opacity` (qui n'agit que sur le compositing OS, pas le rendu GDI). Toujours retirer ce code de debug avant de committer, et penser aussi à commenter/décommenter `ShowFirstRunDialogs()` si un dialogue de premier lancement bloquerait la capture.
+
+**Piège WinForms — `DrawToBitmap` sur un `Form` top-level** : contrairement à un `Panel` enfant, `DrawToBitmap` sur un formulaire top-level (ex: une fenêtre modale comme `SettingsForm`) inclut la barre de titre et les bordures. Dimensionner le bitmap sur `form.ClientSize` écrase alors le contenu du bas (la barre de titre "mange" de la hauteur sans que le bitmap ne s'agrandisse en conséquence). Utiliser `form.Size` (pas `.ClientSize`) pour la taille du bitmap et du rectangle de dessin.
 
 **Piège WinForms — `Anchor` posé avant `Controls.Add`** : définir `Anchor` dans l'initialiseur d'objet d'un contrôle (avant qu'il soit ajouté à son parent) capture une marge basée sur un `Parent` encore `null` — le contrôle se retrouve projeté hors de la fenêtre dès le premier redimensionnement (marge négative interprétée comme "encore plus loin du bord"). Toujours poser `control.Anchor = ...;` en instruction séparée, APRÈS le `Controls.Add`/`AddRange` qui le parente.
 
