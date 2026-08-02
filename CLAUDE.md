@@ -6,6 +6,44 @@ Site : https://tomoushie.github.io/ChaturbateRecorder/
 
 ## État au 2026-08-03 — version courante : v1.14.0 (app), README/Wiki à jour (docs uniquement, pas de bump de version)
 
+**30.0/33.0 traités (2026-08-03)** :
+- **30.0** : premier package NuGet publié sur GitHub Packages —
+  `ChaturbateRecorder.Security` (v1.0.0), nouveau projet séparé
+  `ChaturbateRecorder.Security/` + `ChaturbateRecorder.Security.Tests/` à la
+  racine du repo (sibling de `ChaturbateRecorderApp.csproj`, exclu de sa
+  compilation par défaut — voir `<Compile Remove>` dans le .csproj principal).
+  Copie (pas déplacement) des 6 validateurs de `Security/`, retravaillée pour
+  être une bibliothèque pure sans effet de bord : `Logger.Log(...)` remplacé
+  par un paramètre `out string? reason` optionnel sur chaque méthode (signatures
+  historiques conservées via surcharges). `VerifySubjectAlternativeName`
+  passe de `internal` à `public`. 63 tests xUnit (portés + quelques nouveaux
+  pour ACL/dossier d'exécution). Code de `Security/*.cs` et `Tests/*.cs` de
+  l'app principale non touché.
+- **33.0** : GitHub Project (v2) créé et lié au repo — "Chaturbate Recorder -
+  Backlog" (`https://github.com/users/Tomoushie/projects/2`), 3 cartes Todo
+  pour le backlog restant (21.0 portage Mac, 22.0 extension navigateur Mac,
+  23.0 installateur).
+- **Piège majeur découvert (les deux items étaient bloqués dessus)** : le
+  token Git Credential Manager (classique, scopes `gist repo workflow`) n'a
+  ni `write:packages` ni `project`. L'utilisateur a d'abord essayé un token
+  **fine-grained** (nouvelle génération) : `write:packages` n'existe PAS du
+  tout comme permission fine-grained (GitHub Packages ne supporte pas encore
+  les tokens fine-grained), et `project` est bien listé mais l'appel
+  `createProjectV2` a quand même été refusé (`FORBIDDEN`) même une fois la
+  permission "Projects" ajoutée côté fine-grained — dans ce cas précis, seul
+  un **token classique** avec les scopes `write:packages`/`project` a
+  fonctionné pour les deux. Les deux fenêtres GitHub (Packages ET Projects
+  v2) se créent **privées par défaut**, sans option de bascule au moment de
+  la création — passage en public fait après coup : impossible via l'API
+  REST pour un package NuGet (`PATCH /user/packages/...` → 404, a fallu que
+  l'utilisateur le fasse manuellement dans les paramètres du package sur
+  github.com) ; possible via GraphQL pour un Project v2
+  (`updateProjectV2(input: {projectId, public: true})`).
+  Utilisé un token très largement scopé (quasi tous les scopes possibles,
+  fourni par l'utilisateur) — à usage strictement limité à ces deux appels,
+  supprimé du disque immédiatement après ; suggéré à l'utilisateur de le
+  révoquer/restreindre après coup vu son étendue.
+
 **31.0/32.0 traités (2026-08-03)** — documentation uniquement, aucun changement de code applicatif, pas de bump `<Version>`/Changelog :
 - **31.0** : refonte du `README.md` — logo (`Assets/logo.png`, extrait de `app.ico`), capture d'écran (`Assets/screenshot.png`, générée avec des données factices — jamais le vrai contenu de capture de l'utilisateur), badges shields.io, nouvelle section "Installation (utilisateurs)" avant la partie développeur, section "Fonctionnalités" alignée sur le site, contenu existant conservé mais réorganisé sous des `<details>` repliables. Cible clarifiée avec l'utilisateur avant de commencer : les deux profils GitHub donnés en exemple (ishandutta2007, grigorkalajdziev) étaient des profils **personnels** (bannière, stats de contributions, typing animation) — l'utilisateur a confirmé vouloir améliorer le README du **projet**, pas un profil perso, donc emprunt du style badges/structure uniquement.
 - **32.0** : Wiki GitHub créé (`https://github.com/Tomoushie/ChaturbateRecorder/wiki`, dépôt séparé `ChaturbateRecorder.wiki.git`) — 7 pages : Home, Installation, Guide-utilisation, Configuration, Securite, FAQ-Depannage, Contribuer, plus `_Sidebar.md`. **Piège découvert** : impossible de créer la toute première page d'un wiki GitHub par API ou par simple `git push` sur `<repo>.wiki.git` (repo inexistant tant qu'aucune page n'a été sauvegardée une fois via l'interface web) — a fallu demander à l'utilisateur de cliquer une fois sur "Create the first page", ensuite tout le contenu a pu être poussé normalement par git comme n'importe quel dépôt. Contenu en français uniquement (pas bilingue, à la différence du site/de l'app) — scope non demandé, à proposer seulement si demandé.
