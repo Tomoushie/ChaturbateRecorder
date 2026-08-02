@@ -4,9 +4,9 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-02 — version courante : v1.12.0
+## État au 2026-08-02 — version courante : v1.13.0
 
-Toutes les sections d'une liste de tâches numérotée (1 à 9) ont été traitées :
+Toutes les sections d'une liste de tâches numérotée (1 à 9) ont été traitées, plus l'item 20.0 (sélecteur de langue) :
 1. Sécurité (hash binaires, sandbox chemins/URL, dossier d'exécution, ACL, QR code) — 1.1 (signature de l'EXE) reste bloqué, nécessite un certificat de signature de code que l'utilisateur n'a pas.
 2. Robustesse (watchdog anti-freeze, ffmpeg hors thread UI, logs JSON, rotation des logs)
 3. UI (icônes SVG, mode simple/avancé, notifications toast, barre de progression animée)
@@ -17,7 +17,9 @@ Toutes les sections d'une liste de tâches numérotée (1 à 9) ont été trait�
 8. Modernisation UI, suite (v1.11.0) : GroupBox remplacés par `UI/RoundedGroupPanel.cs` (bordure arrondie + titre dessiné à la main, mêmes coordonnées d'enfants qu'avant), ombre légère sous chaque panneau, remplissage animé de la ProgressBar en fin de job (`AnimateProgressBarFill` dans `MainForm.cs`), couleurs hover/pressed sur les boutons via `FlatAppearance` dans `ThemeManager.cs`.
 9. Modernisation avancée (v1.12.0) : fondu d'ouverture au démarrage + clignotement léger au changement de mode simple/avancé (`AnimateOpacity`/`PulseOpacity` dans `MainForm.cs`), transition de couleur animée entre thème clair/sombre (`ThemeManager.Palette`/`GetPalette`/`ApplyPalette`/`LerpPalette` + `MainForm.AnimateThemeTransition`), couleurs hover/appui des boutons animées en douceur (remplace le changement instantané natif de `FlatAppearance` par un suivi manuel souris + interpolation). Palette pastel (9.1) explicitement écartée par l'utilisateur pour rester sur le bleu Windows 11 déjà établi. 9.3 (mode simple/avancé) et 9.4 (notifications Toast) étaient déjà couverts par la section 3.
 
-**Section 9 entièrement traitée.** Pas de section 10 planifiée pour l'instant — attendre une nouvelle demande de l'utilisateur avant de proposer une suite. Le fichier de notes perso (`E:\Corpus\Documents\Chaturbate Record\Projet en Powershell\A ajouter.txt`, hors dépôt) contient encore les points 17.0 à 23.0 (extension navigateur, bouton signaler un bug, menu clic droit sur l'icône, sélection de langue, portage Mac, installateur) — à proposer seulement si l'utilisateur le mentionne.
+20.0 Sélecteur de langue (v1.13.0) : Français/English, `UI/Localization.cs` (dictionnaire clé -> (Fr,En)) + `MainForm.ApplyLanguage(lang)`. **Portée volontairement limitée à l'UI principale** (labels, boutons, cases à cocher, en-têtes de colonnes, items de ComboBox, bascule de mode) — décision prise avec l'utilisateur. Messages d'erreur/confirmations, notifications toast, logs, guide de démarrage (TutorialForm) et historique des nouveautés (Changelog) restent en français, pas couverts par ce passage (générés à des dizaines d'endroits différents dans le code). Nouveau sélecteur "Langue :" à côté du thème, visible en mode avancé seulement ; barre du haut passée à deux lignes (plus assez de place sur une seule) — `grpRecordY` à 75 au lieu de 50. Choix persisté dans `UserSettings.Language` ("fr"/"en").
+
+**Prochaine étape logique si l'utilisateur redemande une traduction plus poussée** : messages d'erreur/MessageBox (21 occurrences), notifications toast, ou guide de démarrage/changelog — ne pas se lancer dedans sans qu'il le demande explicitement, l'ampleur a été volontairement limitée cette fois.
 
 Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvelle :
 - 1.1 et 6.3 (signature Authenticode) : bloqués sur certificat, pas de solution logicielle possible.
@@ -25,6 +27,7 @@ Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvell
 - 9.1 (couleurs pastel) : écarté par l'utilisateur, palette bleu Windows 11 conservée.
 - 17.0 (extension navigateur) : gros projet à part, reporté à la demande de l'utilisateur.
 - 15.0 (portable vs installeur choisi au 1er lancement) : concept corrigé — c'est un choix de *publication* (deux fichiers de release séparés), pas un dialogue runtime. Déjà en place via les deux formats de release.
+- 20.0 (traduction des messages/notifications/guide/changelog) : hors périmètre du premier passage de traduction (v1.13.0), à proposer seulement si demandé.
 
 ## Conventions établies dans ce projet
 
