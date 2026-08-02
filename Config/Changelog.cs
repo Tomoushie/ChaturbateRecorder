@@ -71,6 +71,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Nouveau format de release \"portable\" : exécutable autonome (runtime .NET inclus, aucune installation requise sur la machine cible), en plus du format habituel dépendant du runtime.",
             }),
+            ("1.10.0", new[]
+            {
+                "Modernisation de l'interface (palette Windows 11) : boutons en couleur d'accent sans bordure, coins arrondis, police Segoe UI, titres de section en gras, espacement généreux entre les sections (20px).",
+                "Correctif : le texte de plusieurs boutons (\"Démarrer\", \"Tout arrêter\", \"Parcourir...\", \"Supprimer favori\", \"Rechercher une mise à jour\") était tronqué — largeurs ajustées.",
+                "Correctif thème sombre : le fond de certains panneaux restait clair au lieu de suivre le thème actif.",
+            }),
         };
     }
 }

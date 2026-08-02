@@ -968,12 +968,11 @@ namespace ChaturbateRecorderApp
         }
 
         /// <summary>
-        /// Couleur des icônes (3.1) alignée sur le thème actif — les boutons
-        /// reçoivent déjà ce même ForeColor via ThemeManager, donc l'icône
-        /// reste lisible sur le fond du bouton dans les deux thèmes.
+        /// Couleur des icônes (3.1) : les boutons sont désormais en couleur
+        /// d'accent bleue dans les deux thèmes (7.5), donc un blanc fixe reste
+        /// lisible quel que soit le thème actif.
         /// </summary>
-        private Color IconColor =>
-            themeCombo.SelectedItem?.ToString() == "Sombre" ? Color.WhiteSmoke : Color.Black;
+        private static Color IconColor => Color.White;
 
         /// <summary>
         /// (Ré)assigne les icônes vectorielles de tous les boutons fixes, ainsi
@@ -1019,9 +1018,10 @@ namespace ChaturbateRecorderApp
         {
             _advancedMode = advanced;
 
-            const int grpRecordY = 40;
+            const int grpRecordY = 50;
             const int grpRecordHeightAdvanced = 310;
             const int grpRecordHeightSimple = 110;
+            const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
 
             advancedOptionsPanel.Visible = advanced;
             themeLabel.Visible = advanced;
@@ -1035,21 +1035,21 @@ namespace ChaturbateRecorderApp
 
             grpRecord.Height = advanced ? grpRecordHeightAdvanced : grpRecordHeightSimple;
 
-            var progressY = grpRecordY + grpRecord.Height + 8;
+            var progressY = grpRecordY + grpRecord.Height + sectionGap;
             grpProgress.Location = new Point(12, progressY);
 
             int naturalHeight;
             if (advanced)
             {
-                grpHistory.Location = new Point(12, progressY + grpProgress.Height + 8);
-                grpFavorites.Location = new Point(12, grpHistory.Bottom + 8);
-                grpDonate.Location = new Point(12, grpFavorites.Bottom + 8);
-                grpLogs.Location = new Point(12, grpDonate.Bottom + 8);
-                naturalHeight = grpLogs.Bottom + 20;
+                grpHistory.Location = new Point(12, progressY + grpProgress.Height + sectionGap);
+                grpFavorites.Location = new Point(12, grpHistory.Bottom + sectionGap);
+                grpDonate.Location = new Point(12, grpFavorites.Bottom + sectionGap);
+                grpLogs.Location = new Point(12, grpDonate.Bottom + sectionGap);
+                naturalHeight = grpLogs.Bottom + sectionGap;
             }
             else
             {
-                naturalHeight = progressY + grpProgress.Height + 20;
+                naturalHeight = progressY + grpProgress.Height + sectionGap;
             }
 
             // Taille "naturelle" du contenu : appliquée à la fenêtre pour un
@@ -1143,6 +1143,10 @@ namespace ChaturbateRecorderApp
             MaximizeBox = true;
             MinimumSize = new Size(500, 300);
 
+            // Police moderne (7.2) : héritée par tous les contrôles enfants qui
+            // ne définissent pas explicitement leur propre Font.
+            Font = new Font("Segoe UI", 10F);
+
             // Panneau conteneur avec défilement automatique : la fenêtre est
             // redimensionnable librement (agrandir/réduire/maximiser), et si
             // elle devient plus petite que la taille naturelle du contenu
@@ -1177,21 +1181,21 @@ namespace ChaturbateRecorderApp
             themeCombo.SelectedItem = "Clair";
             themeCombo.SelectedIndexChanged += OnThemeChanged;
 
-            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(500, 9), Size = new Size(172, 24) };
+            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(490, 9), Size = new Size(205, 24) };
             checkUpdateButton.Click += OnCheckUpdateClick;
 
             tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(210, 9), Size = new Size(160, 24) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
-            modeToggleButton = new Button { Location = new Point(380, 9), Size = new Size(110, 24) };
+            modeToggleButton = new Button { Location = new Point(380, 9), Size = new Size(100, 24) };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
             // --- GroupBox : Enregistrement ---
-            grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
+            grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 50), Size = new Size(660, 272) };
             var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
-            urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(420, 24) };
-            startButton = new Button { Text = "Démarrer", Location = new Point(445, 46), Size = new Size(95, 28) };
-            stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(548, 46), Size = new Size(95, 28) };
+            urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
+            startButton = new Button { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
+            stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
             addFavoriteButton = new Button { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
 
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
@@ -1248,11 +1252,11 @@ namespace ChaturbateRecorderApp
             saveDirTextBox = new TextBox
             {
                 Location = new Point(12, 84),
-                Size = new Size(520, 24),
+                Size = new Size(500, 24),
                 ReadOnly = true,
                 Text = AppConfig.CaptureDir
             };
-            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(542, 84), Size = new Size(106, 24) };
+            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(522, 84), Size = new Size(126, 24) };
 
             var cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 120), AutoSize = true };
             cookiesTextBox = new TextBox
@@ -1339,9 +1343,9 @@ namespace ChaturbateRecorderApp
 
             // --- GroupBox : Favoris ---
             grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
-            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(500, 98) };
-            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(522, 22), Size = new Size(120, 26) };
-            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(522, 54), Size = new Size(120, 26) };
+            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(480, 98) };
+            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(502, 22), Size = new Size(140, 26) };
+            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(502, 54), Size = new Size(140, 26) };
 
             loadFavoriteButton.Click += OnLoadFavoriteClick;
             removeFavoriteButton.Click += OnRemoveFavoriteClick;
