@@ -4,7 +4,11 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-02 — version courante : v1.14.0
+## État au 2026-08-03 — version courante : v1.14.0 (app), README/Wiki à jour (docs uniquement, pas de bump de version)
+
+**31.0/32.0 traités (2026-08-03)** — documentation uniquement, aucun changement de code applicatif, pas de bump `<Version>`/Changelog :
+- **31.0** : refonte du `README.md` — logo (`Assets/logo.png`, extrait de `app.ico`), capture d'écran (`Assets/screenshot.png`, générée avec des données factices — jamais le vrai contenu de capture de l'utilisateur), badges shields.io, nouvelle section "Installation (utilisateurs)" avant la partie développeur, section "Fonctionnalités" alignée sur le site, contenu existant conservé mais réorganisé sous des `<details>` repliables. Cible clarifiée avec l'utilisateur avant de commencer : les deux profils GitHub donnés en exemple (ishandutta2007, grigorkalajdziev) étaient des profils **personnels** (bannière, stats de contributions, typing animation) — l'utilisateur a confirmé vouloir améliorer le README du **projet**, pas un profil perso, donc emprunt du style badges/structure uniquement.
+- **32.0** : Wiki GitHub créé (`https://github.com/Tomoushie/ChaturbateRecorder/wiki`, dépôt séparé `ChaturbateRecorder.wiki.git`) — 7 pages : Home, Installation, Guide-utilisation, Configuration, Securite, FAQ-Depannage, Contribuer, plus `_Sidebar.md`. **Piège découvert** : impossible de créer la toute première page d'un wiki GitHub par API ou par simple `git push` sur `<repo>.wiki.git` (repo inexistant tant qu'aucune page n'a été sauvegardée une fois via l'interface web) — a fallu demander à l'utilisateur de cliquer une fois sur "Create the first page", ensuite tout le contenu a pu être poussé normalement par git comme n'importe quel dépôt. Contenu en français uniquement (pas bilingue, à la différence du site/de l'app) — scope non demandé, à proposer seulement si demandé.
 
 **Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
 
