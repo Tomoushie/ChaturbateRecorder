@@ -62,6 +62,11 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Fenêtre redimensionnable (agrandir/réduire/maximiser) : le contenu défile automatiquement si la fenêtre devient plus petite que sa taille naturelle, au lieu d'être coupé.",
             }),
+            ("1.8.0", new[]
+            {
+                "Suite de tests xUnit (sandbox URL, sandbox chemins, hash binaire, parsing progression, correspondance SAN TLS).",
+                "Correctif : la vérification TLS (pinning serveur) comparait le nom d'hôte à du texte localisé par l'OS et ne fonctionnait donc jamais correctement sur un Windows non-anglais. Remplacé par un décodage ASN.1 direct, indépendant de la langue.",
+            }),
         };
     }
 }

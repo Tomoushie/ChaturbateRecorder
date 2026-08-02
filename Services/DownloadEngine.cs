@@ -191,12 +191,26 @@ namespace ChaturbateRecorderApp.Services
 
             OnLogLine?.Invoke(line);
 
+            if (TryParseProgress(line, out var pct))
+                OnProgress?.Invoke(pct);
+        }
+
+        /// <summary>
+        /// Extrait le pourcentage d'une ligne de sortie yt-dlp du type
+        /// "[download]  42.0% of ...". Exposée en public/statique pour être
+        /// testable directement (voir Tests/ProgressParsingTests.cs) sans avoir
+        /// à démarrer un vrai process yt-dlp.
+        /// </summary>
+        public static bool TryParseProgress(string line, out double percent)
+        {
             var match = ProgressRegex.Match(line);
             if (match.Success &&
-                double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var pct))
+                double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out percent))
             {
-                OnProgress?.Invoke(pct);
+                return true;
             }
+            percent = 0;
+            return false;
         }
 
         private void HandleExited()

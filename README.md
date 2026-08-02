@@ -28,6 +28,16 @@ dotnet build -c Release
 
 L'exécutable se trouve ensuite dans `bin\Release\net8.0-windows\ChaturbateRecorder.exe`.
 
+## Tests
+
+Suite xUnit (`Tests/ChaturbateRecorderApp.Tests.csproj`) couvrant la sandbox
+URL, la sandbox de chemins, la vérification de hash binaire, le parsing de
+progression yt-dlp, et la correspondance SAN (Subject Alternative Name) TLS :
+
+```powershell
+dotnet test Tests/ChaturbateRecorderApp.Tests.csproj
+```
+
 ## Publier un .exe autonome (single-file, sans dépendre du runtime .NET installé)
 
 ```powershell

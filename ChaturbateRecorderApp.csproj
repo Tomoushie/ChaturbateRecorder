@@ -9,7 +9,7 @@
     <AssemblyName>ChaturbateRecorder</AssemblyName>
     <RootNamespace>ChaturbateRecorderApp</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>1.7.0</Version>
+    <Version>1.8.0</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
 
     <!--
@@ -27,6 +27,16 @@
   <ItemGroup>
     <!-- Rendu SVG -> Bitmap à la volée pour les icônes vectorielles (3.1). -->
     <PackageReference Include="Svg" Version="3.4.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tests/ est un projet à part (ChaturbateRecorderApp.Tests.csproj) : à
+         exclure de l'inclusion récursive par défaut du SDK, sinon ce projet-ci
+         essaie aussi de compiler les fichiers de test (et leurs packages
+         xUnit, absents ici). -->
+    <Compile Remove="Tests\**" />
+    <Content Remove="Tests\**" />
+    <None Remove="Tests\**" />
   </ItemGroup>
 
   <ItemGroup>

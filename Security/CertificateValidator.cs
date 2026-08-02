@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
 using ChaturbateRecorderApp.Services;
 
 namespace ChaturbateRecorderApp.Security
@@ -95,7 +96,7 @@ namespace ChaturbateRecorderApp.Security
             }
         }
 
-        private static bool VerifySubjectAlternativeName(X509Certificate2 cert, string expectedHostName)
+        internal static bool VerifySubjectAlternativeName(X509Certificate2 cert, string expectedHostName)
         {
             X509Extension? sanExtension = null;
             foreach (var ext in cert.Extensions)
@@ -109,20 +110,25 @@ namespace ChaturbateRecorderApp.Security
                 return false;
             }
 
-            // Format(false) renvoie une chaîne du type "DNS Name=chaturbate.com, DNS Name=*.chaturbate.com"
-            var sanText = sanExtension.Format(false);
-            var matches = Regex.Matches(sanText, @"DNS Name=([^,;]+)");
+            List<string> dnsNames;
+            try
+            {
+                dnsNames = ParseDnsSanEntries(sanExtension.RawData);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erreur lors du décodage de l'extension SAN : {ex.Message}", LogLevel.ERROR);
+                return false;
+            }
 
-            if (matches.Count == 0)
+            if (dnsNames.Count == 0)
             {
                 Logger.Log("Extension SAN présente mais aucune entrée DNS Name exploitable.", LogLevel.ERROR);
                 return false;
             }
 
-            foreach (Match m in matches)
+            foreach (var entry in dnsNames)
             {
-                var entry = m.Groups[1].Value.Trim();
-
                 if (string.Equals(entry, expectedHostName, StringComparison.OrdinalIgnoreCase))
                     return true;
 
@@ -137,6 +143,38 @@ namespace ChaturbateRecorderApp.Security
 
             Logger.Log($"Le nom d'hôte '{expectedHostName}' ne correspond à aucune entrée SAN du certificat.", LogLevel.ERROR);
             return false;
+        }
+
+        /// <summary>
+        /// Décode les entrées dNSName de l'extension SAN (OID 2.5.29.17) via un
+        /// parsing ASN.1 direct (System.Formats.Asn1), plutôt que via
+        /// X509Extension.Format() dont la sortie est LOCALISÉE selon la langue
+        /// de l'OS ("DNS Name=" en anglais, "Nom DNS=" en français...) — un
+        /// bug réel découvert via les tests unitaires : sur un OS non-anglais,
+        /// l'ancienne regex sur Format() ne matchait jamais rien.
+        /// dNSName est encodé en GeneralName comme [2] IMPLICIT IA5String.
+        /// </summary>
+        private static List<string> ParseDnsSanEntries(byte[] rawData)
+        {
+            var names = new List<string>();
+            var reader = new AsnReader(rawData, AsnEncodingRules.BER);
+            var sequence = reader.ReadSequence();
+
+            while (sequence.HasData)
+            {
+                var tag = sequence.PeekTag();
+                if (tag.TagClass == TagClass.ContextSpecific && tag.TagValue == 2)
+                {
+                    var dnsName = sequence.ReadCharacterString(UniversalTagNumber.IA5String, tag);
+                    names.Add(dnsName);
+                }
+                else
+                {
+                    sequence.ReadEncodedValue();
+                }
+            }
+
+            return names;
         }
     }
 }
