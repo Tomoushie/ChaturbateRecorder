@@ -18,5 +18,12 @@ namespace ChaturbateRecorderApp.Services
         // --- Reconnexion automatique (4.2) ---
         public bool AutoReconnectEnabled { get; set; }
         public int ReconnectAttempt;
+
+        // Nom de fichier (sans extension) de la tentative en cours, régénéré à
+        // chaque (re)démarrage (voir StartEngine dans MainForm) : identifie la
+        // sortie de CE job sans ambiguïté, contrairement à une recherche par
+        // RoomName seul qui peut confondre deux enregistrements différents du
+        // même salon (miniature/réencodage attribués au mauvais fichier).
+        public string? OutputBaseName { get; set; }
     }
 }

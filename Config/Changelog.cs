@@ -93,6 +93,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Sélecteur de langue (Français / English) : traduit les libellés, boutons, cases à cocher et en-têtes de colonnes de l'interface principale. Choix mémorisé entre les lancements.",
             }),
+            ("1.13.1", new[]
+            {
+                "Correctif : la miniature (et le réencodage) d'un enregistrement pouvait être associée au mauvais fichier lorsqu'un même salon était enregistré plusieurs fois (le fichier était retrouvé par \"le plus récent portant ce nom\", ambigu ; il est maintenant identifié par son nom exact, fixé au démarrage de l'enregistrement).",
+                "Correctif : élargir la fenêtre ne redimensionnait pas le contenu (panneaux, listes, champs) qui restait figé à sa largeur d'origine.",
+                "Correctif : les boutons \"Site web\", \"Ouvrir dossier\" et \"Supprimer favori\" avaient leur texte rogné.",
+            }),
         };
     }
 }

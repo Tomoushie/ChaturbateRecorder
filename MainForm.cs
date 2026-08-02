@@ -492,14 +492,23 @@ namespace ChaturbateRecorderApp
             timer.Start();
         }
 
-        private FileInfo? FindLatestCaptureFile(RecordingJob job)
+        /// <summary>
+        /// Fichier de capture de CE job précisément — chemin déterministe basé
+        /// sur OutputBaseName (horodatage figé au (re)démarrage), plus fiable
+        /// qu'une recherche par RoomName + "fichier le plus récent" : un salon
+        /// enregistré plusieurs fois (jours différents, reconnexions) produit
+        /// plusieurs fichiers correspondant au même motif, et le réencodage
+        /// (ReencodeCaptureAsync) écrit un fichier supplémentaire qui matchait
+        /// aussi ce motif — l'ancienne heuristique par date de modification
+        /// pouvait donc attribuer la miniature/le réencodage d'un job au
+        /// fichier d'un AUTRE enregistrement du même salon.
+        /// </summary>
+        private FileInfo? FindOwnCaptureFile(RecordingJob job)
         {
-            if (!Directory.Exists(job.CaptureDir)) return null;
+            if (job.OutputBaseName == null) return null;
 
-            return new DirectoryInfo(job.CaptureDir)
-                .GetFiles($"{job.RoomName}-*.{job.ContainerExt}")
-                .OrderByDescending(f => f.LastWriteTime)
-                .FirstOrDefault();
+            var expectedPath = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.{job.ContainerExt}");
+            return File.Exists(expectedPath) ? new FileInfo(expectedPath) : null;
         }
 
         private static readonly string[] VideoExtensions = { ".mp4", ".mkv", ".mov" };
@@ -635,7 +644,7 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private void GenerateThumbnail(RecordingJob job)
         {
-            var videoFile = FindLatestCaptureFile(job);
+            var videoFile = FindOwnCaptureFile(job);
             if (videoFile == null)
             {
                 AppendJobLog(job, "Aucune vidéo trouvée.");
@@ -692,7 +701,7 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private void ReencodeCaptureAsync(RecordingJob job)
         {
-            var videoFile = FindLatestCaptureFile(job);
+            var videoFile = FindOwnCaptureFile(job);
             if (videoFile == null)
             {
                 AppendJobLog(job, "Réencodage annulé : aucune vidéo trouvée.");
@@ -866,8 +875,9 @@ namespace ChaturbateRecorderApp
             void StartEngine()
             {
                 var time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                var logFilePath = Path.Combine(AppConfig.LogDir, $"{roomName}-{time}.log");
-                var outputPath  = Path.Combine(job.CaptureDir, $"{roomName}-{time}.%(ext)s");
+                job.OutputBaseName = $"{roomName}-{time}";
+                var logFilePath = Path.Combine(AppConfig.LogDir, $"{job.OutputBaseName}.log");
+                var outputPath  = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.%(ext)s");
 
                 job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
                     AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
@@ -1425,6 +1435,11 @@ namespace ChaturbateRecorderApp
             checkUpdateButton.Click += OnCheckUpdateClick;
 
             // --- Panel : Enregistrement ---
+            // Ancrage Left+Right (fenêtre redimensionnable, v1.7.0) : le panneau
+            // et son contenu large (URL, dossier, proxy) suivent la largeur de
+            // la fenêtre au lieu de rester figés à 660px avec du vide autour
+            // quand on l'élargit — seuls les boutons de droite sont ancrés Right
+            // seul, pour rester collés au bord plutôt que de s'étirer eux-mêmes.
             grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 75), Size = new Size(660, 272) };
             urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
@@ -1488,7 +1503,7 @@ namespace ChaturbateRecorderApp
                 Location = new Point(12, 84),
                 Size = new Size(500, 24),
                 ReadOnly = true,
-                Text = AppConfig.CaptureDir
+                Text = AppConfig.CaptureDir,
             };
             browseDirButton = new Button { Text = "Parcourir...", Location = new Point(522, 84), Size = new Size(126, 24) };
 
@@ -1508,7 +1523,7 @@ namespace ChaturbateRecorderApp
                 Location = new Point(330, 138),
                 Size = new Size(306, 24),
                 Text = AppConfig.ProxyUrl,
-                PlaceholderText = "ex: socks5://127.0.0.1:9050"
+                PlaceholderText = "ex: socks5://127.0.0.1:9050",
             };
 
             autoReconnectCheckbox = new CheckBox
@@ -1532,12 +1547,26 @@ namespace ChaturbateRecorderApp
                 cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox,
                 autoReconnectCheckbox
             });
+            // Ancrage (fenêtre redimensionnable, v1.7.0) posé APRÈS l'ajout au
+            // parent : Control.Anchor calcule la marge par rapport aux bords à
+            // partir du Parent courant — posé plus tôt (ex: dans l'initialiseur
+            // d'objet, avant Controls.Add), le Parent est encore null et la
+            // marge calculée est fausse (bouton/zone de texte projeté hors de la
+            // fenêtre au premier redimensionnement).
+            saveDirTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            browseDirButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            proxyTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             grpRecord.Controls.AddRange(new Control[]
             {
                 urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
                 advancedOptionsPanel
             });
+            urlTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            startButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            stopAllButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            addFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            advancedOptionsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             // --- Panel : Enregistrements en cours (plusieurs jobs possibles) ---
             grpProgress = new RoundedGroupPanel { Title = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
@@ -1550,13 +1579,14 @@ namespace ChaturbateRecorderApp
                 WrapContents = false,
             };
             grpProgress.Controls.Add(jobsListPanel);
+            jobsListPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             // --- Panel : Historique des enregistrements (4.4) ---
             grpHistory = new RoundedGroupPanel { Title = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 130) };
             historyListView = new ListView
             {
                 Location = new Point(12, 22),
-                Size = new Size(500, 98),
+                Size = new Size(470, 98),
                 View = View.Details,
                 FullRowSelect = true,
                 MultiSelect = false,
@@ -1567,30 +1597,41 @@ namespace ChaturbateRecorderApp
             historyListView.Columns.Add("Durée", 70);
             historyListView.Columns.Add("Date", 120);
 
-            refreshHistoryButton = new Button { Text = "Actualiser", Location = new Point(522, 22), Size = new Size(120, 26) };
-            openHistoryFolderButton = new Button { Text = "Ouvrir dossier", Location = new Point(522, 54), Size = new Size(120, 26) };
+            // Largeur 150 (au lieu de 120) : le Padding horizontal des boutons
+            // (8.4/9.2) ne laissait plus assez de place pour "Ouvrir dossier",
+            // tronqué en "Ouvrir".
+            refreshHistoryButton = new Button { Text = "Actualiser", Location = new Point(492, 22), Size = new Size(150, 26) };
+            openHistoryFolderButton = new Button { Text = "Ouvrir dossier", Location = new Point(492, 54), Size = new Size(150, 26) };
 
             refreshHistoryButton.Click += (s, e) => RefreshHistoryAsync();
             openHistoryFolderButton.Click += OnOpenHistoryFolderClick;
 
             grpHistory.Controls.AddRange(new Control[] { historyListView, refreshHistoryButton, openHistoryFolderButton });
+            historyListView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            refreshHistoryButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            openHistoryFolderButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             // --- Panel : Favoris ---
             grpFavorites = new RoundedGroupPanel { Title = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
-            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(480, 98) };
-            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(502, 22), Size = new Size(140, 26) };
-            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(502, 54), Size = new Size(140, 26) };
+            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(460, 98) };
+            // Largeur 160 (au lieu de 140) : même correctif que ci-dessus,
+            // "Supprimer favori" était tronqué en "Supprimer".
+            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(482, 22), Size = new Size(160, 26) };
+            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(482, 54), Size = new Size(160, 26) };
 
             loadFavoriteButton.Click += OnLoadFavoriteClick;
             removeFavoriteButton.Click += OnRemoveFavoriteClick;
             favoritesListBox.DoubleClick += OnLoadFavoriteClick;
 
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
+            favoritesListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            loadFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             // --- Panel : Soutenir le projet ---
             grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
-            websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 22) };
+            websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 24) };
             qrPictureBox = new PictureBox
             {
                 Location = new Point(250, 12),
@@ -1616,12 +1657,22 @@ namespace ChaturbateRecorderApp
             {
                 Location = new Point(12, 22),
                 Size = new Size(636, 186),
-                HorizontalScrollbar = true
+                HorizontalScrollbar = true,
             };
             grpLogs.Controls.Add(logListBox);
+            logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             contentPanel.Controls.AddRange(new Control[] { themeLabel, themeCombo, languageLabel, languageCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
             Controls.Add(contentPanel);
+
+            // Ancrage des panneaux eux-mêmes, posé après leur ajout à
+            // contentPanel (même raison que ci-dessus : Parent doit être connu).
+            grpRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpProgress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpHistory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpFavorites.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpDonate.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpLogs.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             ResumeLayout(false);
             PerformLayout();
