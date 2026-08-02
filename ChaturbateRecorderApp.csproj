@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ChaturbateRecorder</AssemblyName>
+    <RootNamespace>ChaturbateRecorderApp</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+
+    <!--
+      SYSLIB0057 : X509Certificate.CreateFromSignedFile(...) est marquée obsolète
+      depuis .NET 8, mais reste la seule API de la BCL permettant d'extraire le
+      certificat Authenticode signataire d'un binaire PE déjà signé. Il n'existe
+      pas d'équivalent direct sans dépendance tierce (ex: AuthenticodeExaminer)
+      ou P/Invoke vers WinTrust (WinVerifyTrust). On désactive donc ce warning
+      spécifique en connaissance de cause plutôt que de le supprimer partout au
+      niveau du code avec des #pragma disséminés.
+    -->
+    <NoWarn>SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Le QR code de don est copié à côté de l'exécutable au build. -->
+    <None Include="Assets\donate_qr.png" Condition="Exists('Assets\donate_qr.png')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>donate_qr.png</Link>
+    </None>
+    <!--
+      yt-dlp.exe et ffmpeg.exe sont conservés dans Tools\ (hors du dossier bin\
+      de build, qu'un dotnet clean peut effacer) et copiés à côté de l'exécutable
+      à chaque build. Leur hash SHA256 doit être tenu à jour dans AppConfig.cs
+      (YtDlpExpectedSha256 / FfmpegExpectedSha256) à chaque mise à jour de binaire.
+    -->
+    <None Include="Tools\yt-dlp.exe" Condition="Exists('Tools\yt-dlp.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>yt-dlp.exe</Link>
+    </None>
+    <None Include="Tools\ffmpeg.exe" Condition="Exists('Tools\ffmpeg.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg.exe</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

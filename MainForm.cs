@@ -1,0 +1,764 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using ChaturbateRecorderApp.Config;
+using ChaturbateRecorderApp.Security;
+using ChaturbateRecorderApp.Services;
+using ChaturbateRecorderApp.UI;
+
+namespace ChaturbateRecorderApp
+{
+    public class MainForm : Form
+    {
+        // --- Contrôles ---
+        private ComboBox themeCombo = null!;
+        private TextBox urlTextBox = null!;
+        private Button startButton = null!;
+        private Button stopAllButton = null!;
+        private Button addFavoriteButton = null!;
+        private FlowLayoutPanel jobsListPanel = null!;
+        private ComboBox qualityCombo = null!;
+        private ComboBox codecCombo = null!;
+        private ComboBox formatCombo = null!;
+        private TextBox saveDirTextBox = null!;
+        private Button browseDirButton = null!;
+        private ListBox favoritesListBox = null!;
+        private Button loadFavoriteButton = null!;
+        private Button removeFavoriteButton = null!;
+        private Button donateButton = null!;
+        private PictureBox qrPictureBox = null!;
+        private Label donateLabel = null!;
+        private ListBox logListBox = null!;
+
+        /// <summary>
+        /// Un enregistrement affiché dans la liste "Enregistrements en cours" :
+        /// lie un RecordingJob (moteur + métadonnées) à sa ligne d'UI dédiée.
+        /// Plusieurs peuvent tourner en parallèle, chacun avec son propre
+        /// process yt-dlp — c'est ce qui permet d'enregistrer plusieurs lives
+        /// à la fois sans ouvrir plusieurs instances de l'application.
+        /// </summary>
+        private sealed class JobRow
+        {
+            public RecordingJob Job = null!;
+            public Panel Container = null!;
+            public Label NameLabel = null!;
+            public ProgressBar ProgressBar = null!;
+            public Label StatusLabel = null!;
+            public Button StopButton = null!;
+        }
+
+        // --- État ---
+        private readonly FavoritesManager _favorites = new();
+        private readonly List<JobRow> _jobRows = new();
+
+        private readonly UserSettings _settings;
+
+        public MainForm()
+        {
+            _settings = SettingsManager.Load();
+            if (!string.IsNullOrWhiteSpace(_settings.CaptureDir) && PathValidator.IsValidPath(_settings.CaptureDir))
+                AppConfig.CaptureDir = _settings.CaptureDir;
+
+            InitializeComponent();
+
+            Logger.Log("Application démarrée.");
+
+            if (!PathValidator.IsValidPath(AppConfig.CaptureDir) || !PathValidator.IsValidPath(AppConfig.LogDir))
+            {
+                MessageBox.Show(
+                    "Dossier de capture ou de logs invalide (sandbox de chemins).",
+                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(1);
+            }
+
+            Directory.CreateDirectory(AppConfig.CaptureDir);
+            Directory.CreateDirectory(AppConfig.LogDir);
+
+            WarnIfBroadWriteAccess(AppConfig.AppDir);
+            WarnIfBroadWriteAccess(AppConfig.CaptureDir);
+            WarnIfBroadWriteAccess(AppConfig.LogDir);
+
+            _favorites.Load();
+            foreach (var fav in _favorites.Favorites)
+                favoritesListBox.Items.Add(fav);
+
+            LoadQrImage();
+            ThemeManager.Apply(this, AppTheme.Light);
+            ShowChangelogIfUpdated();
+        }
+
+        private static string CurrentVersion =>
+            typeof(MainForm).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+
+        private void ShowChangelogIfUpdated()
+        {
+            var version = CurrentVersion;
+            if (_settings.LastSeenVersion == version) return;
+
+            var entry = Changelog.Entries.FirstOrDefault(e => e.Version == version);
+            var body = entry.Changes is { Length: > 0 }
+                ? string.Join(Environment.NewLine, entry.Changes.Select(c => "• " + c))
+                : "Aucun détail disponible pour cette version.";
+
+            MessageBox.Show(this, body, $"Nouveautés — v{version}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            _settings.LastSeenVersion = version;
+            SettingsManager.Save(_settings);
+        }
+
+        /// <summary>
+        /// Marshale l'exécution sur le thread UI si nécessaire — indispensable
+        /// puisque les événements de DownloadEngine sont levés depuis les
+        /// threads du Process (OutputDataReceived / Exited tournent sur des
+        /// threads de pool, jamais sur le thread UI).
+        /// </summary>
+        private void SafeInvoke(Action action)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired) BeginInvoke(action);
+            else action();
+        }
+
+        /// <summary>
+        /// Vérification ACL non bloquante (voir AclValidator) : informe l'utilisateur
+        /// sans empêcher le démarrage, "Utilisateurs authentifiés" ayant par défaut
+        /// des droits Modify sur la plupart des dossiers Windows non durcis.
+        /// </summary>
+        private void WarnIfBroadWriteAccess(string directoryPath)
+        {
+            if (AclValidator.TryFindBroadWriteAccess(directoryPath, out var details))
+            {
+                Logger.Log($"ACL permissive détectée : {details}", LogLevel.WARN);
+            }
+        }
+
+        private void LoadQrImage()
+        {
+            if (File.Exists(AppConfig.DonateQrPath))
+            {
+                if (!BinaryVerifier.VerifyFileHash(AppConfig.DonateQrPath, AppConfig.DonateQrExpectedSha256))
+                {
+                    Logger.Log($"Hash du QR code de don invalide ({AppConfig.DonateQrPath}) : affichage refusé (possible substitution).", LogLevel.ERROR);
+                    return;
+                }
+
+                try
+                {
+                    qrPictureBox.Image = Image.FromFile(AppConfig.DonateQrPath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Impossible de charger le QR code de don ({AppConfig.DonateQrPath}) : {ex.Message}", LogLevel.WARN);
+                }
+            }
+            else
+            {
+                Logger.Log($"QR code de don introuvable : {AppConfig.DonateQrPath}", LogLevel.WARN);
+            }
+        }
+
+        private void AppendLog(string line)
+        {
+            logListBox.Items.Add(line);
+            logListBox.TopIndex = logListBox.Items.Count - 1;
+        }
+
+        private void AppendJobLog(RecordingJob job, string message)
+        {
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] [{job.RoomName}] {message}");
+        }
+
+        /// <summary>
+        /// Construit la ligne d'UI (nom, barre marquee, statut, bouton) pour un
+        /// nouveau job et câble ses événements DownloadEngine. Le bouton sert de
+        /// Stop tant que l'enregistrement tourne, puis de "Retirer" une fois
+        /// terminé (évite d'accumuler indéfiniment des lignes mortes).
+        /// </summary>
+        private JobRow BuildJobRow(RecordingJob job)
+        {
+            var container = new Panel { Size = new Size(605, 46), Margin = new Padding(2) };
+            var nameLabel = new Label { Text = job.RoomName, Location = new Point(2, 2), AutoSize = true, Font = new Font(Font, FontStyle.Bold) };
+            var progressBar = new ProgressBar { Location = new Point(2, 22), Size = new Size(350, 18), Minimum = 0, Maximum = 100 };
+            var statusLabel = new Label { Text = "Préparation...", Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
+            var stopButton = new Button { Text = "Stop", Location = new Point(505, 20), Size = new Size(95, 22) };
+
+            container.Controls.AddRange(new Control[] { nameLabel, progressBar, statusLabel, stopButton });
+
+            var row = new JobRow
+            {
+                Job = job,
+                Container = container,
+                NameLabel = nameLabel,
+                ProgressBar = progressBar,
+                StatusLabel = statusLabel,
+                StopButton = stopButton,
+            };
+
+            stopButton.Click += (s, e) =>
+            {
+                if (job.Engine.State == DownloadState.Running)
+                {
+                    job.Engine.Stop();
+                }
+                else
+                {
+                    jobsListPanel.Controls.Remove(row.Container);
+                    _jobRows.Remove(row);
+                }
+            };
+
+            job.Engine.OnLogLine      += line => SafeInvoke(() => AppendJobLog(job, line));
+            job.Engine.OnProgress     += pct  => SafeInvoke(() => UpdateJobProgress(row, pct));
+            job.Engine.OnStateChanged += state => SafeInvoke(() => HandleJobStateChanged(row, state));
+
+            return row;
+        }
+
+        private void UpdateJobProgress(JobRow row, double pct)
+        {
+            var clamped = Math.Min(100, Math.Max(0, (int)Math.Round(pct)));
+            row.ProgressBar.Value = clamped;
+            row.StatusLabel.Text = $"{pct.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
+        }
+
+        private void HandleJobStateChanged(JobRow row, DownloadState state)
+        {
+            switch (state)
+            {
+                case DownloadState.Running:
+                    row.StopButton.Text = "Stop";
+                    row.StopButton.Enabled = true;
+                    row.ProgressBar.Style = ProgressBarStyle.Marquee;
+                    row.ProgressBar.MarqueeAnimationSpeed = 30;
+                    row.StatusLabel.Text = "En cours...";
+                    break;
+
+                case DownloadState.Completed:
+                case DownloadState.Failed:
+                case DownloadState.Stopped:
+                    row.StopButton.Text = "Retirer";
+                    row.ProgressBar.Style = ProgressBarStyle.Blocks;
+                    row.ProgressBar.Value = state == DownloadState.Completed ? 100 : 0;
+                    row.StatusLabel.Text = $"{state}";
+                    AppendJobLog(row.Job, $"Job terminé (état : {state}).");
+
+                    if (state == DownloadState.Stopped)
+                        AppendJobLog(row.Job, "Téléchargement interrompu.");
+                    else
+                        GenerateThumbnail(row.Job);
+
+                    // Le réencodage se fait toujours en post-traitement sur le fichier
+                    // final, y compris après un arrêt manuel : yt-dlp ne réencode qu'à
+                    // la fin normale d'un téléchargement, or un live s'arrête toujours
+                    // par un Kill du process (STOP ou fermeture du formulaire), qui ne
+                    // laisse jamais ce post-traitement interne s'exécuter.
+                    if (row.Job.CodecChoice != "copy" && state != DownloadState.Failed)
+                        ReencodeCaptureAsync(row.Job);
+                    break;
+            }
+        }
+
+        private FileInfo? FindLatestCaptureFile(RecordingJob job)
+        {
+            if (!Directory.Exists(job.CaptureDir)) return null;
+
+            return new DirectoryInfo(job.CaptureDir)
+                .GetFiles($"{job.RoomName}-*.{job.ContainerExt}")
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+        }
+
+        private void GenerateThumbnail(RecordingJob job)
+        {
+            try
+            {
+                var videoFile = FindLatestCaptureFile(job);
+                if (videoFile == null)
+                {
+                    AppendJobLog(job, "Aucune vidéo trouvée.");
+                    return;
+                }
+
+                var thumbnail = Path.Combine(videoFile.DirectoryName!, Path.GetFileNameWithoutExtension(videoFile.Name) + ".jpg");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = AppConfig.FFmpegPath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                foreach (var a in new[]
+                {
+                    "-ss", AppConfig.ThumbnailOffsetSeconds.ToString(),
+                    "-i", videoFile.FullName,
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    thumbnail,
+                    "-y",
+                    "-loglevel", "error"
+                })
+                {
+                    psi.ArgumentList.Add(a);
+                }
+
+                using var p = Process.Start(psi);
+                p?.WaitForExit(15000);
+
+                AppendJobLog(job, File.Exists(thumbnail)
+                    ? $"Miniature créée : {thumbnail}"
+                    : "Erreur création miniature.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erreur lors de la génération de la miniature : {ex.Message}", LogLevel.WARN);
+            }
+        }
+
+        /// <summary>
+        /// Réencode le fichier capturé en post-traitement (voir commentaire dans
+        /// HandleJobStateChanged pour la raison : yt-dlp ne peut pas le faire
+        /// lui-même après un Kill de process). Tourne en arrière-plan (Task.Run)
+        /// pour ne pas geler l'UI le temps de l'encodage, qui peut durer plusieurs
+        /// minutes. Produit un fichier séparé (suffixe -h264/-h265) : la capture
+        /// d'origine n'est jamais modifiée ni supprimée, même si l'encodage échoue.
+        /// </summary>
+        private void ReencodeCaptureAsync(RecordingJob job)
+        {
+            var videoFile = FindLatestCaptureFile(job);
+            if (videoFile == null)
+            {
+                AppendJobLog(job, "Réencodage annulé : aucune vidéo trouvée.");
+                return;
+            }
+
+            var codec = job.CodecChoice;
+            var codecArgs = codec == "h265"
+                ? new[] { "-c:v", "libx265", "-crf", "28", "-preset", "medium" }
+                : new[] { "-c:v", "libx264", "-crf", "23", "-preset", "medium" };
+
+            // Utilise l'extension du fichier source (pas job.ContainerExt, au cas où
+            // un nouveau job pour la même room aurait déjà démarré entre-temps).
+            var outputFile = Path.Combine(videoFile.DirectoryName!,
+                $"{Path.GetFileNameWithoutExtension(videoFile.Name)}-{codec}{videoFile.Extension}");
+
+            AppendJobLog(job, $"Réencodage ({codec}) démarré en arrière-plan : {outputFile}");
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = AppConfig.FFmpegPath,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    };
+                    foreach (var a in new[] { "-i", videoFile.FullName }
+                        .Concat(codecArgs)
+                        .Concat(new[] { "-c:a", "aac", outputFile, "-y", "-loglevel", "error" }))
+                    {
+                        psi.ArgumentList.Add(a);
+                    }
+
+                    using var p = Process.Start(psi);
+                    p?.WaitForExit();
+
+                    var ok = p != null && p.ExitCode == 0 && File.Exists(outputFile);
+                    SafeInvoke(() => AppendJobLog(job, ok
+                        ? $"Réencodage ({codec}) terminé : {outputFile}"
+                        : $"Échec du réencodage ({codec})."));
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Erreur lors du réencodage ({codec}) : {ex.Message}", LogLevel.WARN);
+                    SafeInvoke(() => AppendJobLog(job, $"Erreur réencodage : {ex.Message}"));
+                }
+            });
+        }
+
+        // ------------------------------------------------------------------
+        // Événements
+        // ------------------------------------------------------------------
+
+        private void OnStartClick(object? sender, EventArgs e)
+        {
+            var urlInput = urlTextBox.Text.Trim();
+
+            if (!UrlValidator.IsSafeUrl(urlInput, AppConfig.Whitelist, AppConfig.Blacklist))
+            {
+                MessageBox.Show("URL refusée par la validation de sécurité (voir log de session).", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!BinaryVerifier.VerifyTrustedBinary(AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256,
+                    AppConfig.YtDlpRequireAuthenticode, AppConfig.YtDlpExpectedSignerThumbprint, AppConfig.YtDlpExpectedSignerSubject))
+            {
+                MessageBox.Show("Échec vérification yt-dlp.exe. Renseigne AppConfig.YtDlpExpectedSha256.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (!BinaryVerifier.VerifyTrustedBinary(AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256,
+                    AppConfig.FfmpegRequireAuthenticode, AppConfig.FfmpegExpectedSignerThumbprint, AppConfig.FfmpegExpectedSignerSubject))
+            {
+                MessageBox.Show("Échec vérification ffmpeg.exe. Renseigne AppConfig.FfmpegExpectedSha256.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (AppConfig.EnableCaPinning)
+            {
+                var ytOk = BinaryVerifier.VerifyCaPinning(AppConfig.YtDlpPath, AppConfig.TrustedCaThumbprint, AppConfig.TrustedCaIssuer);
+                var ffOk = ytOk && BinaryVerifier.VerifyCaPinning(AppConfig.FFmpegPath, AppConfig.TrustedCaThumbprint, AppConfig.TrustedCaIssuer);
+                if (!ffOk)
+                {
+                    MessageBox.Show("Échec du pinning CA pour les binaires.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                Logger.Log("CA pinning activé et validé pour yt-dlp.exe et ffmpeg.exe.");
+            }
+            else
+            {
+                Logger.Log("CA pinning désactivé (binaires non signés).");
+            }
+
+            // Sandbox dossier : re-validation défensive à chaque lancement (protège aussi
+            // contre un remplacement du dossier par un lien symbolique entre-temps).
+            if (!PathValidator.IsValidPath(AppConfig.CaptureDir))
+            {
+                MessageBox.Show($"Dossier de sortie invalide ou interdit par la sandbox : {AppConfig.CaptureDir}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var uri = new Uri(urlInput);
+
+            if (AppConfig.EnableTlsServerPinning)
+            {
+                if (!CertificateValidator.VerifyRemoteCertificate(uri.Host, 443, AppConfig.ServerExpectedThumbprint, AppConfig.ServerExpectedIssuer))
+                {
+                    MessageBox.Show($"Échec de la vérification TLS du serveur distant ({uri.Host}).", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                Logger.Log($"TLS server pinning activé et validé pour {uri.Host}.");
+            }
+            else
+            {
+                Logger.Log("TLS server pinning désactivé (validation TLS native uniquement).");
+            }
+
+            var roomName = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(roomName)) roomName = "Chaturbate";
+
+            if (_jobRows.Any(r => r.Job.RoomName == roomName && r.Job.Engine.State == DownloadState.Running))
+            {
+                MessageBox.Show($"Un enregistrement pour '{roomName}' est déjà en cours.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var logFilePath = Path.Combine(AppConfig.LogDir, $"{roomName}-{time}.log");
+            var outputPath  = Path.Combine(AppConfig.CaptureDir, $"{roomName}-{time}.%(ext)s");
+
+            if (!PathValidator.IsValidPath(logFilePath))
+            {
+                MessageBox.Show("Chemin de log invalide.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var codecChoice = codecCombo.SelectedIndex switch
+            {
+                1 => "h264",
+                2 => "h265",
+                _ => "copy"
+            };
+            var formatSelector = qualityCombo.SelectedIndex switch
+            {
+                1 => "bestvideo[height<=720]+bestaudio/best[height<=720]/best",
+                2 => "worst",
+                _ => null
+            };
+            var containerExt = formatCombo.SelectedIndex switch
+            {
+                1 => "mkv",
+                2 => "mov",
+                _ => "mp4"
+            };
+
+            var job = new RecordingJob
+            {
+                RoomName = roomName,
+                CaptureDir = AppConfig.CaptureDir,
+                CodecChoice = codecChoice,
+                ContainerExt = containerExt,
+            };
+
+            var row = BuildJobRow(job);
+            _jobRows.Add(row);
+            jobsListPanel.Controls.Add(row.Container);
+
+            AppendJobLog(job, "Démarrage de l'enregistrement...");
+
+            try
+            {
+                job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Impossible de démarrer le téléchargement : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                jobsListPanel.Controls.Remove(row.Container);
+                _jobRows.Remove(row);
+            }
+        }
+
+        private void OnStopAllClick(object? sender, EventArgs e)
+        {
+            foreach (var row in _jobRows.ToList())
+            {
+                if (row.Job.Engine.State == DownloadState.Running)
+                    row.Job.Engine.Stop();
+            }
+        }
+
+        private void OnBrowseCaptureDirClick(object? sender, EventArgs e)
+        {
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Choisis le dossier de sauvegarde des enregistrements",
+                UseDescriptionForTitle = true,
+                SelectedPath = Directory.Exists(AppConfig.CaptureDir) ? AppConfig.CaptureDir : AppConfig.AppDir,
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            var chosen = dialog.SelectedPath;
+            if (!PathValidator.IsValidPath(chosen))
+            {
+                MessageBox.Show("Dossier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            AppConfig.CaptureDir = chosen;
+            Directory.CreateDirectory(AppConfig.CaptureDir);
+            saveDirTextBox.Text = AppConfig.CaptureDir;
+
+            _settings.CaptureDir = AppConfig.CaptureDir;
+            SettingsManager.Save(_settings);
+
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Dossier de sauvegarde changé : {AppConfig.CaptureDir}");
+        }
+
+        private void OnAddFavoriteClick(object? sender, EventArgs e)
+        {
+            var url = urlTextBox.Text.Trim();
+            if (!_favorites.AddFavorite(url))
+            {
+                MessageBox.Show("URL invalide ou déjà présente dans les favoris.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            favoritesListBox.Items.Add(url);
+        }
+
+        private void OnRemoveFavoriteClick(object? sender, EventArgs e)
+        {
+            if (favoritesListBox.SelectedItem is not string selected) return;
+            _favorites.RemoveFavorite(selected);
+            favoritesListBox.Items.Remove(selected);
+        }
+
+        private void OnLoadFavoriteClick(object? sender, EventArgs e)
+        {
+            if (favoritesListBox.SelectedItem is string selected)
+                urlTextBox.Text = selected;
+        }
+
+        private void OnDonateClick(object? sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(AppConfig.DonateUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Impossible d'ouvrir le lien de don : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OnThemeChanged(object? sender, EventArgs e)
+        {
+            var theme = themeCombo.SelectedItem?.ToString() == "Sombre" ? AppTheme.Dark : AppTheme.Light;
+            ThemeManager.Apply(this, theme);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            foreach (var row in _jobRows)
+                row.Job.Engine.Stop();
+            base.OnFormClosing(e);
+        }
+
+        // ------------------------------------------------------------------
+        // Construction de l'UI — équivalent du bloc de création de contrôles
+        // WinForms du script PowerShell. Écrit à la main (pas de fichier
+        // .Designer.cs séparé) ; libre à toi de le scinder si tu ouvres le
+        // projet dans Visual Studio avec le concepteur de formulaires.
+        // ------------------------------------------------------------------
+        private void InitializeComponent()
+        {
+            SuspendLayout();
+
+            Text = $"Chaturbate Recorder v{CurrentVersion}";
+            ClientSize = new Size(700, 900);
+            StartPosition = FormStartPosition.CenterScreen;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+
+            var themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
+            themeCombo = new ComboBox
+            {
+                Location = new Point(70, 9),
+                Size = new Size(120, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
+            themeCombo.SelectedItem = "Clair";
+            themeCombo.SelectedIndexChanged += OnThemeChanged;
+
+            // --- GroupBox : Enregistrement ---
+            var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 216) };
+            var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
+            urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(420, 24) };
+            startButton = new Button { Text = "Démarrer", Location = new Point(445, 46), Size = new Size(95, 28) };
+            stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(548, 46), Size = new Size(95, 28) };
+            addFavoriteButton = new Button { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
+
+            var qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 112), AutoSize = true };
+            qualityCombo = new ComboBox
+            {
+                Location = new Point(12, 130),
+                Size = new Size(190, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            qualityCombo.Items.AddRange(new object[]
+            {
+                "Meilleure qualité (recommandé)",
+                "Qualité moyenne (720p max)",
+                "Qualité minimale (économie)"
+            });
+            qualityCombo.SelectedIndex = 0;
+
+            var codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 112), AutoSize = true };
+            codecCombo = new ComboBox
+            {
+                Location = new Point(214, 130),
+                Size = new Size(260, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            codecCombo.Items.AddRange(new object[]
+            {
+                "Copie sans réencodage (recommandé, rapide)",
+                "H.264 (libx264 — compatibilité universelle)",
+                "H.265 (libx265 — fichier plus léger)"
+            });
+            codecCombo.SelectedIndex = 0;
+
+            var formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 112), AutoSize = true };
+            formatCombo = new ComboBox
+            {
+                Location = new Point(486, 130),
+                Size = new Size(150, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            formatCombo.Items.AddRange(new object[]
+            {
+                "MP4 (recommandé)",
+                "MKV (plus robuste)",
+                "MOV"
+            });
+            formatCombo.SelectedIndex = 0;
+
+            var saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 166), AutoSize = true };
+            saveDirTextBox = new TextBox
+            {
+                Location = new Point(12, 184),
+                Size = new Size(520, 24),
+                ReadOnly = true,
+                Text = AppConfig.CaptureDir
+            };
+            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(542, 184), Size = new Size(106, 24) };
+
+            startButton.Click += OnStartClick;
+            stopAllButton.Click += OnStopAllClick;
+            addFavoriteButton.Click += OnAddFavoriteClick;
+            browseDirButton.Click += OnBrowseCaptureDirClick;
+
+            grpRecord.Controls.AddRange(new Control[]
+            {
+                urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
+                qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
+                saveDirLabel, saveDirTextBox, browseDirButton
+            });
+
+            // --- GroupBox : Enregistrements en cours (plusieurs jobs possibles) ---
+            var grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 264), Size = new Size(660, 140) };
+            jobsListPanel = new FlowLayoutPanel
+            {
+                Location = new Point(12, 22),
+                Size = new Size(636, 108),
+                AutoScroll = true,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+            };
+            grpProgress.Controls.Add(jobsListPanel);
+
+            // --- GroupBox : Favoris ---
+            var grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 412), Size = new Size(660, 130) };
+            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(500, 98) };
+            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(522, 22), Size = new Size(120, 26) };
+            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(522, 54), Size = new Size(120, 26) };
+
+            loadFavoriteButton.Click += OnLoadFavoriteClick;
+            removeFavoriteButton.Click += OnRemoveFavoriteClick;
+            favoritesListBox.DoubleClick += OnLoadFavoriteClick;
+
+            grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
+
+            // --- GroupBox : Soutenir le projet ---
+            var grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 550), Size = new Size(660, 100) };
+            donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
+            qrPictureBox = new PictureBox
+            {
+                Location = new Point(250, 12),
+                Size = new Size(76, 76),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            donateLabel = new Label
+            {
+                Text = "Scanne le QR code avec ton téléphone, ou clique sur le bouton.",
+                Location = new Point(340, 40),
+                Size = new Size(300, 40)
+            };
+
+            donateButton.Click += OnDonateClick;
+
+            grpDonate.Controls.AddRange(new Control[] { donateButton, qrPictureBox, donateLabel });
+
+            // --- GroupBox : Logs ---
+            var grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 658), Size = new Size(660, 220) };
+            logListBox = new ListBox
+            {
+                Location = new Point(12, 22),
+                Size = new Size(636, 186),
+                HorizontalScrollbar = true
+            };
+            grpLogs.Controls.Add(logListBox);
+
+            Controls.AddRange(new Control[] { themeLabel, themeCombo, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
+
+            ResumeLayout(false);
+            PerformLayout();
+        }
+    }
+}

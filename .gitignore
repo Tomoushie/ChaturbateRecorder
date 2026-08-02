@@ -1,0 +1,20 @@
+# Build outputs
+bin/
+obj/
+
+# Binaires tiers (yt-dlp.exe, ffmpeg.exe) — trop volumineux pour Git
+# (ffmpeg.exe dépasse la limite de 100 Mo de GitHub), à fournir soi-même
+# en suivant le README avant de builder.
+Tools/
+
+# Claude Code — paramètres locaux, non partagés
+.claude/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# État local généré au runtime (copié dans bin/ de toute façon)
+settings.json
+favorites.json
