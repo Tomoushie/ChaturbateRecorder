@@ -21,6 +21,15 @@ namespace ChaturbateRecorderApp.Config
                 "Détection des ACL permissives sur les dossiers sensibles.",
                 "Vérification du hash du QR code de don.",
             }),
+            ("1.1.0", new[]
+            {
+                "Enregistrement multi-stream : plusieurs lives en parallèle sans ouvrir plusieurs instances.",
+                "Bouton \"Ouvrir\" par enregistrement (accès direct à la page du stream).",
+                "Import de cookies navigateur (cookies.txt) pour accéder au contenu réservé à un compte connecté.",
+                "Champ proxy SOCKS5/HTTP (confidentialité de l'IP vis-à-vis du site distant).",
+                "Icône d'application.",
+                "Publication sur GitHub (dépôt public + première release).",
+            }),
         };
     }
 }

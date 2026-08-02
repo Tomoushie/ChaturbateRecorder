@@ -38,7 +38,7 @@ namespace ChaturbateRecorderApp.Services
         private static readonly Regex ProgressRegex =
             new(@"\[download\]\s+([\d\.]+)%", RegexOptions.Compiled);
 
-        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4")
+        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null)
         {
             lock (_sync)
             {
@@ -82,6 +82,18 @@ namespace ChaturbateRecorderApp.Services
             {
                 psi.ArgumentList.Add("-f");
                 psi.ArgumentList.Add(formatSelector);
+            }
+
+            if (!string.IsNullOrWhiteSpace(cookiesFilePath))
+            {
+                psi.ArgumentList.Add("--cookies");
+                psi.ArgumentList.Add(cookiesFilePath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(proxyUrl))
+            {
+                psi.ArgumentList.Add("--proxy");
+                psi.ArgumentList.Add(proxyUrl);
             }
 
             try

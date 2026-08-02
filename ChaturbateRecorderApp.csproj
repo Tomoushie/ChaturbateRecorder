@@ -9,7 +9,8 @@
     <AssemblyName>ChaturbateRecorder</AssemblyName>
     <RootNamespace>ChaturbateRecorderApp</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
 
     <!--
       SYSLIB0057 : X509Certificate.CreateFromSignedFile(...) est marquée obsolète

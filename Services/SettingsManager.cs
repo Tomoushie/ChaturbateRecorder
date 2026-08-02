@@ -9,6 +9,8 @@ namespace ChaturbateRecorderApp.Services
     {
         public string? CaptureDir { get; set; }
         public string? LastSeenVersion { get; set; }
+        public string? CookiesFilePath { get; set; }
+        public string? ProxyUrl { get; set; }
     }
 
     /// <summary>

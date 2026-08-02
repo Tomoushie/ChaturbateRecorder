@@ -25,6 +25,17 @@ namespace ChaturbateRecorderApp.Config
         public static string DonateUrl         = "https://paypal.me/tomoushie";
         public static int    ThumbnailOffsetSeconds = 10;
 
+        // --- Confidentialité / session (13.0, 16.0) ---
+        // CookiesFilePath : fichier cookies.txt (format Netscape) exporté depuis
+        // le navigateur, transmis à yt-dlp via --cookies pour accéder au contenu
+        // réservé à un compte connecté. Aucun mot de passe n'est jamais géré ou
+        // stocké par l'application elle-même.
+        public static string CookiesFilePath   = "";
+        // ProxyUrl : proxy SOCKS5/HTTP (ex: socks5://127.0.0.1:9050) transmis à
+        // yt-dlp via --proxy pour masquer l'IP réelle vis-à-vis du site distant.
+        // L'application ne fournit pas de proxy/VPN elle-même.
+        public static string ProxyUrl          = "";
+
         public static readonly string[] Blacklist = { "example.com", "badhost.org" };
         public static readonly string[] Whitelist = { "chaturbate.com" };
 

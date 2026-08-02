@@ -9,6 +9,7 @@ namespace ChaturbateRecorderApp.Services
     public class RecordingJob
     {
         public required string RoomName { get; init; }
+        public required string SourceUrl { get; init; }
         public required string CaptureDir { get; init; }
         public required string CodecChoice { get; init; }
         public required string ContainerExt { get; init; }

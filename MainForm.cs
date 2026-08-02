@@ -27,6 +27,9 @@ namespace ChaturbateRecorderApp
         private ComboBox formatCombo = null!;
         private TextBox saveDirTextBox = null!;
         private Button browseDirButton = null!;
+        private TextBox cookiesTextBox = null!;
+        private Button browseCookiesButton = null!;
+        private TextBox proxyTextBox = null!;
         private ListBox favoritesListBox = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
@@ -63,6 +66,10 @@ namespace ChaturbateRecorderApp
             _settings = SettingsManager.Load();
             if (!string.IsNullOrWhiteSpace(_settings.CaptureDir) && PathValidator.IsValidPath(_settings.CaptureDir))
                 AppConfig.CaptureDir = _settings.CaptureDir;
+            if (!string.IsNullOrWhiteSpace(_settings.CookiesFilePath) && File.Exists(_settings.CookiesFilePath))
+                AppConfig.CookiesFilePath = _settings.CookiesFilePath;
+            if (!string.IsNullOrWhiteSpace(_settings.ProxyUrl))
+                AppConfig.ProxyUrl = _settings.ProxyUrl;
 
             InitializeComponent();
 
@@ -183,11 +190,24 @@ namespace ChaturbateRecorderApp
         {
             var container = new Panel { Size = new Size(605, 46), Margin = new Padding(2) };
             var nameLabel = new Label { Text = job.RoomName, Location = new Point(2, 2), AutoSize = true, Font = new Font(Font, FontStyle.Bold) };
+            var openButton = new Button { Text = "Ouvrir", Location = new Point(505, 0), Size = new Size(95, 20) };
             var progressBar = new ProgressBar { Location = new Point(2, 22), Size = new Size(350, 18), Minimum = 0, Maximum = 100 };
             var statusLabel = new Label { Text = "Préparation...", Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
-            var stopButton = new Button { Text = "Stop", Location = new Point(505, 20), Size = new Size(95, 22) };
+            var stopButton = new Button { Text = "Stop", Location = new Point(505, 22), Size = new Size(95, 22) };
 
-            container.Controls.AddRange(new Control[] { nameLabel, progressBar, statusLabel, stopButton });
+            openButton.Click += (s, e) =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(job.SourceUrl) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Impossible d'ouvrir la page : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            container.Controls.AddRange(new Control[] { nameLabel, openButton, progressBar, statusLabel, stopButton });
 
             var row = new JobRow
             {
@@ -489,6 +509,7 @@ namespace ChaturbateRecorderApp
             var job = new RecordingJob
             {
                 RoomName = roomName,
+                SourceUrl = urlInput,
                 CaptureDir = AppConfig.CaptureDir,
                 CodecChoice = codecChoice,
                 ContainerExt = containerExt,
@@ -502,7 +523,8 @@ namespace ChaturbateRecorderApp
 
             try
             {
-                job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt);
+                job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
+                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl);
             }
             catch (Exception ex)
             {
@@ -547,6 +569,38 @@ namespace ChaturbateRecorderApp
             SettingsManager.Save(_settings);
 
             AppendLog($"[{DateTime.Now:HH:mm:ss}] Dossier de sauvegarde changé : {AppConfig.CaptureDir}");
+        }
+
+        private void OnBrowseCookiesClick(object? sender, EventArgs e)
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Title = "Choisis un fichier cookies.txt (format Netscape, exporté depuis ton navigateur)",
+                Filter = "Fichiers cookies (*.txt)|*.txt|Tous les fichiers (*.*)|*.*",
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true))
+            {
+                MessageBox.Show("Fichier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            AppConfig.CookiesFilePath = dialog.FileName;
+            cookiesTextBox.Text = AppConfig.CookiesFilePath;
+
+            _settings.CookiesFilePath = AppConfig.CookiesFilePath;
+            SettingsManager.Save(_settings);
+
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Fichier cookies changé : {AppConfig.CookiesFilePath}");
+        }
+
+        private void OnProxyTextChanged(object? sender, EventArgs e)
+        {
+            AppConfig.ProxyUrl = proxyTextBox.Text.Trim();
+            _settings.ProxyUrl = AppConfig.ProxyUrl;
+            SettingsManager.Save(_settings);
         }
 
         private void OnAddFavoriteClick(object? sender, EventArgs e)
@@ -609,10 +663,16 @@ namespace ChaturbateRecorderApp
             SuspendLayout();
 
             Text = $"Chaturbate Recorder v{CurrentVersion}";
-            ClientSize = new Size(700, 900);
+            ClientSize = new Size(700, 960);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
+
+            // Réutilise l'icône déjà embarquée dans l'exe (via <ApplicationIcon> dans
+            // le .csproj) pour la fenêtre/barre des tâches — pas de fichier séparé à
+            // copier, l'icône EXE et l'icône de fenêtre restent toujours cohérentes.
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+            catch (Exception ex) { Logger.Log($"Impossible de charger l'icône : {ex.Message}", LogLevel.WARN); }
 
             var themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
             themeCombo = new ComboBox
@@ -626,7 +686,7 @@ namespace ChaturbateRecorderApp
             themeCombo.SelectedIndexChanged += OnThemeChanged;
 
             // --- GroupBox : Enregistrement ---
-            var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 216) };
+            var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
             var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(420, 24) };
             startButton = new Button { Text = "Démarrer", Location = new Point(445, 46), Size = new Size(95, 28) };
@@ -688,20 +748,42 @@ namespace ChaturbateRecorderApp
             };
             browseDirButton = new Button { Text = "Parcourir...", Location = new Point(542, 184), Size = new Size(106, 24) };
 
+            var cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 220), AutoSize = true };
+            cookiesTextBox = new TextBox
+            {
+                Location = new Point(12, 238),
+                Size = new Size(260, 24),
+                ReadOnly = true,
+                Text = AppConfig.CookiesFilePath
+            };
+            browseCookiesButton = new Button { Text = "...", Location = new Point(278, 238), Size = new Size(40, 24) };
+
+            var proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 220), AutoSize = true };
+            proxyTextBox = new TextBox
+            {
+                Location = new Point(330, 238),
+                Size = new Size(306, 24),
+                Text = AppConfig.ProxyUrl,
+                PlaceholderText = "ex: socks5://127.0.0.1:9050"
+            };
+
             startButton.Click += OnStartClick;
             stopAllButton.Click += OnStopAllClick;
             addFavoriteButton.Click += OnAddFavoriteClick;
             browseDirButton.Click += OnBrowseCaptureDirClick;
+            browseCookiesButton.Click += OnBrowseCookiesClick;
+            proxyTextBox.Leave += OnProxyTextChanged;
 
             grpRecord.Controls.AddRange(new Control[]
             {
                 urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
                 qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
-                saveDirLabel, saveDirTextBox, browseDirButton
+                saveDirLabel, saveDirTextBox, browseDirButton,
+                cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox
             });
 
             // --- GroupBox : Enregistrements en cours (plusieurs jobs possibles) ---
-            var grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 264), Size = new Size(660, 140) };
+            var grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
             jobsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
@@ -713,7 +795,7 @@ namespace ChaturbateRecorderApp
             grpProgress.Controls.Add(jobsListPanel);
 
             // --- GroupBox : Favoris ---
-            var grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 412), Size = new Size(660, 130) };
+            var grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
             favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(500, 98) };
             loadFavoriteButton = new Button { Text = "Charger", Location = new Point(522, 22), Size = new Size(120, 26) };
             removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(522, 54), Size = new Size(120, 26) };
@@ -725,7 +807,7 @@ namespace ChaturbateRecorderApp
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
 
             // --- GroupBox : Soutenir le projet ---
-            var grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 550), Size = new Size(660, 100) };
+            var grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
             qrPictureBox = new PictureBox
             {
@@ -746,7 +828,7 @@ namespace ChaturbateRecorderApp
             grpDonate.Controls.AddRange(new Control[] { donateButton, qrPictureBox, donateLabel });
 
             // --- GroupBox : Logs ---
-            var grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 658), Size = new Size(660, 220) };
+            var grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
             logListBox = new ListBox
             {
                 Location = new Point(12, 22),
