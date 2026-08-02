@@ -17,13 +17,21 @@ namespace ChaturbateRecorderApp
     {
         // --- Contrôles ---
         private ComboBox themeCombo = null!;
+        private Label themeLabel = null!;
         private Button checkUpdateButton = null!;
         private Button tutorialButton = null!;
+        private Button modeToggleButton = null!;
         private TextBox urlTextBox = null!;
         private Button startButton = null!;
         private Button stopAllButton = null!;
         private Button addFavoriteButton = null!;
         private FlowLayoutPanel jobsListPanel = null!;
+        private Panel advancedOptionsPanel = null!;
+        private GroupBox grpRecord = null!;
+        private GroupBox grpProgress = null!;
+        private GroupBox grpFavorites = null!;
+        private GroupBox grpDonate = null!;
+        private GroupBox grpLogs = null!;
         private ComboBox qualityCombo = null!;
         private ComboBox codecCombo = null!;
         private ComboBox formatCombo = null!;
@@ -56,11 +64,14 @@ namespace ChaturbateRecorderApp
             public ProgressBar ProgressBar = null!;
             public Label StatusLabel = null!;
             public Button StopButton = null!;
+            public Button OpenButton = null!;
         }
 
         // --- État ---
         private readonly FavoritesManager _favorites = new();
         private readonly List<JobRow> _jobRows = new();
+        private bool _advancedMode = true;
+        private NotifyIcon _notifyIcon = null!;
 
         private readonly UserSettings _settings;
 
@@ -101,6 +112,8 @@ namespace ChaturbateRecorderApp
 
             LoadQrImage();
             ThemeManager.Apply(this, AppTheme.Light);
+            ApplyIcons();
+            ApplyUiMode(_settings.AdvancedMode ?? true);
             ShowFirstRunDialogs();
         }
 
@@ -228,6 +241,11 @@ namespace ChaturbateRecorderApp
             var statusLabel = new Label { Text = "Préparation...", Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
             var stopButton = new Button { Text = "Stop", Location = new Point(505, 22), Size = new Size(95, 22) };
 
+            openButton.Image = IconManager.Render("open", 14, IconColor);
+            openButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+            stopButton.Image = IconManager.Render("stop", 14, IconColor);
+            stopButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+
             openButton.Click += (s, e) =>
             {
                 try
@@ -250,6 +268,7 @@ namespace ChaturbateRecorderApp
                 ProgressBar = progressBar,
                 StatusLabel = statusLabel,
                 StopButton = stopButton,
+                OpenButton = openButton,
             };
 
             stopButton.Click += (s, e) =>
@@ -289,6 +308,7 @@ namespace ChaturbateRecorderApp
                     row.ProgressBar.Style = ProgressBarStyle.Marquee;
                     row.ProgressBar.MarqueeAnimationSpeed = 30;
                     row.StatusLabel.Text = "En cours...";
+                    PulseProgressBar(row.ProgressBar, RunningColor);
                     break;
 
                 case DownloadState.Completed:
@@ -297,13 +317,27 @@ namespace ChaturbateRecorderApp
                     row.StopButton.Text = "Retirer";
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
                     row.ProgressBar.Value = state == DownloadState.Completed ? 100 : 0;
+                    row.ProgressBar.SetBarColor(state switch
+                    {
+                        DownloadState.Completed => CompletedColor,
+                        DownloadState.Failed => FailedColor,
+                        _ => StoppedColor,
+                    });
                     row.StatusLabel.Text = $"{state}";
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
 
                     if (state == DownloadState.Stopped)
+                    {
                         AppendJobLog(row.Job, "Téléchargement interrompu.");
+                    }
                     else
+                    {
                         GenerateThumbnail(row.Job);
+                        if (state == DownloadState.Completed)
+                            ShowNotification("Enregistrement terminé", row.Job.RoomName);
+                        else
+                            ShowNotification("Erreur d'enregistrement", $"{row.Job.RoomName} : flux inaccessible ou interrompu de façon inattendue.", ToolTipIcon.Error);
+                    }
 
                     // Le réencodage se fait toujours en post-traitement sur le fichier
                     // final, y compris après un arrêt manuel : yt-dlp ne réencode qu'à
@@ -314,6 +348,42 @@ namespace ChaturbateRecorderApp
                         ReencodeCaptureAsync(row.Job);
                     break;
             }
+        }
+
+        // --- Couleurs dynamiques de la barre de progression (3.4) ---
+        private static readonly Color RunningColor   = Color.FromArgb(0, 120, 215);
+        private static readonly Color CompletedColor = Color.FromArgb(16, 137, 62);
+        private static readonly Color FailedColor    = Color.FromArgb(196, 43, 28);
+        private static readonly Color StoppedColor   = Color.FromArgb(120, 120, 120);
+
+        /// <summary>
+        /// Effet "pulse" (3.4) au démarrage d'un enregistrement : alterne
+        /// brièvement entre une teinte éclaircie et la couleur définitive
+        /// avant de s'y stabiliser, pour signaler visuellement le démarrage.
+        /// </summary>
+        private void PulseProgressBar(ProgressBar bar, Color settleColor)
+        {
+            var brighter = Color.FromArgb(255,
+                Math.Min(255, settleColor.R + 70),
+                Math.Min(255, settleColor.G + 70),
+                Math.Min(255, settleColor.B + 70));
+
+            var ticks = 0;
+            var timer = new System.Windows.Forms.Timer { Interval = 150 };
+            timer.Tick += (s, e) =>
+            {
+                if (bar.IsDisposed) { timer.Stop(); timer.Dispose(); return; }
+
+                bar.SetBarColor(ticks % 2 == 0 ? brighter : settleColor);
+                ticks++;
+                if (ticks >= 6)
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    bar.SetBarColor(settleColor);
+                }
+            };
+            timer.Start();
         }
 
         private FileInfo? FindLatestCaptureFile(RecordingJob job)
@@ -654,6 +724,7 @@ namespace ChaturbateRecorderApp
                 return;
             }
             favoritesListBox.Items.Add(url);
+            ShowNotification("Favori ajouté", url);
         }
 
         private void OnRemoveFavoriteClick(object? sender, EventArgs e)
@@ -697,6 +768,95 @@ namespace ChaturbateRecorderApp
         {
             var theme = themeCombo.SelectedItem?.ToString() == "Sombre" ? AppTheme.Dark : AppTheme.Light;
             ThemeManager.Apply(this, theme);
+            ApplyIcons();
+        }
+
+        /// <summary>
+        /// Couleur des icônes (3.1) alignée sur le thème actif — les boutons
+        /// reçoivent déjà ce même ForeColor via ThemeManager, donc l'icône
+        /// reste lisible sur le fond du bouton dans les deux thèmes.
+        /// </summary>
+        private Color IconColor =>
+            themeCombo.SelectedItem?.ToString() == "Sombre" ? Color.WhiteSmoke : Color.Black;
+
+        /// <summary>
+        /// (Ré)assigne les icônes vectorielles de tous les boutons fixes, ainsi
+        /// que des lignes d'enregistrement déjà créées (les nouvelles lignes se
+        /// colorent elles-mêmes à la création dans BuildJobRow).
+        /// </summary>
+        private void ApplyIcons()
+        {
+            var color = IconColor;
+
+            void SetIcon(Button button, string icon, int size = 16)
+            {
+                button.Image = IconManager.Render(icon, size, color);
+                button.TextImageRelation = TextImageRelation.ImageBeforeText;
+                button.ImageAlign = ContentAlignment.MiddleLeft;
+                button.TextAlign = ContentAlignment.MiddleRight;
+            }
+
+            SetIcon(startButton, "play");
+            SetIcon(stopAllButton, "stop");
+            SetIcon(browseDirButton, "folder");
+            SetIcon(checkUpdateButton, "update");
+            SetIcon(tutorialButton, "book");
+            SetIcon(websiteButton, "globe");
+
+            foreach (var row in _jobRows)
+            {
+                row.StopButton.Image = IconManager.Render("stop", 14, color);
+                row.OpenButton.Image = IconManager.Render("open", 14, color);
+                row.StopButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+                row.OpenButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+            }
+        }
+
+        /// <summary>
+        /// Mode simple / avancé (3.2). En mode simple : uniquement URL,
+        /// Démarrer/Tout arrêter et la liste des enregistrements en cours.
+        /// En mode avancé : tout (qualité/codec/format, dossier, cookies/proxy,
+        /// thème, guide, mises à jour, favoris, don, logs). Le choix est
+        /// mémorisé entre les lancements.
+        /// </summary>
+        private void ApplyUiMode(bool advanced)
+        {
+            _advancedMode = advanced;
+
+            const int grpRecordY = 40;
+            const int grpRecordHeightAdvanced = 272;
+            const int grpRecordHeightSimple = 110;
+
+            advancedOptionsPanel.Visible = advanced;
+            themeLabel.Visible = advanced;
+            themeCombo.Visible = advanced;
+            tutorialButton.Visible = advanced;
+            checkUpdateButton.Visible = advanced;
+            grpFavorites.Visible = advanced;
+            grpDonate.Visible = advanced;
+            grpLogs.Visible = advanced;
+
+            grpRecord.Height = advanced ? grpRecordHeightAdvanced : grpRecordHeightSimple;
+
+            var progressY = grpRecordY + grpRecord.Height + 8;
+            grpProgress.Location = new Point(12, progressY);
+
+            if (advanced)
+            {
+                grpFavorites.Location = new Point(12, progressY + grpProgress.Height + 8);
+                grpDonate.Location = new Point(12, grpFavorites.Bottom + 8);
+                grpLogs.Location = new Point(12, grpDonate.Bottom + 8);
+                ClientSize = new Size(700, grpLogs.Bottom + 20);
+            }
+            else
+            {
+                ClientSize = new Size(700, progressY + grpProgress.Height + 20);
+            }
+
+            modeToggleButton.Text = advanced ? "Mode simple" : "Mode avancé";
+
+            _settings.AdvancedMode = advanced;
+            SettingsManager.Save(_settings);
         }
 
         private async void OnCheckUpdateClick(object? sender, EventArgs e)
@@ -739,7 +899,25 @@ namespace ChaturbateRecorderApp
         {
             foreach (var row in _jobRows)
                 row.Job.Engine.Stop();
+
+            // Retire l'icône de la zone de notification avant fermeture : sans
+            // ça, Windows laisse une icône "fantôme" jusqu'au survol suivant.
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+
             base.OnFormClosing(e);
+        }
+
+        /// <summary>
+        /// Notification "toast" (3.3) via la zone de notification — le style
+        /// visuel moderne est appliqué automatiquement par Windows 10/11 sans
+        /// dépendance supplémentaire. Volontairement non bloquant : l'absence
+        /// de notification ne doit jamais interrompre l'appli.
+        /// </summary>
+        private void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
+        {
+            try { _notifyIcon.ShowBalloonTip(4000, title, message, icon); }
+            catch (Exception ex) { Logger.Log($"Impossible d'afficher la notification : {ex.Message}", LogLevel.WARN); }
         }
 
         // ------------------------------------------------------------------
@@ -764,7 +942,17 @@ namespace ChaturbateRecorderApp
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
             catch (Exception ex) { Logger.Log($"Impossible de charger l'icône : {ex.Message}", LogLevel.WARN); }
 
-            var themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
+            // Icône de la zone de notification (3.3) : uniquement pour porter les
+            // notifications de type "toast" (ShowBalloonTip) — enregistrement
+            // terminé/en erreur, favori ajouté.
+            _notifyIcon = new NotifyIcon
+            {
+                Icon = Icon ?? SystemIcons.Application,
+                Text = "Chaturbate Recorder",
+                Visible = true,
+            };
+
+            themeLabel = new Label { Text = "Thème :", Location = new Point(12, 12), AutoSize = true };
             themeCombo = new ComboBox
             {
                 Location = new Point(70, 9),
@@ -781,18 +969,26 @@ namespace ChaturbateRecorderApp
             tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(210, 9), Size = new Size(160, 24) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
+            modeToggleButton = new Button { Location = new Point(380, 9), Size = new Size(110, 24) };
+            modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
+
             // --- GroupBox : Enregistrement ---
-            var grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
+            grpRecord = new GroupBox { Text = "Enregistrement", Location = new Point(12, 40), Size = new Size(660, 272) };
             var urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(420, 24) };
             startButton = new Button { Text = "Démarrer", Location = new Point(445, 46), Size = new Size(95, 28) };
             stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(548, 46), Size = new Size(95, 28) };
             addFavoriteButton = new Button { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
 
-            var qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 112), AutoSize = true };
+            // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
+            // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
+            // en Mode simple (3.2), coordonnées relatives au panneau lui-même.
+            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 172) };
+
+            var qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
             qualityCombo = new ComboBox
             {
-                Location = new Point(12, 130),
+                Location = new Point(12, 30),
                 Size = new Size(190, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -804,10 +1000,10 @@ namespace ChaturbateRecorderApp
             });
             qualityCombo.SelectedIndex = 0;
 
-            var codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 112), AutoSize = true };
+            var codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 12), AutoSize = true };
             codecCombo = new ComboBox
             {
-                Location = new Point(214, 130),
+                Location = new Point(214, 30),
                 Size = new Size(260, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -819,10 +1015,10 @@ namespace ChaturbateRecorderApp
             });
             codecCombo.SelectedIndex = 0;
 
-            var formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 112), AutoSize = true };
+            var formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 12), AutoSize = true };
             formatCombo = new ComboBox
             {
-                Location = new Point(486, 130),
+                Location = new Point(486, 30),
                 Size = new Size(150, 24),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
@@ -834,30 +1030,30 @@ namespace ChaturbateRecorderApp
             });
             formatCombo.SelectedIndex = 0;
 
-            var saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 166), AutoSize = true };
+            var saveDirLabel = new Label { Text = "Dossier de sauvegarde :", Location = new Point(12, 66), AutoSize = true };
             saveDirTextBox = new TextBox
             {
-                Location = new Point(12, 184),
+                Location = new Point(12, 84),
                 Size = new Size(520, 24),
                 ReadOnly = true,
                 Text = AppConfig.CaptureDir
             };
-            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(542, 184), Size = new Size(106, 24) };
+            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(542, 84), Size = new Size(106, 24) };
 
-            var cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 220), AutoSize = true };
+            var cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 120), AutoSize = true };
             cookiesTextBox = new TextBox
             {
-                Location = new Point(12, 238),
+                Location = new Point(12, 138),
                 Size = new Size(260, 24),
                 ReadOnly = true,
                 Text = AppConfig.CookiesFilePath
             };
-            browseCookiesButton = new Button { Text = "...", Location = new Point(278, 238), Size = new Size(40, 24) };
+            browseCookiesButton = new Button { Text = "...", Location = new Point(278, 138), Size = new Size(40, 24) };
 
-            var proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 220), AutoSize = true };
+            var proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(330, 120), AutoSize = true };
             proxyTextBox = new TextBox
             {
-                Location = new Point(330, 238),
+                Location = new Point(330, 138),
                 Size = new Size(306, 24),
                 Text = AppConfig.ProxyUrl,
                 PlaceholderText = "ex: socks5://127.0.0.1:9050"
@@ -870,16 +1066,21 @@ namespace ChaturbateRecorderApp
             browseCookiesButton.Click += OnBrowseCookiesClick;
             proxyTextBox.Leave += OnProxyTextChanged;
 
-            grpRecord.Controls.AddRange(new Control[]
+            advancedOptionsPanel.Controls.AddRange(new Control[]
             {
-                urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
                 qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
                 saveDirLabel, saveDirTextBox, browseDirButton,
                 cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox
             });
 
+            grpRecord.Controls.AddRange(new Control[]
+            {
+                urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
+                advancedOptionsPanel
+            });
+
             // --- GroupBox : Enregistrements en cours (plusieurs jobs possibles) ---
-            var grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
+            grpProgress = new GroupBox { Text = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
             jobsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
@@ -891,7 +1092,7 @@ namespace ChaturbateRecorderApp
             grpProgress.Controls.Add(jobsListPanel);
 
             // --- GroupBox : Favoris ---
-            var grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
+            grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
             favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(500, 98) };
             loadFavoriteButton = new Button { Text = "Charger", Location = new Point(522, 22), Size = new Size(120, 26) };
             removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(522, 54), Size = new Size(120, 26) };
@@ -903,7 +1104,7 @@ namespace ChaturbateRecorderApp
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
 
             // --- GroupBox : Soutenir le projet ---
-            var grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
+            grpDonate = new GroupBox { Text = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
             websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 22) };
             qrPictureBox = new PictureBox
@@ -926,7 +1127,7 @@ namespace ChaturbateRecorderApp
             grpDonate.Controls.AddRange(new Control[] { donateButton, websiteButton, qrPictureBox, donateLabel });
 
             // --- GroupBox : Logs ---
-            var grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
+            grpLogs = new GroupBox { Text = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };
             logListBox = new ListBox
             {
                 Location = new Point(12, 22),
@@ -935,7 +1136,7 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
+            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
 
             ResumeLayout(false);
             PerformLayout();

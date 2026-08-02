@@ -46,6 +46,13 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Rotation automatique des logs : suppression des fichiers de plus de 14 jours au démarrage, et rotation (renommage horodaté) au-delà de 20 Mo par fichier.",
             }),
+            ("1.5.0", new[]
+            {
+                "Icônes vectorielles sur les boutons principaux (rendu SVG à la volée, nettes à toute résolution).",
+                "Mode simple / mode avancé : bouton de bascule masquant qualité/codec/format, dossier, cookies/proxy, thème, guide, mises à jour, favoris, don et logs.",
+                "Notifications (zone de notification) : enregistrement terminé, erreur d'enregistrement, favori ajouté.",
+                "Barre de progression : couleur dynamique selon l'état (bleu en cours, vert terminé, rouge erreur, gris arrêté) et effet de pulsation au démarrage.",
+            }),
         };
     }
 }

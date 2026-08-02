@@ -9,7 +9,7 @@
     <AssemblyName>ChaturbateRecorder</AssemblyName>
     <RootNamespace>ChaturbateRecorderApp</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
 
     <!--
@@ -23,6 +23,11 @@
     -->
     <NoWarn>SYSLIB0057</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Rendu SVG -> Bitmap à la volée pour les icônes vectorielles (3.1). -->
+    <PackageReference Include="Svg" Version="3.4.8" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Le QR code de don est copié à côté de l'exécutable au build. -->

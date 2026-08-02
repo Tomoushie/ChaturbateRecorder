@@ -1,0 +1,62 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Text;
+using Svg;
+
+namespace ChaturbateRecorderApp.UI
+{
+    /// <summary>
+    /// Icônes vectorielles pour les boutons (3.1) : chaque glyphe est un SVG
+    /// minimal défini en code (pas de fichiers externes à gérer/distribuer),
+    /// rendu en Bitmap à la volée via la librairie Svg à la taille et à la
+    /// couleur demandées — net à n'importe quelle résolution/DPI, et retintable
+    /// selon le thème clair/sombre actif.
+    /// </summary>
+    public static class IconManager
+    {
+        private static readonly Dictionary<string, string> Templates = new()
+        {
+            ["play"] = Wrap("<polygon points=\"6,4 20,12 6,20\" fill=\"{COLOR}\"/>"),
+
+            ["stop"] = Wrap("<rect x=\"5\" y=\"5\" width=\"14\" height=\"14\" rx=\"2\" fill=\"{COLOR}\"/>"),
+
+            ["folder"] = Wrap(
+                "<rect x=\"3\" y=\"5\" width=\"8\" height=\"4\" rx=\"1\" fill=\"{COLOR}\"/>" +
+                "<rect x=\"3\" y=\"8\" width=\"18\" height=\"12\" rx=\"1.5\" fill=\"{COLOR}\"/>"),
+
+            ["open"] = Wrap(
+                "<polyline points=\"8,6 16,12 8,18\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"3\" " +
+                "stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"),
+
+            ["update"] = Wrap(
+                "<polygon points=\"12,4 20,14 14,14 14,20 10,20 10,14 4,14\" fill=\"{COLOR}\"/>"),
+
+            ["book"] = Wrap(
+                "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1.5\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>" +
+                "<line x1=\"12\" y1=\"4\" x2=\"12\" y2=\"20\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>"),
+
+            ["globe"] = Wrap(
+                "<circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>" +
+                "<line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>" +
+                "<ellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>"),
+        };
+
+        private static string Wrap(string inner) =>
+            $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">{inner}</svg>";
+
+        public static Bitmap Render(string name, int size, Color color)
+        {
+            if (!Templates.TryGetValue(name, out var template))
+                throw new ArgumentException($"Icône inconnue : '{name}'", nameof(name));
+
+            var colorHex = ColorTranslator.ToHtml(color);
+            var svgText = template.Replace("{COLOR}", colorHex);
+
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(svgText));
+            var document = SvgDocument.Open<SvgDocument>(stream);
+            return document.Draw(size, size);
+        }
+    }
+}
