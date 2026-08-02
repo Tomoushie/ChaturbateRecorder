@@ -26,7 +26,12 @@ cd ChaturbateRecorderApp
 dotnet build -c Release
 ```
 
-L'exécutable se trouve ensuite dans `bin\Release\net8.0-windows\ChaturbateRecorder.exe`.
+L'exécutable se trouve ensuite dans `bin\Release\net10.0-windows\ChaturbateRecorder.exe`.
+
+> Si `dotnet build`/`publish` échoue avec `NU1100` (impossible de résoudre un
+> package), vérifie que `NuGet.Config` à la racine du projet est bien présent —
+> le `NuGet.Config` global de certaines machines n'a aucune source configurée,
+> ce qui bloque toute dépendance externe.
 
 ## Tests
 
@@ -44,7 +49,10 @@ dotnet test Tests/ChaturbateRecorderApp.Tests.csproj
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
-Résultat dans `bin\Release\net8.0-windows\win-x64\publish\ChaturbateRecorder.exe`.
+Résultat dans `bin\Release\net10.0-windows\win-x64\publish\ChaturbateRecorder.exe`
+(~115 Mo, runtime .NET inclus — n'a besoin de rien d'installé sur la machine
+cible). Copie aussi `donate_qr.png` (et tes propres `yt-dlp.exe`/`ffmpeg.exe`
+si tu veux les distribuer avec) depuis ce même dossier `publish\`.
 
 ## Avant le premier lancement
 
