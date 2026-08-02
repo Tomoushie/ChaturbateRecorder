@@ -4,9 +4,9 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-02 — version courante : v1.10.0
+## État au 2026-08-02 — version courante : v1.11.0
 
-Toutes les sections d'une liste de tâches numérotée (1 à 7) ont été traitées :
+Toutes les sections d'une liste de tâches numérotée (1 à 8) ont été traitées :
 1. Sécurité (hash binaires, sandbox chemins/URL, dossier d'exécution, ACL, QR code) — 1.1 (signature de l'EXE) reste bloqué, nécessite un certificat de signature de code que l'utilisateur n'a pas.
 2. Robustesse (watchdog anti-freeze, ffmpeg hors thread UI, logs JSON, rotation des logs)
 3. UI (icônes SVG, mode simple/avancé, notifications toast, barre de progression animée)
@@ -14,12 +14,9 @@ Toutes les sections d'une liste de tâches numérotée (1 à 7) ont été trait�
 5. Maintenance (architecture déjà modulaire, suite xUnit 59 tests dans `Tests/`)
 6. Distribution (single-file self-contained fonctionne, NativeAOT écarté car non supporté par WinForms, signature Authenticode bloquée sur certificat)
 7. Modernisation UI (palette Windows 11, Segoe UI, boutons arrondis sans bordure, espacement)
+8. Modernisation UI, suite (v1.11.0) : GroupBox remplacés par `UI/RoundedGroupPanel.cs` (bordure arrondie + titre dessiné à la main, mêmes coordonnées d'enfants qu'avant), ombre légère sous chaque panneau, remplissage animé de la ProgressBar en fin de job (`AnimateProgressBarFill` dans `MainForm.cs`), couleurs hover/pressed sur les boutons via `FlatAppearance` dans `ThemeManager.cs`.
 
-**Prochaine étape prévue : section 8** (voir `E:\Corpus\Documents\Chaturbate Record\Projet en Powershell\A ajouter.txt` sur la machine de l'utilisateur pour le détail exact — ce fichier N'EST PAS dans ce dépôt, c'est une note de travail perso) :
-- 8.1 Remplacer les GroupBox par des Panels à bordure arrondie + titre en Label
-- 8.2 Ombres légères (dessinées via OnPaint ou panel semi-transparent)
-- 8.3 Animation de la ProgressBar (fluide, effet "smooth fill" — le "pulse" au démarrage est déjà fait en 3.4/7)
-- 8.4 Boutons "Fluent UI" (hover/pressed color, padding large — le style de base est déjà fait en 7.1)
+**Section 8 entièrement traitée (8.1 à 8.4).** Pas de section 9 planifiée pour l'instant — attendre une nouvelle demande de l'utilisateur avant de proposer une suite. Le fichier de notes perso (`E:\Corpus\Documents\Chaturbate Record\Projet en Powershell\A ajouter.txt`, hors dépôt) peut contenir la suite si l'utilisateur le mentionne.
 
 Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvelle :
 - 1.1 et 6.3 (signature Authenticode) : bloqués sur certificat, pas de solution logicielle possible.
