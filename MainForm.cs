@@ -29,6 +29,10 @@ namespace ChaturbateRecorderApp
         private Panel advancedOptionsPanel = null!;
         private GroupBox grpRecord = null!;
         private GroupBox grpProgress = null!;
+        private GroupBox grpHistory = null!;
+        private ListView historyListView = null!;
+        private Button refreshHistoryButton = null!;
+        private Button openHistoryFolderButton = null!;
         private GroupBox grpFavorites = null!;
         private GroupBox grpDonate = null!;
         private GroupBox grpLogs = null!;
@@ -40,6 +44,7 @@ namespace ChaturbateRecorderApp
         private TextBox cookiesTextBox = null!;
         private Button browseCookiesButton = null!;
         private TextBox proxyTextBox = null!;
+        private CheckBox autoReconnectCheckbox = null!;
         private ListBox favoritesListBox = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
@@ -65,6 +70,8 @@ namespace ChaturbateRecorderApp
             public Label StatusLabel = null!;
             public Button StopButton = null!;
             public Button OpenButton = null!;
+            public Action RestartEngine = null!;
+            public System.Windows.Forms.Timer? PendingReconnectTimer;
         }
 
         // --- État ---
@@ -114,6 +121,7 @@ namespace ChaturbateRecorderApp
             ThemeManager.Apply(this, AppTheme.Light);
             ApplyIcons();
             ApplyUiMode(_settings.AdvancedMode ?? true);
+            RefreshHistoryAsync();
             ShowFirstRunDialogs();
         }
 
@@ -277,6 +285,16 @@ namespace ChaturbateRecorderApp
                 {
                     job.Engine.Stop();
                 }
+                else if (row.PendingReconnectTimer != null)
+                {
+                    row.PendingReconnectTimer.Stop();
+                    row.PendingReconnectTimer.Dispose();
+                    row.PendingReconnectTimer = null;
+                    job.AutoReconnectEnabled = false;
+                    AppendJobLog(job, "Reconnexion automatique annulée.");
+                    row.StopButton.Text = "Retirer";
+                    row.StatusLabel.Text = "Annulé";
+                }
                 else
                 {
                     jobsListPanel.Controls.Remove(row.Container);
@@ -303,6 +321,7 @@ namespace ChaturbateRecorderApp
             switch (state)
             {
                 case DownloadState.Running:
+                    row.Job.ReconnectAttempt = 0;
                     row.StopButton.Text = "Stop";
                     row.StopButton.Enabled = true;
                     row.ProgressBar.Style = ProgressBarStyle.Marquee;
@@ -325,6 +344,7 @@ namespace ChaturbateRecorderApp
                     });
                     row.StatusLabel.Text = $"{state}";
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
+                    RefreshHistoryAsync();
 
                     if (state == DownloadState.Stopped)
                     {
@@ -337,6 +357,12 @@ namespace ChaturbateRecorderApp
                             ShowNotification("Enregistrement terminé", row.Job.RoomName);
                         else
                             ShowNotification("Erreur d'enregistrement", $"{row.Job.RoomName} : flux inaccessible ou interrompu de façon inattendue.", ToolTipIcon.Error);
+
+                        // Reconnexion automatique (4.2) : uniquement si le job ne s'est
+                        // PAS arrêté manuellement (cas déjà exclu ci-dessus) et que
+                        // l'utilisateur a coché l'option pour cet enregistrement.
+                        if (row.Job.AutoReconnectEnabled && row.Job.ReconnectAttempt < AppConfig.AutoReconnectMaxAttempts)
+                            ScheduleReconnect(row);
                     }
 
                     // Le réencodage se fait toujours en post-traitement sur le fichier
@@ -348,6 +374,36 @@ namespace ChaturbateRecorderApp
                         ReencodeCaptureAsync(row.Job);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Reconnexion automatique (4.2) : programme une nouvelle tentative
+        /// après le délai configuré. Le bouton Stop de la ligne devient
+        /// "Annuler" tant que la reconnexion est en attente.
+        /// </summary>
+        private void ScheduleReconnect(JobRow row)
+        {
+            row.Job.ReconnectAttempt++;
+            var attempt = row.Job.ReconnectAttempt;
+            var delaySeconds = AppConfig.AutoReconnectDelaySeconds;
+
+            AppendJobLog(row.Job, $"Reconnexion automatique dans {delaySeconds}s (tentative {attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
+            row.StatusLabel.Text = $"Reco. dans {delaySeconds}s...";
+            row.StopButton.Text = "Annuler";
+
+            var timer = new System.Windows.Forms.Timer { Interval = delaySeconds * 1000 };
+            row.PendingReconnectTimer = timer;
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                timer.Dispose();
+                row.PendingReconnectTimer = null;
+                if (!_jobRows.Contains(row)) return;
+
+                AppendJobLog(row.Job, $"Nouvelle tentative de connexion ({attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
+                row.RestartEngine();
+            };
+            timer.Start();
         }
 
         // --- Couleurs dynamiques de la barre de progression (3.4) ---
@@ -394,6 +450,131 @@ namespace ChaturbateRecorderApp
                 .GetFiles($"{job.RoomName}-*.{job.ContainerExt}")
                 .OrderByDescending(f => f.LastWriteTime)
                 .FirstOrDefault();
+        }
+
+        private static readonly string[] VideoExtensions = { ".mp4", ".mkv", ".mov" };
+
+        /// <summary>
+        /// Historique des enregistrements (4.4) : scan du dossier de capture en
+        /// arrière-plan (Task.Run — énumération de fichiers + éventuels appels
+        /// ffprobe ne doivent jamais geler l'UI), résultat appliqué au ListView
+        /// via SafeInvoke. Limité aux 50 fichiers les plus récents pour éviter
+        /// un scan trop lourd sur un dossier avec un historique important.
+        /// </summary>
+        private void RefreshHistoryAsync()
+        {
+            var captureDir = AppConfig.CaptureDir;
+            var ffprobePath = AppConfig.FFprobePath;
+            var hasFFprobe = File.Exists(ffprobePath);
+
+            Task.Run(() =>
+            {
+                var entries = new List<(string Name, long Size, string Duration, DateTime Date, string FullPath)>();
+                try
+                {
+                    if (Directory.Exists(captureDir))
+                    {
+                        entries.AddRange(new DirectoryInfo(captureDir)
+                            .GetFiles()
+                            .Where(f => VideoExtensions.Contains(f.Extension.ToLowerInvariant()))
+                            .OrderByDescending(f => f.LastWriteTime)
+                            .Take(50)
+                            .Select(f => (
+                                f.Name,
+                                f.Length,
+                                hasFFprobe ? ProbeDuration(ffprobePath, f.FullName) : "N/A",
+                                f.LastWriteTime,
+                                f.FullName
+                            )));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Erreur lors du scan de l'historique : {ex.Message}", LogLevel.WARN);
+                }
+
+                SafeInvoke(() =>
+                {
+                    historyListView.Items.Clear();
+                    foreach (var entry in entries)
+                    {
+                        var item = new ListViewItem(entry.Name);
+                        item.SubItems.Add(FormatSize(entry.Size));
+                        item.SubItems.Add(entry.Duration);
+                        item.SubItems.Add(entry.Date.ToString("dd/MM/yyyy HH:mm"));
+                        item.Tag = entry.FullPath;
+                        historyListView.Items.Add(item);
+                    }
+                });
+            });
+        }
+
+        private static string FormatSize(long bytes)
+        {
+            string[] units = { "o", "Ko", "Mo", "Go" };
+            double size = bytes;
+            var unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.Length - 1)
+            {
+                size /= 1024;
+                unitIndex++;
+            }
+            return $"{size:0.#} {units[unitIndex]}";
+        }
+
+        private static string ProbeDuration(string ffprobePath, string filePath)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = ffprobePath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                };
+                foreach (var a in new[] { "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filePath })
+                    psi.ArgumentList.Add(a);
+
+                using var p = Process.Start(psi);
+                if (p == null) return "N/A";
+
+                var output = p.StandardOutput.ReadToEnd().Trim();
+                p.WaitForExit(5000);
+
+                if (double.TryParse(output, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds))
+                {
+                    var ts = TimeSpan.FromSeconds(seconds);
+                    return ts.Hours > 0 ? $"{(int)ts.TotalHours}h{ts.Minutes:00}" : $"{ts.Minutes}m{ts.Seconds:00}";
+                }
+            }
+            catch
+            {
+                // Non bloquant : "N/A" en cas d'échec (ffprobe manquant, fichier corrompu...).
+            }
+            return "N/A";
+        }
+
+        private void OnOpenHistoryFolderClick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (historyListView.SelectedItems.Count > 0 &&
+                    historyListView.SelectedItems[0].Tag is string path && File.Exists(path))
+                {
+                    var psi = new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = false };
+                    psi.ArgumentList.Add($"/select,{path}");
+                    Process.Start(psi);
+                }
+                else
+                {
+                    Process.Start(new ProcessStartInfo(AppConfig.CaptureDir) { UseShellExecute = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Impossible d'ouvrir le dossier : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -589,11 +770,10 @@ namespace ChaturbateRecorderApp
                 return;
             }
 
-            var time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            var logFilePath = Path.Combine(AppConfig.LogDir, $"{roomName}-{time}.log");
-            var outputPath  = Path.Combine(AppConfig.CaptureDir, $"{roomName}-{time}.%(ext)s");
-
-            if (!PathValidator.IsValidPath(logFilePath))
+            // Chemin de log seulement validé une fois ici : seul l'horodatage
+            // change entre tentatives, ce qui ne peut pas rendre un chemin déjà
+            // valide invalide.
+            if (!PathValidator.IsValidPath(Path.Combine(AppConfig.LogDir, $"{roomName}-test.log")))
             {
                 MessageBox.Show("Chemin de log invalide.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -625,9 +805,25 @@ namespace ChaturbateRecorderApp
                 CaptureDir = AppConfig.CaptureDir,
                 CodecChoice = codecChoice,
                 ContainerExt = containerExt,
+                AutoReconnectEnabled = autoReconnectCheckbox.Checked,
             };
 
             var row = BuildJobRow(job);
+
+            // Capturée ici et réutilisée telle quelle pour les reconnexions
+            // automatiques (4.2) : régénère un horodatage frais à chaque appel,
+            // donc un nouveau fichier de sortie/log à chaque tentative.
+            void StartEngine()
+            {
+                var time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                var logFilePath = Path.Combine(AppConfig.LogDir, $"{roomName}-{time}.log");
+                var outputPath  = Path.Combine(job.CaptureDir, $"{roomName}-{time}.%(ext)s");
+
+                job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
+                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
+            }
+            row.RestartEngine = StartEngine;
+
             _jobRows.Add(row);
             jobsListPanel.Controls.Add(row.Container);
 
@@ -635,8 +831,7 @@ namespace ChaturbateRecorderApp
 
             try
             {
-                job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
-                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
+                StartEngine();
             }
             catch (Exception ex)
             {
@@ -824,7 +1019,7 @@ namespace ChaturbateRecorderApp
             _advancedMode = advanced;
 
             const int grpRecordY = 40;
-            const int grpRecordHeightAdvanced = 272;
+            const int grpRecordHeightAdvanced = 310;
             const int grpRecordHeightSimple = 110;
 
             advancedOptionsPanel.Visible = advanced;
@@ -832,6 +1027,7 @@ namespace ChaturbateRecorderApp
             themeCombo.Visible = advanced;
             tutorialButton.Visible = advanced;
             checkUpdateButton.Visible = advanced;
+            grpHistory.Visible = advanced;
             grpFavorites.Visible = advanced;
             grpDonate.Visible = advanced;
             grpLogs.Visible = advanced;
@@ -843,7 +1039,8 @@ namespace ChaturbateRecorderApp
 
             if (advanced)
             {
-                grpFavorites.Location = new Point(12, progressY + grpProgress.Height + 8);
+                grpHistory.Location = new Point(12, progressY + grpProgress.Height + 8);
+                grpFavorites.Location = new Point(12, grpHistory.Bottom + 8);
                 grpDonate.Location = new Point(12, grpFavorites.Bottom + 8);
                 grpLogs.Location = new Point(12, grpDonate.Bottom + 8);
                 ClientSize = new Size(700, grpLogs.Bottom + 20);
@@ -983,7 +1180,7 @@ namespace ChaturbateRecorderApp
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
             // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
             // en Mode simple (3.2), coordonnées relatives au panneau lui-même.
-            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 172) };
+            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 200) };
 
             var qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
             qualityCombo = new ComboBox
@@ -1059,6 +1256,13 @@ namespace ChaturbateRecorderApp
                 PlaceholderText = "ex: socks5://127.0.0.1:9050"
             };
 
+            autoReconnectCheckbox = new CheckBox
+            {
+                Text = "Reconnexion automatique si le live se termine de façon inattendue",
+                Location = new Point(12, 172),
+                AutoSize = true,
+            };
+
             startButton.Click += OnStartClick;
             stopAllButton.Click += OnStopAllClick;
             addFavoriteButton.Click += OnAddFavoriteClick;
@@ -1070,7 +1274,8 @@ namespace ChaturbateRecorderApp
             {
                 qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
                 saveDirLabel, saveDirTextBox, browseDirButton,
-                cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox
+                cookiesLabel, cookiesTextBox, browseCookiesButton, proxyLabel, proxyTextBox,
+                autoReconnectCheckbox
             });
 
             grpRecord.Controls.AddRange(new Control[]
@@ -1090,6 +1295,30 @@ namespace ChaturbateRecorderApp
                 WrapContents = false,
             };
             grpProgress.Controls.Add(jobsListPanel);
+
+            // --- GroupBox : Historique des enregistrements (4.4) ---
+            grpHistory = new GroupBox { Text = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 130) };
+            historyListView = new ListView
+            {
+                Location = new Point(12, 22),
+                Size = new Size(500, 98),
+                View = View.Details,
+                FullRowSelect = true,
+                MultiSelect = false,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+            };
+            historyListView.Columns.Add("Fichier", 220);
+            historyListView.Columns.Add("Taille", 80);
+            historyListView.Columns.Add("Durée", 70);
+            historyListView.Columns.Add("Date", 120);
+
+            refreshHistoryButton = new Button { Text = "Actualiser", Location = new Point(522, 22), Size = new Size(120, 26) };
+            openHistoryFolderButton = new Button { Text = "Ouvrir dossier", Location = new Point(522, 54), Size = new Size(120, 26) };
+
+            refreshHistoryButton.Click += (s, e) => RefreshHistoryAsync();
+            openHistoryFolderButton.Click += OnOpenHistoryFolderClick;
+
+            grpHistory.Controls.AddRange(new Control[] { historyListView, refreshHistoryButton, openHistoryFolderButton });
 
             // --- GroupBox : Favoris ---
             grpFavorites = new GroupBox { Text = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
@@ -1136,7 +1365,7 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
 
-            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpFavorites, grpDonate, grpLogs });
+            Controls.AddRange(new Control[] { themeLabel, themeCombo, tutorialButton, checkUpdateButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
 
             ResumeLayout(false);
             PerformLayout();

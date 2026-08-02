@@ -14,5 +14,9 @@ namespace ChaturbateRecorderApp.Services
         public required string CodecChoice { get; init; }
         public required string ContainerExt { get; init; }
         public DownloadEngine Engine { get; } = new();
+
+        // --- Reconnexion automatique (4.2) ---
+        public bool AutoReconnectEnabled { get; set; }
+        public int ReconnectAttempt;
     }
 }

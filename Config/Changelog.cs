@@ -53,6 +53,11 @@ namespace ChaturbateRecorderApp.Config
                 "Notifications (zone de notification) : enregistrement terminé, erreur d'enregistrement, favori ajouté.",
                 "Barre de progression : couleur dynamique selon l'état (bleu en cours, vert terminé, rouge erreur, gris arrêté) et effet de pulsation au démarrage.",
             }),
+            ("1.6.0", new[]
+            {
+                "Reconnexion automatique (optionnelle, par enregistrement) : si le live se termine de façon inattendue, nouvelle tentative après un délai configurable, jusqu'à un nombre maximal de tentatives, avec possibilité d'annuler.",
+                "Historique des enregistrements : liste des vidéos capturées (nom, taille, durée si ffprobe.exe est présent, date), avec bouton \"Ouvrir dossier\".",
+            }),
         };
     }
 }

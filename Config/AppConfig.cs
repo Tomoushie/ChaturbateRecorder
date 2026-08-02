@@ -47,6 +47,18 @@ namespace ChaturbateRecorderApp.Config
         // L'application ne fournit pas de proxy/VPN elle-même.
         public static string ProxyUrl          = "";
 
+        // --- Reconnexion automatique (4.2) ---
+        // Si le live se termine (erreur ou fin de flux) sans arrêt manuel, et
+        // que l'option est cochée pour ce job, on retente après ce délai.
+        public static int AutoReconnectDelaySeconds = 30;
+        public static int AutoReconnectMaxAttempts   = 5;
+
+        // --- Historique des enregistrements (4.4) ---
+        // ffprobe.exe est optionnel : uniquement utilisé pour afficher la durée
+        // des vidéos dans l'historique. S'il est absent, la durée affiche "N/A"
+        // sans bloquer le reste de la fonctionnalité.
+        public static string FFprobePath = Path.Combine(AppDir, "ffprobe.exe");
+
         public static readonly string[] Blacklist = { "example.com", "badhost.org" };
         public static readonly string[] Whitelist = { "chaturbate.com" };
 
