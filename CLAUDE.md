@@ -4,7 +4,14 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-02 — version courante : v1.13.0
+## État au 2026-08-02 — version courante : v1.13.1
+
+**Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
+
+v1.13.1 : correctifs signalés par l'utilisateur (pas de nouvelle fonctionnalité) :
+- Miniature/réencodage associés au mauvais fichier vidéo quand un même salon était enregistré plusieurs fois — `FindLatestCaptureFile` (heuristique "fichier le plus récent" ambiguë) remplacé par `FindOwnCaptureFile` (chemin exact via nouveau `RecordingJob.OutputBaseName`, déterministe).
+- Fenêtre non responsive en largeur — `Anchor` Left+Right ajouté sur les panneaux/champs larges, Top+Right sur les boutons.
+- Boutons "Site web"/"Ouvrir dossier"/"Supprimer favori" au texte rogné — tailles ajustées.
 
 Toutes les sections d'une liste de tâches numérotée (1 à 9) ont été traitées, plus l'item 20.0 (sélecteur de langue) :
 1. Sécurité (hash binaires, sandbox chemins/URL, dossier d'exécution, ACL, QR code) — 1.1 (signature de l'EXE) reste bloqué, nécessite un certificat de signature de code que l'utilisateur n'a pas.
@@ -45,6 +52,8 @@ Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvell
    - Ne JAMAIS inclure `yt-dlp.exe`/`ffmpeg.exe` dans les ZIP de release (licence GPL de ffmpeg — voir README)
 
 **Vérification visuelle des changements UI** — WinForms ne peut pas être piloté par `computer-use` (exe non reconnu comme "app installée"). À la place : ajouter temporairement dans le constructeur de `MainForm` un handler `Shown += (s,e) => { ... DrawToBitmap ... Environment.Exit(0); }` qui capture un vrai rendu en PNG dans le scratchpad, à regarder via `Read`. Piège découvert : `Form.DrawToBitmap()` ne rend pas correctement le fond d'un `Panel` avec `AutoScroll=true` imbriqué — capturer directement `contentPanel.DrawToBitmap(...)` à la place donne le rendu réel. Pour vérifier une animation (ex: transition de thème) : `Shown += async (s,e) => { ... await Task.Delay(...); Capture(...); TriggerAnimation(); await Task.Delay(...); Capture(...); Environment.Exit(0); }` — capturer après un délai supérieur à la durée de l'animation donne l'état final, `DrawToBitmap` n'étant pas affecté par `Form.Opacity` (qui n'agit que sur le compositing OS, pas le rendu GDI). Toujours retirer ce code de debug avant de committer, et penser aussi à commenter/décommenter `ShowFirstRunDialogs()` si un dialogue de premier lancement bloquerait la capture.
+
+**Piège WinForms — `Anchor` posé avant `Controls.Add`** : définir `Anchor` dans l'initialiseur d'objet d'un contrôle (avant qu'il soit ajouté à son parent) capture une marge basée sur un `Parent` encore `null` — le contrôle se retrouve projeté hors de la fenêtre dès le premier redimensionnement (marge négative interprétée comme "encore plus loin du bord"). Toujours poser `control.Anchor = ...;` en instruction séparée, APRÈS le `Controls.Add`/`AddRange` qui le parente.
 
 **NuGet** — Le `NuGet.Config` global de cette machine (`%APPDATA%\NuGet\NuGet.Config`) a une liste de sources vide. Un `NuGet.Config` local (déjà présent à la racine du projet) ajoute `nuget.org`, sans toucher au fichier global. Sans lui, toute dépendance externe (y compris le self-contained publish, qui a besoin de runtime packs) échoue avec `NU1100`.
 
