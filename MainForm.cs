@@ -79,6 +79,7 @@ namespace ChaturbateRecorderApp
         private readonly FavoritesManager _favorites = new();
         private readonly List<JobRow> _jobRows = new();
         private bool _advancedMode = true;
+        private AppTheme _currentTheme = AppTheme.Light;
         private NotifyIcon _notifyIcon = null!;
 
         private readonly UserSettings _settings;
@@ -119,11 +120,18 @@ namespace ChaturbateRecorderApp
                 favoritesListBox.Items.Add(fav);
 
             LoadQrImage();
-            ThemeManager.Apply(this, AppTheme.Light);
+            ThemeManager.Apply(this, _currentTheme);
             ApplyIcons();
-            ApplyUiMode(_settings.AdvancedMode ?? true);
+            ApplyUiMode(_settings.AdvancedMode ?? true, animate: false);
             RefreshHistoryAsync();
             ShowFirstRunDialogs();
+
+            // Fondu d'ouverture (9.2) : la fenêtre démarre invisible (Opacity=0)
+            // et remonte à pleine opacité une fois affichée — Shown ne se
+            // déclenche qu'après Application.Run(new MainForm()), donc après les
+            // dialogues de premier lancement éventuels ci-dessus.
+            Opacity = 0;
+            Shown += (s, e) => AnimateOpacity(1.0, 250);
         }
 
         private static string CurrentVersion =>
@@ -992,8 +1000,82 @@ namespace ChaturbateRecorderApp
         private void OnThemeChanged(object? sender, EventArgs e)
         {
             var theme = themeCombo.SelectedItem?.ToString() == "Sombre" ? AppTheme.Dark : AppTheme.Light;
-            ThemeManager.Apply(this, theme);
-            ApplyIcons();
+            AnimateThemeTransition(_currentTheme, theme);
+            _currentTheme = theme;
+        }
+
+        /// <summary>
+        /// Transition douce clair/sombre (9.2) : interpole les deux palettes sur
+        /// une courte durée au lieu du saut instantané de couleurs d'origine.
+        /// ApplyIcons() n'a rien à refaire pendant l'animation (IconColor est
+        /// fixe dans les deux thèmes, voir son commentaire), un seul appel à la
+        /// fin suffit, par cohérence avec le comportement précédent.
+        /// </summary>
+        private void AnimateThemeTransition(AppTheme from, AppTheme to)
+        {
+            var start = ThemeManager.GetPalette(from);
+            var end = ThemeManager.GetPalette(to);
+            const int durationMs = 220;
+
+            var sw = Stopwatch.StartNew();
+            var timer = new System.Windows.Forms.Timer { Interval = 15 };
+            timer.Tick += (s, e) =>
+            {
+                if (IsDisposed) { timer.Stop(); timer.Dispose(); return; }
+
+                var t = Math.Min(1f, (float)sw.ElapsedMilliseconds / durationMs);
+                ThemeManager.ApplyPalette(this, ThemeManager.LerpPalette(start, end, t));
+
+                if (t >= 1f)
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    ThemeManager.Apply(this, to);
+                    ApplyIcons();
+                }
+            };
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Anime l'Opacity de la fenêtre entière vers <paramref name="target"/>
+        /// (9.2) : WinForms n'exposant pas d'opacité par contrôle, un fondu par
+        /// panneau demanderait un contournement bien plus lourd (fenêtres
+        /// calquées) pour un gain limité — un fondu de toute la fenêtre reste le
+        /// bon compromis ici. Réutilisé pour le fondu d'ouverture (Opacity 0→1)
+        /// et pour le clignotement léger au changement de mode simple/avancé.
+        /// </summary>
+        private void AnimateOpacity(double target, int durationMs, Action? onComplete = null)
+        {
+            var start = Opacity;
+            var sw = Stopwatch.StartNew();
+            var timer = new System.Windows.Forms.Timer { Interval = 15 };
+            timer.Tick += (s, e) =>
+            {
+                if (IsDisposed) { timer.Stop(); timer.Dispose(); return; }
+
+                var t = Math.Min(1.0, (double)sw.ElapsedMilliseconds / durationMs);
+                Opacity = start + (target - start) * t;
+
+                if (t >= 1.0)
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    onComplete?.Invoke();
+                }
+            };
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Clignotement léger (creux puis retour à 1.0) au changement de mode
+        /// simple/avancé (9.2) : le contenu se redimensionne instantanément
+        /// (ClientSize dans ApplyUiMode), ce court fondu adoucit la coupure sans
+        /// faire disparaître complètement la fenêtre pendant le redimensionnement.
+        /// </summary>
+        private void PulseOpacity()
+        {
+            AnimateOpacity(0.55, 90, () => AnimateOpacity(1.0, 90));
         }
 
         /// <summary>
@@ -1043,7 +1125,7 @@ namespace ChaturbateRecorderApp
         /// thème, guide, mises à jour, favoris, don, logs). Le choix est
         /// mémorisé entre les lancements.
         /// </summary>
-        private void ApplyUiMode(bool advanced)
+        private void ApplyUiMode(bool advanced, bool animate = true)
         {
             _advancedMode = advanced;
 
@@ -1092,6 +1174,8 @@ namespace ChaturbateRecorderApp
 
             _settings.AdvancedMode = advanced;
             SettingsManager.Save(_settings);
+
+            if (animate) PulseOpacity();
         }
 
         private async void OnCheckUpdateClick(object? sender, EventArgs e)

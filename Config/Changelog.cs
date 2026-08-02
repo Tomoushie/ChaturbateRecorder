@@ -83,6 +83,12 @@ namespace ChaturbateRecorderApp.Config
                 "Barre de progression : remplissage animé (au lieu d'un saut instantané) à la fin d'un enregistrement.",
                 "Boutons : couleurs distinctes au survol et à l'appui de la souris.",
             }),
+            ("1.12.0", new[]
+            {
+                "Fondu d'ouverture au démarrage de l'application, et clignotement léger lors du changement de mode simple/avancé.",
+                "Transition animée (au lieu d'un changement instantané) lors du passage entre thème clair et thème sombre.",
+                "Boutons : la couleur au survol et à l'appui change désormais en douceur plutôt que d'un coup.",
+            }),
         };
     }
 }
