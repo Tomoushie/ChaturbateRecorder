@@ -1,0 +1,9 @@
+theme: jekyll-theme-cayman
+title: Chaturbate Recorder
+description: Application .NET 10 sécurisée pour enregistrer Chaturbate
+lang: fr
+
+# index.html est une page personnalisée (bilingue FR/EN, sans front matter) :
+# Jekyll la copie telle quelle sans lui appliquer ce thème. Seules les
+# nouvelles pages Markdown (features.md, screenshots.md, roadmap.md) sont
+# rendues avec jekyll-theme-cayman.

@@ -76,6 +76,10 @@
   .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
   .btn-secondary:hover { border-color: var(--muted); text-decoration: none; }
 
+  .sub-links { margin-top: 18px; display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  .sub-links a { color: var(--muted); font-size: 0.9rem; }
+  .sub-links a:hover { color: var(--text); }
+
   main { max-width: 880px; margin: 0 auto; padding: 56px 24px; }
 
   section { margin-bottom: 56px; }
@@ -136,6 +140,11 @@
   <div class="cta-row">
     <a class="btn btn-primary" id="ctaDownload" href="https://github.com/Tomoushie/ChaturbateRecorder/releases/latest"></a>
     <a class="btn btn-secondary" id="ctaSource" href="https://github.com/Tomoushie/ChaturbateRecorder"></a>
+  </div>
+  <div class="sub-links">
+    <a id="navFeatures" href="features.html"></a>
+    <a id="navScreenshots" href="screenshots.html"></a>
+    <a id="navRoadmap" href="roadmap.html"></a>
   </div>
 </header>
 
@@ -200,6 +209,9 @@
       tagline: "Enregistreur de lives multi-stream pour Windows — sécurité, qualité et confidentialité configurables.",
       ctaDownload: "Télécharger la dernière version",
       ctaSource: "Code source (GitHub)",
+      navFeatures: "Fonctionnalités détaillées",
+      navScreenshots: "Captures d'écran",
+      navRoadmap: "Roadmap",
       featuresTitle: "Fonctionnalités",
       feat1Title: "Multi-stream",
       feat1Desc: "Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.",
@@ -225,6 +237,9 @@
       tagline: "Multi-stream live recorder for Windows — configurable security, quality, and privacy.",
       ctaDownload: "Download the latest version",
       ctaSource: "Source code (GitHub)",
+      navFeatures: "Detailed features",
+      navScreenshots: "Screenshots",
+      navRoadmap: "Roadmap",
       featuresTitle: "Features",
       feat1Title: "Multi-stream",
       feat1Desc: "Records multiple lives in parallel without opening multiple instances of the app.",
@@ -254,6 +269,9 @@
     document.getElementById("tagline").textContent = s.tagline;
     document.getElementById("ctaDownload").textContent = s.ctaDownload;
     document.getElementById("ctaSource").textContent = s.ctaSource;
+    document.getElementById("navFeatures").textContent = s.navFeatures;
+    document.getElementById("navScreenshots").textContent = s.navScreenshots;
+    document.getElementById("navRoadmap").textContent = s.navRoadmap;
     document.getElementById("featuresTitle").textContent = s.featuresTitle;
     for (var i = 1; i <= 6; i++) {
       document.getElementById("feat" + i + "Title").textContent = s["feat" + i + "Title"];

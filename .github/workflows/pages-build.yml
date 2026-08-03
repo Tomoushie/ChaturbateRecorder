@@ -28,9 +28,19 @@ jobs:
 
       - uses: actions/configure-pages@v6
 
+      # Nécessaire pour que _config.yml/theme (37.0) et les pages Markdown
+      # (features.md, roadmap.md, screenshots.md) soient réellement rendus :
+      # sans ce build, upload-pages-artifact publierait les fichiers .md tels
+      # quels (texte brut), pas le HTML généré par le thème Jekyll.
+      - name: Build Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: docs
+          path: ./_site
 
       - id: deployment
         uses: actions/deploy-pages@v4
