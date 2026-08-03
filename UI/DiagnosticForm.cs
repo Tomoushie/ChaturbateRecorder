@@ -19,6 +19,12 @@ namespace ChaturbateRecorderApp.UI
     /// Security/ (hash des binaires, ACL, dossier d'exécution) plutôt que de
     /// dupliquer leur logique, et ajoute les informations non déjà exposées
     /// ailleurs (versions .NET/app/yt-dlp/ffmpeg, joignabilité réseau).
+    ///
+    /// Volontairement NON traduit (décision de périmètre en 24.0) : ce rapport
+    /// est fait pour être collé dans un ticket GitHub. Le traduire ferait
+    /// arriver des rapports en deux langues au mainteneur, qui aurait à
+    /// deviner à quel champ français correspond chaque libellé anglais. Même
+    /// raisonnement que pour les logs et CrashReportForm.
     /// </summary>
     public class DiagnosticForm : Form
     {

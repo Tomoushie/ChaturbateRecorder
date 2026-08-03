@@ -1,9 +1,18 @@
+using System.Collections.Generic;
+
 namespace ChaturbateRecorderApp.Config
 {
     /// <summary>
     /// Historique des versions, affiché en local (aucun serveur requis) via une
     /// boîte de dialogue "Nouveautés" au premier lancement suivant une mise à
     /// jour de version. À compléter à chaque bump de &lt;Version&gt; dans le .csproj.
+    ///
+    /// Traduction (24.0) : Entries reste la source canonique en français, et
+    /// EnglishChanges ne couvre que les versions à partir de la version courante
+    /// au moment de ce passage (1.16.0). L'historique antérieur reste en
+    /// français — son intérêt est surtout archivistique, et le dialogue
+    /// "Nouveautés" n'affiche de toute façon qu'une seule version : celle qui
+    /// vient d'être installée.
     /// </summary>
     public static class Changelog
     {
@@ -123,5 +132,41 @@ namespace ChaturbateRecorderApp.Config
                 "Nouveau bouton \"Diagnostic\" (mode avancé) : panneau affichant les versions (.NET, application, yt-dlp, ffmpeg), l'intégrité des binaires externes, l'état des ACL et du dossier d'exécution, et la joignabilité réseau — copiable en un clic pour un rapport de bug.",
             }),
         };
+
+        /// <summary>
+        /// Traductions anglaises, à partir de 1.16.0 uniquement (voir le
+        /// commentaire de classe). Une version absente ici retombe
+        /// silencieusement sur son entrée française : c'est le comportement
+        /// voulu pour l'historique ancien, jamais une erreur.
+        /// </summary>
+        private static readonly Dictionary<string, string[]> EnglishChanges = new()
+        {
+            ["1.16.0"] = new[]
+            {
+                "New \"Diagnostics\" button (advanced mode): a panel showing versions (.NET, application, yt-dlp, ffmpeg), the integrity of external binaries, the state of the ACLs and of the execution folder, and network reachability — copied in one click for a bug report.",
+            },
+        };
+
+        /// <summary>
+        /// Retourne les nouveautés d'une version dans la langue demandée, avec
+        /// repli sur le français si cette version n'a pas de traduction.
+        /// Prend un bool plutôt qu'un AppLanguage à dessein : Config est la
+        /// couche basse (référencée par Security/Services) et n'a pas à
+        /// dépendre de UI.
+        /// </summary>
+        public static string[] GetChanges(string version, bool english)
+        {
+            if (english && EnglishChanges.TryGetValue(version, out var translated))
+                return translated;
+
+            foreach (var entry in Entries)
+                if (entry.Version == version)
+                    return entry.Changes;
+
+            return System.Array.Empty<string>();
+        }
+
+        /// <summary>Exposé aux tests : voir ChangelogTests.</summary>
+        internal static IReadOnlyDictionary<string, string[]> AllEnglishChanges => EnglishChanges;
     }
 }

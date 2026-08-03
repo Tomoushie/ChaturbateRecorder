@@ -194,9 +194,9 @@ namespace ChaturbateRecorderApp
 
         private void ShowChangelog(string version)
         {
-            var entry = Changelog.Entries.FirstOrDefault(e => e.Version == version);
-            var body = entry.Changes is { Length: > 0 }
-                ? string.Join(Environment.NewLine, entry.Changes.Select(c => "• " + c))
+            var changes = Changelog.GetChanges(version, Localization.Current == AppLanguage.English);
+            var body = changes.Length > 0
+                ? string.Join(Environment.NewLine, changes.Select(c => "• " + c))
                 : Localization.Get("changelog.noDetails");
 
             MessageBox.Show(this, body, Localization.Format("changelog.title", version),
