@@ -199,6 +199,51 @@ namespace ChaturbateRecorderApp.UI
             ["notify.stillActive.body"] = (
                 "Chaturbate Recorder continue de tourner dans la zone de notification. Clic droit sur l'icône pour ouvrir, accéder aux paramètres ou fermer complètement.",
                 "Chaturbate Recorder keeps running in the notification area. Right-click the icon to open it, reach the settings, or close it completely."),
+
+            // --- 24.0 : guide de démarrage (TutorialForm) ---
+            // Les noms d'éléments cités entre guillemets dans la prose reprennent
+            // mot pour mot les libellés traduits plus haut (button.start,
+            // panel.progress, job.open...) : le guide doit désigner les boutons
+            // tels qu'ils s'affichent réellement dans la langue courante.
+            ["tutorial.back"] = ("◀ Précédent", "◀ Back"),
+            ["tutorial.next"] = ("Suivant ▶", "Next ▶"),
+            ["tutorial.finish"] = ("Terminer", "Finish"),
+            ["tutorial.stepProgress"] = ("Étape {0} / {1}", "Step {0} / {1}"),
+
+            ["tutorial.welcome.title"] = ("Bienvenue", "Welcome"),
+            ["tutorial.welcome.body"] = (
+                "Chaturbate Recorder enregistre des lives en local, avec des vérifications de sécurité intégrées (hash des binaires, sandbox de chemins, ACL).\n\nCe guide rapide passe en revue les fonctionnalités principales — tu peux le rouvrir à tout moment via le bouton \"Guide de démarrage\".",
+                "Chaturbate Recorder records live streams locally, with built-in security checks (binary hashes, path sandbox, ACL).\n\nThis quick guide walks through the main features — you can reopen it at any time from the \"Getting started guide\" button."),
+
+            ["tutorial.start.title"] = ("Démarrer un enregistrement", "Starting a recording"),
+            ["tutorial.start.body"] = (
+                "Colle l'URL Chaturbate dans le champ en haut, puis clique sur \"Démarrer\".\n\nChaque enregistrement tourne indépendamment : tu peux en lancer plusieurs en même temps sans ouvrir plusieurs fenêtres. \"Tout arrêter\" stoppe tous les enregistrements en cours d'un coup.",
+                "Paste the Chaturbate URL into the field at the top, then click \"Start\".\n\nEach recording runs independently: you can start several at once without opening multiple windows. \"Stop all\" stops every running recording at once."),
+
+            ["tutorial.quality.title"] = ("Qualité, codec et format", "Quality, codec and format"),
+            ["tutorial.quality.body"] = (
+                "Trois menus déroulants te laissent choisir :\n\n•  la qualité source (meilleure / moyenne / minimale)\n•  le codec de sortie (copie sans perte, ou réencodage H.264/H.265 fait après coup, sans bloquer l'appli)\n•  le conteneur (MP4, MKV — plus robuste en cas d'arrêt brutal —, ou MOV)",
+                "Three drop-down menus let you choose:\n\n•  the source quality (best / medium / minimum)\n•  the output codec (lossless copy, or H.264/H.265 re-encoding done afterwards, without blocking the app)\n•  the container (MP4, MKV — more robust if the recording stops abruptly — or MOV)"),
+
+            ["tutorial.saveDir.title"] = ("Dossier de sauvegarde", "Save folder"),
+            ["tutorial.saveDir.body"] = (
+                "Le bouton \"Parcourir...\" te permet de choisir où sont enregistrées tes vidéos.\n\nCe choix est mémorisé automatiquement pour les prochains lancements.",
+                "The \"Browse...\" button lets you choose where your videos are saved.\n\nThis choice is remembered automatically for future sessions."),
+
+            ["tutorial.privacy.title"] = ("Confidentialité", "Privacy"),
+            ["tutorial.privacy.body"] = (
+                "Le champ \"Cookies\" permet d'importer une session déjà connectée depuis ton navigateur (fichier cookies.txt), pour accéder au contenu réservé à un compte.\n\nLe champ \"Proxy\" route le trafic via un SOCKS5/HTTP de ton choix, pour masquer ton IP réelle vis-à-vis du site distant.",
+                "The \"Cookies\" field imports an already signed-in session from your browser (cookies.txt file), to reach content reserved for logged-in accounts.\n\nThe \"Proxy\" field routes traffic through a SOCKS5/HTTP proxy of your choice, to hide your real IP from the remote site."),
+
+            ["tutorial.tracking.title"] = ("Suivi des enregistrements", "Tracking your recordings"),
+            ["tutorial.tracking.body"] = (
+                "Chaque enregistrement actif apparaît comme une ligne dans \"Enregistrements en cours\", avec :\n\n•  sa propre barre de progression\n•  un bouton \"Ouvrir\" (accès direct à la page du stream)\n•  un bouton Stop individuel (qui devient \"Retirer\" une fois terminé)",
+                "Each active recording appears as a row under \"Active recordings\", with:\n\n•  its own progress bar\n•  an \"Open\" button (direct access to the stream page)\n•  its own Stop button (which becomes \"Remove\" once finished)"),
+
+            ["tutorial.security.title"] = ("Sécurité et mises à jour", "Security and updates"),
+            ["tutorial.security.body"] = (
+                "Avant chaque enregistrement, l'appli vérifie le hash de yt-dlp.exe et ffmpeg.exe, et surveille l'emplacement d'exécution du programme.\n\nLe bouton \"Rechercher une mise à jour\" en haut de la fenêtre vérifie automatiquement les nouvelles versions publiées sur GitHub.",
+                "Before each recording, the app verifies the hash of yt-dlp.exe and ffmpeg.exe, and checks where the program is running from.\n\nThe \"Check for updates\" button at the top of the window looks for new versions published on GitHub."),
         };
 
         /// <summary>

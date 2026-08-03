@@ -102,6 +102,23 @@ namespace ChaturbateRecorderApp.Tests
         }
 
         /// <summary>
+        /// Les clés référencées par le guide de démarrage doivent exister : une
+        /// faute de frappe passerait autrement inaperçue au build et afficherait
+        /// la clé brute ("tutorial.welcom.title") en guise de titre d'étape.
+        /// </summary>
+        [Fact]
+        public void EveryTutorialStepKeyExists()
+        {
+            Assert.NotEmpty(TutorialForm.Steps);
+
+            foreach (var (titleKey, bodyKey) in TutorialForm.Steps)
+            {
+                Assert.True(Localization.AllStrings.ContainsKey(titleKey), $"Clé de titre inconnue : '{titleKey}'.");
+                Assert.True(Localization.AllStrings.ContainsKey(bodyKey), $"Clé de corps inconnue : '{bodyKey}'.");
+            }
+        }
+
+        /// <summary>
         /// Toutes les chaînes du dictionnaire doivent survivre à string.Format
         /// avec le bon nombre d'arguments — attrape une accolade littérale non
         /// échappée ("{" seul), qui ferait échouer l'appel à l'exécution.
