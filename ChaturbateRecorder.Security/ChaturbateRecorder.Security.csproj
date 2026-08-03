@@ -18,6 +18,7 @@
     <Authors>Tomoushie</Authors>
     <Description>Utilitaires de sandbox et de vérification de sécurité pour applications .NET Windows : validation stricte de chemins de fichiers (UNC, ADS, reparse points, noms réservés), validation d'URL par liste blanche/noire, vérification de hash/signature Authenticode de binaires externes, détection d'ACL NTFS permissives, vérification TLS/SAN explicite d'un serveur distant, et détection d'emplacements d'exécution à risque (réseau, temporaire, compressé). Extrait du projet Chaturbate Recorder (https://github.com/Tomoushie/ChaturbateRecorder).</Description>
     <PackageTags>security;sandbox;path-validation;url-validation;acl;authenticode;tls;windows</PackageTags>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Tomoushie/ChaturbateRecorder</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/Tomoushie/ChaturbateRecorder</PackageProjectUrl>
