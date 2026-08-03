@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -38,15 +39,35 @@ namespace ChaturbateRecorderApp.Services
             string? downloadUrl = null;
             if (root.TryGetProperty("assets", out var assets))
             {
+                // Chaque release attache deux ZIP (standard framework-dependent /
+                // portable self-contained). Il faut choisir celui qui correspond à
+                // l'exécutable en cours, sinon une install portable pourrait être
+                // remplacée par le build standard (sans runtime .NET embarqué), et
+                // inversement. Détection : le build portable (single-file) n'a pas
+                // de ChaturbateRecorder.dll séparé à côté de l'exe.
+                var isPortable = !File.Exists(Path.Combine(AppContext.BaseDirectory, "ChaturbateRecorder.dll"));
+                string? fallbackUrl = null;
+
                 foreach (var asset in assets.EnumerateArray())
                 {
                     var name = asset.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                    if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    if (!name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var url = asset.TryGetProperty("browser_download_url", out var u) ? u.GetString() : null;
+                    fallbackUrl ??= url;
+
+                    var isPortableAsset = name.Contains("portable", StringComparison.OrdinalIgnoreCase);
+                    if (isPortableAsset == isPortable)
                     {
-                        downloadUrl = asset.TryGetProperty("browser_download_url", out var u) ? u.GetString() : null;
+                        downloadUrl = url;
                         break;
                     }
                 }
+
+                // Release plus ancienne ne suivant pas la convention de nommage
+                // (un seul ZIP, ou noms différents) : on retombe sur le premier
+                // trouvé plutôt que d'échouer silencieusement.
+                downloadUrl ??= fallbackUrl;
             }
 
             if (string.IsNullOrEmpty(downloadUrl)) return null;

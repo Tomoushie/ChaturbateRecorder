@@ -106,6 +106,10 @@ namespace ChaturbateRecorderApp.Config
                 "Bouton \"Signaler un bug\" qui ouvre un ticket GitHub pré-rempli (version, système, dossier de capture).",
                 "Le site du projet (tomoushie.github.io/ChaturbateRecorder) est désormais disponible en français et en anglais, via un bouton de bascule.",
             }),
+            ("1.14.1", new[]
+            {
+                "Correctif : \"Rechercher une mise à jour\" pouvait télécharger la mauvaise variante (standard/portable) quand une release en propose plusieurs — l'exécutable en cours est maintenant détecté pour choisir le bon ZIP.",
+            }),
         };
     }
 }

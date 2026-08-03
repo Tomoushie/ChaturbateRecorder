@@ -1,0 +1,60 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "24 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    # net10.0-windows + WinForms : CodeQL doit pouvoir compiler le code pour
+    # l'analyser, donc runner Windows (comme build-test.yml).
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      - name: Build (nécessaire à l'analyse CodeQL)
+        run: |
+          dotnet build ChaturbateRecorderApp.csproj -c Release
+          dotnet build ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj -c Release
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"
+
+  dependencies:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Dépendances avec vulnérabilités connues
+        run: |
+          dotnet restore ChaturbateRecorderApp.csproj
+          dotnet list ChaturbateRecorderApp.csproj package --vulnerable --include-transitive
+          dotnet restore ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj
+          dotnet list ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj package --vulnerable --include-transitive
+
+      - name: Dépendances obsolètes
+        run: |
+          dotnet list ChaturbateRecorderApp.csproj package --outdated
+          dotnet list ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj package --outdated
