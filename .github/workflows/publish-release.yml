@@ -57,7 +57,7 @@ jobs:
           Compress-Archive -Path publish/portable/* -DestinationPath "ChaturbateRecorder-v$v-portable.zip"
 
       - name: Publier la release GitHub
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
