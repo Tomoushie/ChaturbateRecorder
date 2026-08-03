@@ -27,6 +27,7 @@ namespace ChaturbateRecorderApp.UI
             ("tutorial.privacy.title",  "tutorial.privacy.body"),
             ("tutorial.tracking.title", "tutorial.tracking.body"),
             ("tutorial.security.title", "tutorial.security.body"),
+            ("tutorial.support.title",  "tutorial.support.body"),
         };
 
         private int _stepIndex;
