@@ -9,6 +9,7 @@
   [![Téléchargements](https://img.shields.io/github/downloads/Tomoushie/ChaturbateRecorder/total?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases)
   [![Build + Test](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml)
   [![Security Scan](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml)
+  [![NuGet SentinelGuard](https://img.shields.io/nuget/v/SentinelGuard?label=SentinelGuard&color=004880&logo=nuget&logoColor=white)](https://www.nuget.org/packages/SentinelGuard)
   [![Licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue)](#licence)
   [![Stars](https://img.shields.io/github/stars/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/stargazers)
   [![Forks](https://img.shields.io/github/forks/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/forks)
@@ -19,6 +20,7 @@
   🌐 [Site du projet](https://tomoushie.github.io/ChaturbateRecorder/) ·
   📦 [Dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) ·
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·
+  🛡️ [SentinelGuard sur NuGet](https://www.nuget.org/packages/SentinelGuard) ·
   📜 [Version PowerShell d'origine](legacy-powershell/)
 
   🇫🇷 **Français** · 🇬🇧 [English](README.en.md)
@@ -86,6 +88,35 @@ automatisés).
 4. Lance `ChaturbateRecorder.exe`.
 
 Guide détaillé (première configuration, sécurité, dépannage) : voir le **[Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki)**.
+
+## 🛡️ SentinelGuard — les garde-fous, réutilisables dans ton projet
+
+[![NuGet](https://img.shields.io/nuget/v/SentinelGuard?label=SentinelGuard&color=004880&logo=nuget&logoColor=white)](https://www.nuget.org/packages/SentinelGuard)
+[![Téléchargements NuGet](https://img.shields.io/nuget/dt/SentinelGuard?color=004880)](https://www.nuget.org/packages/SentinelGuard)
+
+Les vérifications de sécurité de cette application sont publiées séparément,
+pour toute application .NET Windows qui lance des binaires tiers ou manipule
+des chemins et des URL fournis par l'utilisateur :
+
+```powershell
+dotnet add package SentinelGuard
+```
+
+| Classe | Ce qu'elle empêche |
+|---|---|
+| `PathValidator` | Chemins UNC, chemins étendus, flux ADS, noms réservés Windows, symlinks |
+| `UrlValidator` | Schémas non-HTTPS, domaines hors liste blanche, segments et query string douteux |
+| `BinaryVerifier` | Exécutable altéré : hash SHA-256, signature Authenticode, pinning du certificat |
+| `AclValidator` | Dossiers inscriptibles par `Tout le monde` — où un binaire peut être remplacé |
+| `WorkingDirectoryValidator` | Exécution depuis un partage réseau, un dossier temporaire ou la corbeille |
+| `CertificateValidator` | Interception TLS : pinning de certificat et validation du SAN |
+
+Fonctions **pures** : chaque vérification retourne un booléen, avec une
+surcharge `out string? reason` donnant le motif exact du refus. Rien n'est
+journalisé, rien n'est levé dans ton dos — tu décides quoi en faire.
+
+Cible `net8.0-windows` et `net10.0-windows`, sous double licence MIT ou
+Apache-2.0. Détails et exemples : [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
 ## Pour les développeurs
 
