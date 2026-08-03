@@ -9,6 +9,39 @@ Site : https://tomoushie.github.io/ChaturbateRecorder/
 (v1.15.0 Crash Reporter et v1.16.0 Diagnostic Mode ont été livrés sans que
 l'en-tête ci-dessus soit mis à jour — corrigé ici.)
 
+**38.0 traité (2026-08-03) — `docs/latest.json` en retard d'une release** (CI
+uniquement, pas de bump de version ni d'entrée de changelog) :
+- **Symptôme** : après chaque release, le site GitHub Pages annonçait encore la
+  version précédente pendant jusqu'à 24 h, jusqu'au passage du cron
+  `17 3 * * *` de Update Checker. Contourné à la main pour v1.17.0 via
+  `workflow_dispatch`.
+- **Cause (piège GitHub Actions à retenir)** : **un évènement créé avec le
+  `GITHUB_TOKEN` par défaut ne déclenche AUCUN workflow** (protection
+  anti-boucle infinie). Or c'est ce token qui crée la release dans
+  `publish-release.yml`, donc le déclencheur `release: [published]` de
+  `update-checker.yml` n'est jamais parti — vérifié par l'API : 1 seul run
+  depuis la création du workflow, déclenché par le cron. Le commentaire en
+  tête du fichier présentait le cron comme un « filet si l'évènement a été
+  raté » alors qu'il était le seul chemin réel ; corrigé.
+- **Correctif** : `update-checker.yml` accepte `workflow_call` et
+  `publish-release.yml` l'appelle en job `update-latest-json` (`needs:
+  publish`) — appel direct, plus de dépendance à l'évènement. `release:
+  published` conservé : il part bien pour une release créée **à la main**
+  depuis l'interface web (identité utilisateur, pas GITHUB_TOKEN). Cron et
+  `workflow_dispatch` conservés en filets. Ajout d'un `concurrency:
+  update-latest-json` — trois chemins poussent un commit sur `main`, deux runs
+  simultanés feraient échouer le push du second en non-fast-forward.
+  Écartés : `workflow_run` (indirection en plus, mêmes garanties, et
+  `workflow_run` ne s'exécute que depuis la branche par défaut) et le PAT à la
+  place du `GITHUB_TOKEN` (secret à gérer/faire tourner pour rien).
+- **Testabilité (ajout permanent)** : `prerelease: ${{ contains(tag, '-') }}`
+  dans `publish-release.yml`. Un tag semver avec suffixe (`v1.17.1-test`) est
+  publié en pré-version, que GitHub exclut de `/releases/latest` — la chaîne
+  complète (tag -> build -> release -> régénération) est donc rejouable de bout
+  en bout **sans** toucher au `latest.json` du site ni au vérificateur de mise
+  à jour de l'app (la régénération tourne, ne voit aucune différence, ne
+  committe rien).
+
 **24.0 traité (2026-08-03) — extension de la traduction FR/EN, 4 commits** :
 - **Libellés dynamiques des lignes de job** : le panneau "Enregistrements en
   cours" est construit en code (`BuildJobRow`), donc il était resté hors du
@@ -120,9 +153,9 @@ pas produire ~300 chaînes RU/ZH vérifiables par le mainteneur.
   de la release GitHub avec les deux ZIP attachés — remplace le script curl
   manuel de la section Conventions ci-dessous, qui reste utilisable en
   secours) ; Update Checker (régénère `docs/latest.json` avec version/URLs/
-  SHA256 à chaque release publiée + cron quotidien en filet de sécurité,
-  découplé de Publish Release pour couvrir aussi une release créée
-  manuellement) ; Security Scan (CodeQL C# + `dotnet list package
+  SHA256 à chaque release publiée + cron quotidien en filet de sécurité —
+  **voir le correctif 38.0 plus bas : le déclencheur `release: published`
+  d'origine ne partait jamais**) ; Security Scan (CodeQL C# + `dotnet list package
   --vulnerable`/`--outdated` sur les deux projets) ; Pages Build (déploie
   `docs/` via `actions/deploy-pages`). Complété par `.github/dependabot.yml`
   (PRs auto pour NuGet + GitHub Actions — 5 PRs de bump de versions d'actions

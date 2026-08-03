@@ -62,6 +62,21 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
+          # Convention semver : un tag avec un suffixe (v1.17.1-test) est une
+          # pré-version. GitHub l'exclut alors de /releases/latest, donc ni le
+          # site ni le vérificateur de mise à jour de l'app ne la voient — c'est
+          # ce qui rend la chaîne testable sans toucher à la version publiée.
+          prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
           files: |
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-standard.zip
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-portable.zip
+
+  # Appel direct plutôt que de compter sur l'évènement "release: published" :
+  # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun
+  # workflow (protection anti-boucle de GitHub), donc docs/latest.json restait
+  # sur la version précédente jusqu'au cron quotidien de Update Checker.
+  update-latest-json:
+    needs: publish
+    permissions:
+      contents: write
+    uses: ./.github/workflows/update-checker.yml
