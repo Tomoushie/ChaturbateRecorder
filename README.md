@@ -17,6 +17,8 @@
   📦 [Dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) ·
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·
   📜 [Version PowerShell d'origine](legacy-powershell/)
+
+  🇫🇷 **Français** · 🇬🇧 [English](README.en.md)
 </div>
 
 <br>
