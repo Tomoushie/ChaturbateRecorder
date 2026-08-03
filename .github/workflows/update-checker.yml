@@ -1,0 +1,76 @@
+name: Update Checker
+
+# Régénère docs/latest.json à partir de la dernière release GitHub publiée.
+# Découplé de "Publish Release" : se redéclenche aussi sur une release créée
+# manuellement, et via le cron en filet de sécurité si l'évènement a été raté.
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-latest-json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Récupérer la dernière release
+        id: release
+        run: |
+          set -euo pipefail
+          data=$(curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          echo "$data" > /tmp/release.json
+          tag=$(jq -r '.tag_name' /tmp/release.json)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Générer latest.json (avec SHA256 des ZIP)
+        run: |
+          set -euo pipefail
+          version="${{ steps.release.outputs.version }}"
+          tag="${{ steps.release.outputs.tag }}"
+          notes_url=$(jq -r '.html_url' /tmp/release.json)
+          published_at=$(jq -r '.published_at' /tmp/release.json)
+
+          assets_json="[]"
+          for row in $(jq -r '.assets[] | @base64' /tmp/release.json); do
+            asset=$(echo "$row" | base64 -d)
+            name=$(echo "$asset" | jq -r '.name')
+            case "$name" in
+              *.zip) ;;
+              *) continue ;;
+            esac
+            url=$(echo "$asset" | jq -r '.browser_download_url')
+            curl -sL -o "/tmp/$name" "$url"
+            sha256=$(sha256sum "/tmp/$name" | cut -d' ' -f1 | tr '[:lower:]' '[:upper:]')
+            variant="standard"
+            case "$name" in *portable*) variant="portable" ;; esac
+            assets_json=$(jq --arg name "$name" --arg url "$url" --arg sha "$sha256" --arg variant "$variant" \
+              '. + [{name: $name, url: $url, sha256: $sha, variant: $variant}]' <<< "$assets_json")
+          done
+
+          jq -n --arg version "$version" --arg tag "$tag" --arg notes "$notes_url" \
+            --arg published "$published_at" --argjson assets "$assets_json" \
+            '{version: $version, tag: $tag, publishedAt: $published, releaseNotesUrl: $notes, assets: $assets}' \
+            > docs/latest.json
+
+      - name: Commit si changement
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: mise à jour de latest.json (${{ steps.release.outputs.tag }})"
+            git push
+          else
+            echo "Aucun changement."
+          fi
