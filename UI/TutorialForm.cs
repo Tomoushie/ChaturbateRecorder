@@ -7,57 +7,25 @@ namespace ChaturbateRecorderApp.UI
     /// <summary>
     /// Guide de démarrage pas-à-pas : affiché automatiquement au tout premier
     /// lancement (voir MainForm.ShowFirstRunDialogs) et réutilisable à tout
-    /// moment via le bouton "Guide de démarrage".
+    /// moment via le bouton "Guide de démarrage". Contenu piloté par
+    /// Localization (24.0) : la langue est figée à la construction (celle
+    /// active à l'ouverture), pas de retraduction à chaud si l'utilisateur
+    /// change de langue pendant que ce dialogue est ouvert.
     /// </summary>
     public class TutorialForm : Form
     {
-        private static readonly (string Title, string Body)[] Steps =
+        private static readonly (string TitleKey, string BodyKey)[] Steps =
         {
-            ("Bienvenue",
-                "Chaturbate Recorder enregistre des lives en local, avec des vérifications " +
-                "de sécurité intégrées (hash des binaires, sandbox de chemins, ACL).\n\n" +
-                "Ce guide rapide passe en revue les fonctionnalités principales — tu peux le " +
-                "rouvrir à tout moment via le bouton \"Guide de démarrage\"."),
-
-            ("Démarrer un enregistrement",
-                "Colle l'URL Chaturbate dans le champ en haut, puis clique sur \"Démarrer\".\n\n" +
-                "Chaque enregistrement tourne indépendamment : tu peux en lancer plusieurs en " +
-                "même temps sans ouvrir plusieurs fenêtres. \"Tout arrêter\" stoppe tous les " +
-                "enregistrements en cours d'un coup."),
-
-            ("Qualité, codec et format",
-                "Trois menus déroulants te laissent choisir :\n\n" +
-                "•  la qualité source (meilleure / moyenne / minimale)\n" +
-                "•  le codec de sortie (copie sans perte, ou réencodage H.264/H.265 fait " +
-                "après coup, sans bloquer l'appli)\n" +
-                "•  le conteneur (MP4, MKV — plus robuste en cas d'arrêt brutal —, ou MOV)"),
-
-            ("Dossier de sauvegarde",
-                "Le bouton \"Parcourir...\" te permet de choisir où sont enregistrées tes " +
-                "vidéos.\n\nCe choix est mémorisé automatiquement pour les prochains " +
-                "lancements."),
-
-            ("Confidentialité",
-                "Le champ \"Cookies\" permet d'importer une session déjà connectée depuis " +
-                "ton navigateur (fichier cookies.txt), pour accéder au contenu réservé à un " +
-                "compte.\n\n" +
-                "Le champ \"Proxy\" route le trafic via un SOCKS5/HTTP de ton choix, pour " +
-                "masquer ton IP réelle vis-à-vis du site distant."),
-
-            ("Suivi des enregistrements",
-                "Chaque enregistrement actif apparaît comme une ligne dans \"Enregistrements " +
-                "en cours\", avec :\n\n" +
-                "•  sa propre barre de progression\n" +
-                "•  un bouton \"Ouvrir\" (accès direct à la page du stream)\n" +
-                "•  un bouton Stop individuel (qui devient \"Retirer\" une fois terminé)"),
-
-            ("Sécurité et mises à jour",
-                "Avant chaque enregistrement, l'appli vérifie le hash de yt-dlp.exe et " +
-                "ffmpeg.exe, et surveille l'emplacement d'exécution du programme.\n\n" +
-                "Le bouton \"Rechercher une mise à jour\" en haut de la fenêtre vérifie " +
-                "automatiquement les nouvelles versions publiées sur GitHub."),
+            ("tutorial.step1.title", "tutorial.step1.body"),
+            ("tutorial.step2.title", "tutorial.step2.body"),
+            ("tutorial.step3.title", "tutorial.step3.body"),
+            ("tutorial.step4.title", "tutorial.step4.body"),
+            ("tutorial.step5.title", "tutorial.step5.body"),
+            ("tutorial.step6.title", "tutorial.step6.body"),
+            ("tutorial.step7.title", "tutorial.step7.body"),
         };
 
+        private readonly AppLanguage _language;
         private int _stepIndex;
         private Label titleLabel = null!;
         private Label bodyLabel = null!;
@@ -65,8 +33,9 @@ namespace ChaturbateRecorderApp.UI
         private Button backButton = null!;
         private Button nextButton = null!;
 
-        public TutorialForm()
+        public TutorialForm(AppLanguage language)
         {
+            _language = language;
             InitializeComponent();
             RenderStep();
         }
@@ -75,7 +44,7 @@ namespace ChaturbateRecorderApp.UI
         {
             SuspendLayout();
 
-            Text = "Guide de démarrage";
+            Text = Localization.Get("tutorial.windowTitle", _language);
             ClientSize = new Size(480, 320);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -103,8 +72,8 @@ namespace ChaturbateRecorderApp.UI
                 AutoSize = true,
             };
 
-            backButton = new Button { Text = "◀ Précédent", Location = new Point(220, 264), Size = new Size(110, 28) };
-            nextButton = new Button { Text = "Suivant ▶", Location = new Point(336, 264), Size = new Size(124, 28) };
+            backButton = new Button { Text = Localization.Get("tutorial.back", _language), Location = new Point(220, 264), Size = new Size(110, 28) };
+            nextButton = new Button { Text = Localization.Get("tutorial.next", _language), Location = new Point(336, 264), Size = new Size(124, 28) };
 
             backButton.Click += (s, e) => { if (_stepIndex > 0) { _stepIndex--; RenderStep(); } };
             nextButton.Click += (s, e) =>
@@ -120,12 +89,14 @@ namespace ChaturbateRecorderApp.UI
 
         private void RenderStep()
         {
-            var (title, body) = Steps[_stepIndex];
-            titleLabel.Text = title;
-            bodyLabel.Text = body;
-            progressLabel.Text = $"Étape {_stepIndex + 1} / {Steps.Length}";
+            var (titleKey, bodyKey) = Steps[_stepIndex];
+            titleLabel.Text = Localization.Get(titleKey, _language);
+            bodyLabel.Text = Localization.Get(bodyKey, _language);
+            progressLabel.Text = Localization.Format("tutorial.progress", _language, _stepIndex + 1, Steps.Length);
             backButton.Enabled = _stepIndex > 0;
-            nextButton.Text = _stepIndex == Steps.Length - 1 ? "Terminer" : "Suivant ▶";
+            nextButton.Text = _stepIndex == Steps.Length - 1
+                ? Localization.Get("tutorial.finish", _language)
+                : Localization.Get("tutorial.next", _language);
         }
     }
 }

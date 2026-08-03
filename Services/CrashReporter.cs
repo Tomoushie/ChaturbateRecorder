@@ -51,7 +51,12 @@ namespace ChaturbateRecorderApp.Services
 
             try
             {
-                using var form = new CrashReportForm(ex, crashFile, isTerminating);
+                // Pas de référence à l'instance MainForm ici (classe statique,
+                // appelée depuis n'importe quel thread) : la langue est relue
+                // depuis les paramètres persistés plutôt que depuis l'état en
+                // mémoire, comme MainForm le fait elle-même à la construction.
+                var language = SettingsManager.Load().Language == "en" ? AppLanguage.English : AppLanguage.French;
+                using var form = new CrashReportForm(ex, crashFile, isTerminating, language);
                 form.ShowDialog();
             }
             catch

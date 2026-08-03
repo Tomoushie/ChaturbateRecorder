@@ -9,23 +9,25 @@ namespace ChaturbateRecorderApp.UI
 {
     /// <summary>
     /// Dialogue affiché par CrashReporter après une exception non gérée.
-    /// Volontairement sans dépendance à ThemeManager/Localization : au moment
-    /// où ce dialogue s'affiche, l'état de l'application peut être corrompu —
-    /// un rendu simple et statique est plus fiable qu'un rendu thémé.
+    /// Volontairement sans dépendance à ThemeManager (rendu simple et
+    /// statique, plus fiable qu'un rendu thémé quand l'état de l'app peut
+    /// être corrompu) — mais utilise Localization (24.0) : la langue est
+    /// relue depuis les paramètres persistés par CrashReporter, puisqu'il
+    /// n'a pas de référence à l'instance MainForm en cours.
     /// </summary>
     public class CrashReportForm : Form
     {
         private readonly string? _crashFile;
 
-        public CrashReportForm(Exception ex, string? crashFile, bool isTerminating)
+        public CrashReportForm(Exception ex, string? crashFile, bool isTerminating, AppLanguage language)
         {
             _crashFile = crashFile;
-            InitializeComponent(ex, crashFile, isTerminating);
+            InitializeComponent(ex, crashFile, isTerminating, language);
         }
 
-        private void InitializeComponent(Exception ex, string? crashFile, bool isTerminating)
+        private void InitializeComponent(Exception ex, string? crashFile, bool isTerminating, AppLanguage language)
         {
-            Text = "Erreur inattendue";
+            Text = Localization.Get("crash.windowTitle", language);
             ClientSize = new Size(480, 320);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -37,8 +39,8 @@ namespace ChaturbateRecorderApp.UI
             var titleLabel = new Label
             {
                 Text = isTerminating
-                    ? "⚠️ Chaturbate Recorder a rencontré une erreur fatale et doit fermer."
-                    : "⚠️ Chaturbate Recorder a rencontré une erreur inattendue.",
+                    ? Localization.Get("crash.titleFatal", language)
+                    : Localization.Get("crash.titleRecoverable", language),
                 Location = new Point(12, 12),
                 Size = new Size(456, 40),
             };
@@ -51,15 +53,14 @@ namespace ChaturbateRecorderApp.UI
                 ReadOnly = true,
                 TabStop = false,
                 ScrollBars = ScrollBars.Vertical,
-                Text = $"{ex.GetType().Name} : {ex.Message}\r\n\r\n" +
-                       (crashFile != null
-                           ? $"Rapport complet enregistré dans :\r\n{crashFile}"
-                           : "Le rapport détaillé n'a pas pu être enregistré sur disque."),
+                Text = crashFile != null
+                    ? Localization.Format("crash.detailsWithFile", language, ex.GetType().Name, ex.Message, crashFile)
+                    : Localization.Format("crash.detailsNoFile", language, ex.GetType().Name, ex.Message),
             };
 
             var openFolderButton = new Button
             {
-                Text = "Ouvrir le dossier des logs",
+                Text = Localization.Get("crash.openFolder", language),
                 Location = new Point(12, 246),
                 Size = new Size(180, 30),
                 Enabled = crashFile != null,
@@ -68,7 +69,7 @@ namespace ChaturbateRecorderApp.UI
 
             var restartButton = new Button
             {
-                Text = "Redémarrer",
+                Text = Localization.Get("crash.restart", language),
                 Location = new Point(200, 246),
                 Size = new Size(120, 30),
             };
@@ -76,7 +77,7 @@ namespace ChaturbateRecorderApp.UI
 
             var closeButton = new Button
             {
-                Text = isTerminating ? "Fermer" : "Continuer",
+                Text = isTerminating ? Localization.Get("button.close", language) : Localization.Get("crash.continue", language),
                 Location = new Point(368, 246),
                 Size = new Size(100, 30),
             };

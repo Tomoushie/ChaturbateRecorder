@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
 using ChaturbateRecorderApp.Security;
 using ChaturbateRecorderApp.Services;
+using ChaturbateRecorderApp.UI;
 
 namespace ChaturbateRecorderApp
 {
@@ -13,11 +14,12 @@ namespace ChaturbateRecorderApp
         {
             if (!WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir))
             {
+                // MainForm n'existe pas encore à ce stade : langue relue depuis
+                // les paramètres persistés, comme CrashReporter le fait.
+                var language = SettingsManager.Load().Language == "en" ? AppLanguage.English : AppLanguage.French;
                 MessageBox.Show(
-                    "Cette application ne peut pas s'exécuter depuis cet emplacement " +
-                    "(partage réseau, dossier temporaire/éphémère ou dossier compressé NTFS). " +
-                    "Déplace l'exécutable vers un dossier local standard.",
-                    "Emplacement non autorisé", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Localization.Get("err.unauthorizedLocation.body", language),
+                    Localization.Get("err.unauthorizedLocation.title", language), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 

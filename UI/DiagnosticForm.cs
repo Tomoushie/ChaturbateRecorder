@@ -19,21 +19,24 @@ namespace ChaturbateRecorderApp.UI
     /// Security/ (hash des binaires, ACL, dossier d'exécution) plutôt que de
     /// dupliquer leur logique, et ajoute les informations non déjà exposées
     /// ailleurs (versions .NET/app/yt-dlp/ffmpeg, joignabilité réseau).
+    /// Langue figée à la construction (24.0), comme TutorialForm.
     /// </summary>
     public class DiagnosticForm : Form
     {
+        private readonly AppLanguage _language;
         private TextBox _reportBox = null!;
         private Button _refreshButton = null!;
 
-        public DiagnosticForm()
+        public DiagnosticForm(AppLanguage language)
         {
+            _language = language;
             InitializeComponent();
             _ = RefreshReportAsync();
         }
 
         private void InitializeComponent()
         {
-            Text = "Diagnostic";
+            Text = Localization.Get("button.diagnostic", _language);
             ClientSize = new Size(520, 460);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -52,16 +55,16 @@ namespace ChaturbateRecorderApp.UI
                 Font = new Font("Consolas", 9F),
             };
 
-            var copyButton = new Button { Text = "Copier", Location = new Point(12, 418), Size = new Size(100, 30) };
+            var copyButton = new Button { Text = Localization.Get("diag.copy", _language), Location = new Point(12, 418), Size = new Size(100, 30) };
             copyButton.Click += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(_reportBox.Text)) Clipboard.SetText(_reportBox.Text);
             };
 
-            _refreshButton = new Button { Text = "Actualiser", Location = new Point(120, 418), Size = new Size(100, 30) };
+            _refreshButton = new Button { Text = Localization.Get("button.refresh", _language), Location = new Point(120, 418), Size = new Size(100, 30) };
             _refreshButton.Click += (s, e) => _ = RefreshReportAsync();
 
-            var closeButton = new Button { Text = "Fermer", Location = new Point(408, 418), Size = new Size(100, 30) };
+            var closeButton = new Button { Text = Localization.Get("button.close", _language), Location = new Point(408, 418), Size = new Size(100, 30) };
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[] { _reportBox, copyButton, _refreshButton, closeButton });
@@ -70,13 +73,14 @@ namespace ChaturbateRecorderApp.UI
         private async Task RefreshReportAsync()
         {
             _refreshButton.Enabled = false;
+            var checking = Localization.Get("diag.checking", _language);
             _reportBox.Text = BuildStaticReport() +
-                "\r\n--- Binaires (versions) ---\r\n" +
-                "yt-dlp.exe : (vérification...)\r\n" +
-                "ffmpeg.exe : (vérification...)\r\n" +
-                "\r\n--- Réseau ---\r\n" +
-                "chaturbate.com : (vérification...)\r\n" +
-                "api.github.com : (vérification...)\r\n";
+                $"\r\n{Localization.Get("diag.sectionBinaryVersions", _language)}\r\n" +
+                $"yt-dlp.exe : {checking}\r\n" +
+                $"ffmpeg.exe : {checking}\r\n" +
+                $"\r\n{Localization.Get("diag.sectionNetwork", _language)}\r\n" +
+                $"chaturbate.com : {checking}\r\n" +
+                $"api.github.com : {checking}\r\n";
 
             var ytDlpVersion = await GetBinaryVersionAsync(AppConfig.YtDlpPath, "--version");
             var ffmpegVersion = await GetBinaryVersionAsync(AppConfig.FFmpegPath, "-version");
@@ -85,13 +89,13 @@ namespace ChaturbateRecorderApp.UI
 
             var sb = new StringBuilder();
             sb.Append(BuildStaticReport());
-            sb.AppendLine("--- Binaires (versions) ---");
+            sb.AppendLine(Localization.Get("diag.sectionBinaryVersions", _language));
             sb.AppendLine($"yt-dlp.exe : {ytDlpVersion}");
             sb.AppendLine($"ffmpeg.exe : {ffmpegVersion}");
             sb.AppendLine();
-            sb.AppendLine("--- Réseau ---");
-            sb.AppendLine($"chaturbate.com : {(chaturbateReachable ? "joignable" : "injoignable")}");
-            sb.AppendLine($"api.github.com : {(githubReachable ? "joignable" : "injoignable")}");
+            sb.AppendLine(Localization.Get("diag.sectionNetwork", _language));
+            sb.AppendLine($"chaturbate.com : {(chaturbateReachable ? Localization.Get("diag.reachable", _language) : Localization.Get("diag.unreachable", _language))}");
+            sb.AppendLine($"api.github.com : {(githubReachable ? Localization.Get("diag.reachable", _language) : Localization.Get("diag.unreachable", _language))}");
 
             if (!IsDisposed)
             {
@@ -100,58 +104,60 @@ namespace ChaturbateRecorderApp.UI
             }
         }
 
-        private static string BuildStaticReport()
+        private string BuildStaticReport()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Application : v{typeof(DiagnosticForm).Assembly.GetName().Version?.ToString(3)}");
+            sb.AppendLine(Localization.Format("diag.application", _language, typeof(DiagnosticForm).Assembly.GetName().Version?.ToString(3)));
             sb.AppendLine($".NET : {RuntimeInformation.FrameworkDescription}");
-            sb.AppendLine($"Système : {Environment.OSVersion} ({(Environment.Is64BitProcess ? "64" : "32")} bits)");
+            sb.AppendLine(Localization.Format("diag.system", _language, Environment.OSVersion, Environment.Is64BitProcess ? "64" : "32"));
             sb.AppendLine();
 
-            sb.AppendLine("--- Intégrité des binaires (hash SHA256) ---");
+            sb.AppendLine(Localization.Get("diag.sectionHashIntegrity", _language));
             sb.AppendLine($"yt-dlp.exe : {DescribeHash("yt-dlp", AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256)}");
             sb.AppendLine($"ffmpeg.exe : {DescribeHash("ffmpeg", AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256)}");
             sb.AppendLine();
 
-            sb.AppendLine("--- Dossier d'exécution ---");
-            sb.AppendLine($"Emplacement autorisé : {(WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir) ? "oui" : "non")}");
+            sb.AppendLine(Localization.Get("diag.sectionExecDir", _language));
+            sb.AppendLine(Localization.Format("diag.authorizedLocation", _language,
+                WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir) ? Localization.Get("diag.yes", _language) : Localization.Get("diag.no", _language)));
             sb.AppendLine();
 
-            sb.AppendLine("--- ACL (droits d'écriture élargis détectés ?) ---");
-            sb.AppendLine(DescribeAcl("Dossier d'exécution", AppConfig.AppDir));
-            sb.AppendLine(DescribeAcl("Dossier de capture", AppConfig.CaptureDir));
-            sb.AppendLine(DescribeAcl("Dossier de logs", AppConfig.LogDir));
+            sb.AppendLine(Localization.Get("diag.sectionAcl", _language));
+            sb.AppendLine(DescribeAcl(Localization.Get("diag.execDirLabel", _language), AppConfig.AppDir));
+            sb.AppendLine(DescribeAcl(Localization.Get("diag.captureDirLabel", _language), AppConfig.CaptureDir));
+            sb.AppendLine(DescribeAcl(Localization.Get("diag.logDirLabel", _language), AppConfig.LogDir));
             sb.AppendLine();
 
-            sb.AppendLine($"Proxy configuré : {(string.IsNullOrWhiteSpace(AppConfig.ProxyUrl) ? "aucun" : AppConfig.ProxyUrl)}");
+            sb.AppendLine(Localization.Format("diag.proxyConfigured", _language,
+                string.IsNullOrWhiteSpace(AppConfig.ProxyUrl) ? Localization.Get("diag.none", _language) : AppConfig.ProxyUrl));
             sb.AppendLine();
 
             return sb.ToString();
         }
 
-        private static string DescribeHash(string binaryKey, string path, string expectedHash)
+        private string DescribeHash(string binaryKey, string path, string expectedHash)
         {
-            if (!File.Exists(path)) return "introuvable";
-            if (BinaryVerifier.VerifyFileHash(path, expectedHash)) return "OK (version testée par le mainteneur)";
+            if (!File.Exists(path)) return Localization.Get("diag.notFound", _language);
+            if (BinaryVerifier.VerifyFileHash(path, expectedHash)) return Localization.Get("diag.hashOkMaintainer", _language);
 
             var actualHash = BinaryVerifier.ComputeSha256(path);
             var trustedHash = Services.TrustedBinaryStore.GetTrustedHash(binaryKey);
             if (actualHash != null && string.Equals(actualHash, trustedHash, StringComparison.OrdinalIgnoreCase))
-                return "OK (approuvé manuellement)";
+                return Localization.Get("diag.hashOkApproved", _language);
 
-            return "ÉCHEC (hash inattendu — pas encore approuvé)";
+            return Localization.Get("diag.hashFailed", _language);
         }
 
-        private static string DescribeAcl(string label, string path)
+        private string DescribeAcl(string label, string path)
         {
             return AclValidator.TryFindBroadWriteAccess(path, out var details)
-                ? $"{label} : permissive — {details}"
-                : $"{label} : OK";
+                ? Localization.Format("diag.aclPermissive", _language, label, details)
+                : Localization.Format("diag.aclOk", _language, label);
         }
 
-        private static async Task<string> GetBinaryVersionAsync(string path, string arguments)
+        private async Task<string> GetBinaryVersionAsync(string path, string arguments)
         {
-            if (!File.Exists(path)) return "introuvable";
+            if (!File.Exists(path)) return Localization.Get("diag.notFound", _language);
 
             try
             {
@@ -174,11 +180,11 @@ namespace ChaturbateRecorderApp.UI
                 try { await process.WaitForExitAsync(cts.Token); } catch (OperationCanceledException) { }
 
                 var firstLine = output.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-                return string.IsNullOrEmpty(firstLine) ? "version inconnue" : firstLine;
+                return string.IsNullOrEmpty(firstLine) ? Localization.Get("diag.unknownVersion", _language) : firstLine;
             }
             catch (Exception ex)
             {
-                return $"erreur ({ex.Message})";
+                return Localization.Format("diag.versionError", _language, ex.Message);
             }
         }
 

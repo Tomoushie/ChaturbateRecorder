@@ -67,6 +67,7 @@ namespace ChaturbateRecorderApp.UI
             browseDirButton.Text = L("button.browse");
             cookiesLabel.Text = L("label.cookies");
             proxyLabel.Text = L("label.proxy");
+            proxyTextBox.PlaceholderText = L("placeholder.proxyExample");
             autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
             closeButton.Text = L("button.close");
 
@@ -98,7 +99,7 @@ namespace ChaturbateRecorderApp.UI
         {
             using var dialog = new FolderBrowserDialog
             {
-                Description = "Choisis le dossier de sauvegarde des enregistrements",
+                Description = Localization.Get("dialog.chooseCaptureDir", _language),
                 UseDescriptionForTitle = true,
                 SelectedPath = Directory.Exists(AppConfig.CaptureDir) ? AppConfig.CaptureDir : AppConfig.AppDir,
             };
@@ -108,7 +109,7 @@ namespace ChaturbateRecorderApp.UI
             var chosen = dialog.SelectedPath;
             if (!PathValidator.IsValidPath(chosen))
             {
-                MessageBox.Show(this, "Dossier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Get("err.invalidCaptureDir", _language), Localization.Get("err.title", _language), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -119,22 +120,22 @@ namespace ChaturbateRecorderApp.UI
             _settings.CaptureDir = AppConfig.CaptureDir;
             SettingsManager.Save(_settings);
 
-            _appendLog($"Dossier de sauvegarde changé : {AppConfig.CaptureDir}");
+            _appendLog(Localization.Format("log.saveDirChanged", _language, AppConfig.CaptureDir));
         }
 
         private void OnBrowseCookiesClick(object? sender, EventArgs e)
         {
             using var dialog = new OpenFileDialog
             {
-                Title = "Choisis un fichier cookies.txt (format Netscape, exporté depuis ton navigateur)",
-                Filter = "Fichiers cookies (*.txt)|*.txt|Tous les fichiers (*.*)|*.*",
+                Title = Localization.Get("dialog.chooseCookiesFile.title", _language),
+                Filter = Localization.Get("dialog.chooseCookiesFile.filter", _language),
             };
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
             if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true))
             {
-                MessageBox.Show(this, "Fichier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Get("err.invalidCookiesFile", _language), Localization.Get("err.title", _language), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -144,7 +145,7 @@ namespace ChaturbateRecorderApp.UI
             _settings.CookiesFilePath = AppConfig.CookiesFilePath;
             SettingsManager.Save(_settings);
 
-            _appendLog($"Fichier cookies changé : {AppConfig.CookiesFilePath}");
+            _appendLog(Localization.Format("log.cookiesFileChanged", _language, AppConfig.CookiesFilePath));
         }
 
         private void OnProxyTextChanged(object? sender, EventArgs e)
