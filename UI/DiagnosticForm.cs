@@ -109,8 +109,8 @@ namespace ChaturbateRecorderApp.UI
             sb.AppendLine();
 
             sb.AppendLine("--- Intégrité des binaires (hash SHA256) ---");
-            sb.AppendLine($"yt-dlp.exe : {DescribeHash(AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256)}");
-            sb.AppendLine($"ffmpeg.exe : {DescribeHash(AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256)}");
+            sb.AppendLine($"yt-dlp.exe : {DescribeHash("yt-dlp", AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256)}");
+            sb.AppendLine($"ffmpeg.exe : {DescribeHash("ffmpeg", AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256)}");
             sb.AppendLine();
 
             sb.AppendLine("--- Dossier d'exécution ---");
@@ -129,10 +129,17 @@ namespace ChaturbateRecorderApp.UI
             return sb.ToString();
         }
 
-        private static string DescribeHash(string path, string expectedHash)
+        private static string DescribeHash(string binaryKey, string path, string expectedHash)
         {
             if (!File.Exists(path)) return "introuvable";
-            return BinaryVerifier.VerifyFileHash(path, expectedHash) ? "OK" : "ÉCHEC (hash inattendu)";
+            if (BinaryVerifier.VerifyFileHash(path, expectedHash)) return "OK (version testée par le mainteneur)";
+
+            var actualHash = BinaryVerifier.ComputeSha256(path);
+            var trustedHash = Services.TrustedBinaryStore.GetTrustedHash(binaryKey);
+            if (actualHash != null && string.Equals(actualHash, trustedHash, StringComparison.OrdinalIgnoreCase))
+                return "OK (approuvé manuellement)";
+
+            return "ÉCHEC (hash inattendu — pas encore approuvé)";
         }
 
         private static string DescribeAcl(string label, string path)

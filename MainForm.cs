@@ -756,6 +756,66 @@ namespace ChaturbateRecorderApp
         // Événements
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// Vérifie le hash d'un binaire externe contre la valeur figée dans
+        /// AppConfig (celle testée par le mainteneur à la release) OU un hash
+        /// déjà approuvé localement (TrustedBinaryStore). Si aucun des deux ne
+        /// correspond, propose une confiance à la première utilisation plutôt
+        /// que de bloquer silencieusement : yt-dlp/ffmpeg sont mis à jour très
+        /// souvent, un hash figé dans le binaire de l'appli devient obsolète en
+        /// quelques jours pour quiconque télécharge "la dernière version" comme
+        /// recommandé par le README/wiki (voir issue #16).
+        /// </summary>
+        private bool VerifyOrTrustBinary(string binaryKey, string displayName, string path,
+            string expectedSha256, bool requireAuthenticode, string expectedSignerThumbprint, string expectedSignerSubject)
+        {
+            if (!File.Exists(path))
+            {
+                MessageBox.Show(this, $"{displayName} introuvable : {path}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            var actualHash = BinaryVerifier.ComputeSha256(path);
+            if (actualHash == null)
+            {
+                MessageBox.Show(this, $"Impossible de calculer le hash de {displayName}.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            var trustedHash = TrustedBinaryStore.GetTrustedHash(binaryKey);
+            var hashKnown =
+                string.Equals(actualHash, expectedSha256?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(actualHash, trustedHash, StringComparison.OrdinalIgnoreCase);
+
+            if (!hashKnown)
+            {
+                var message =
+                    $"Le hash de {displayName} ne correspond ni à la version testée par le " +
+                    $"mainteneur, ni à un hash déjà approuvé sur cette machine.\n\n" +
+                    $"Hash calculé : {actualHash}\n\n" +
+                    "C'est normal si tu viens de télécharger une version plus récente depuis " +
+                    "une source officielle — yt-dlp et ffmpeg sont mis à jour fréquemment. " +
+                    "Si tu ne sais pas d'où vient ce fichier, réponds Non.\n\n" +
+                    $"Faire confiance à ce {displayName} et continuer ?";
+
+                var result = MessageBox.Show(this, message, $"Vérification de {displayName}",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result != DialogResult.Yes) return false;
+
+                TrustedBinaryStore.Trust(binaryKey, actualHash);
+                Logger.Log($"{displayName} approuvé manuellement par l'utilisateur (hash {actualHash}).", LogLevel.WARN);
+            }
+
+            if (requireAuthenticode &&
+                !BinaryVerifier.VerifyTrustedBinary(path, actualHash, true, expectedSignerThumbprint, expectedSignerSubject))
+            {
+                MessageBox.Show(this, $"Signature Authenticode invalide pour {displayName}.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            return true;
+        }
+
         private void OnStartClick(object? sender, EventArgs e)
         {
             var urlInput = urlTextBox.Text.Trim();
@@ -766,16 +826,14 @@ namespace ChaturbateRecorderApp
                 return;
             }
 
-            if (!BinaryVerifier.VerifyTrustedBinary(AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256,
+            if (!VerifyOrTrustBinary("yt-dlp", "yt-dlp.exe", AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256,
                     AppConfig.YtDlpRequireAuthenticode, AppConfig.YtDlpExpectedSignerThumbprint, AppConfig.YtDlpExpectedSignerSubject))
             {
-                MessageBox.Show("Échec vérification yt-dlp.exe. Renseigne AppConfig.YtDlpExpectedSha256.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (!BinaryVerifier.VerifyTrustedBinary(AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256,
+            if (!VerifyOrTrustBinary("ffmpeg", "ffmpeg.exe", AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256,
                     AppConfig.FfmpegRequireAuthenticode, AppConfig.FfmpegExpectedSignerThumbprint, AppConfig.FfmpegExpectedSignerSubject))
             {
-                MessageBox.Show("Échec vérification ffmpeg.exe. Renseigne AppConfig.FfmpegExpectedSha256.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 

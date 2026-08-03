@@ -114,6 +114,10 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Crash Reporter : les erreurs inattendues (thread principal ou non) sont désormais capturées, journalisées dans un fichier de rapport dédié, et affichées dans un dialogue proposant d'ouvrir le dossier des logs ou de redémarrer proprement l'application.",
             }),
+            ("1.15.1", new[]
+            {
+                "Correctif : le hash attendu de yt-dlp.exe/ffmpeg.exe étant figé à la version testée par le mainteneur, toute mise à jour de ces outils (fréquente pour yt-dlp) bloquait le démarrage d'un enregistrement. Un dialogue propose désormais explicitement de faire confiance à la nouvelle version détectée ; ce choix est mémorisé.",
+            }),
             ("1.16.0", new[]
             {
                 "Nouveau bouton \"Diagnostic\" (mode avancé) : panneau affichant les versions (.NET, application, yt-dlp, ffmpeg), l'intégrité des binaires externes, l'état des ACL et du dossier d'exécution, et la joignabilité réseau — copiable en un clic pour un rapport de bug.",
