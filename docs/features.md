@@ -3,6 +3,11 @@ layout: default
 title: Fonctionnalités
 ---
 
+<link rel="stylesheet" href="assets/lang-toggle.css">
+<button id="langToggle" class="lang-toggle-btn" type="button"></button>
+
+<div class="lang-fr" markdown="1">
+
 # Fonctionnalités
 
 Détail des mécanismes internes de Chaturbate Recorder. Pour une vue
@@ -88,3 +93,96 @@ d'ensemble plus courte, voir la [page d'accueil](index.html).
 ---
 
 [← Retour à l'accueil](index.html) · [Captures d'écran](screenshots.html) · [Roadmap](roadmap.html)
+
+</div>
+
+<div class="lang-en" markdown="1" style="display:none">
+
+# Features
+
+Details of Chaturbate Recorder's internal mechanisms. For a shorter
+overview, see the [home page](index.html).
+
+## 🧱 Sandbox
+
+- **File paths**: UNC paths, extended-length paths (`\\?\`, `\\.\`), the
+  `\Device\` namespace, ADS streams, reserved Windows names, and
+  symlinks/reparse points are all blocked — on the final path as well as
+  on every parent directory.
+- **Live URLs**: strict validation of scheme, host, segments, and query
+  string (the `javascript`/`file`/`ftp`/`data`/`blob` schemes are
+  blocked).
+- **Execution directory**: the app refuses to run from a network share
+  (UNC or mapped drive), a temporary/ephemeral folder (`%TEMP%`,
+  Downloads, Desktop, Recycle Bin), or a compressed folder.
+
+## 🔒 Security
+
+- **External binary integrity** (`yt-dlp.exe`, `ffmpeg.exe`): SHA256 hash,
+  Authenticode signature, certificate chain, and optional CA pinning
+  before every launch.
+- **Permissive ACLs**: detects if a broadly shared group (Everyone,
+  BUILTIN\Users, Authenticated Users) has write access to a sensitive
+  folder — another local account could otherwise substitute the binaries.
+- **Remote server TLS**: explicit verification of the certificate and its
+  SAN (Subject Alternative Name), decoded directly as ASN.1 rather than
+  through an API whose output depends on the system's language.
+
+## 📝 Logs
+
+- One structured JSON object per line (JSONL), in a session file
+  timestamped per day — easy to parse or aggregate.
+- Automatic rotation and purging of the oldest logs.
+- Live display in the UI in addition to being written to disk.
+
+## 🎨 Interface
+
+- Light/dark theme with an animated color transition, Windows 11 palette.
+- Simple/advanced mode (quality/codec/format options stay visible in
+  both, since they're per-recording choices).
+- Separate **Settings** window: theme, language, save folder, cookies,
+  proxy, default auto-reconnect.
+- French/English language selector for the main interface.
+- Minimizing to the notification area instead of closing the app, so an
+  ongoing recording keeps running in the background.
+- Vector icons (SVG rendering), toast notifications, animated progress
+  bar.
+
+## 🕒 History
+
+- List of past recordings: name, size, duration, date.
+- Each thumbnail/re-encode is matched to its video file by an exact
+  output name fixed at the start of the recording — not by a "most
+  recent file" heuristic, which becomes ambiguous as soon as the same
+  room is recorded more than once.
+- Favorites to relaunch a recording in one click.
+
+## 🔄 Update checking
+
+- "Check for updates" button that queries the GitHub Releases API (no
+  authentication needed, public repo) and offers automatic installation
+  if a newer version exists.
+- Each release attaches two variants (standard/portable); the app
+  detects which one it's currently running to always download the
+  matching one, even when both are offered.
+- File replacement happens through a detached script (Windows doesn't
+  let a process replace its own `.exe` while it's running), which
+  relaunches the app once the update has been copied.
+
+## 🐕 Anti-freeze watchdog
+
+- If `yt-dlp`/`ffmpeg` stop producing any output line for a configurable
+  delay (120 seconds by default), the process is considered frozen and
+  killed cleanly (full process tree), with an explicit log entry.
+- Runs off the UI thread: a hang in the external process never freezes
+  the app.
+- A recording stopped by the watchdog is marked "Failed" rather than
+  "Stopped", to distinguish it from a voluntary stop.
+
+---
+
+[← Home](index.html) · [Screenshots](screenshots.html) · [Roadmap](roadmap.html)
+
+</div>
+
+<script src="assets/lang-toggle.js"></script>

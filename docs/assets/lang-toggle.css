@@ -1,0 +1,15 @@
+.lang-toggle-btn {
+  display: inline-block;
+  margin-bottom: 24px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5da;
+  background: #fff;
+  color: #159957;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lang-toggle-btn:hover {
+  background: #f6f8fa;
+}
