@@ -4,7 +4,7 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.14.1 (app), CI/CD + site Jekyll en place (34.0/37.0)
+## État au 2026-08-03 — version courante : v1.14.1 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 **30.0/33.0 traités (2026-08-03)** :
 - **30.0** : premier package NuGet publié sur GitHub Packages —
@@ -115,6 +115,43 @@ Site : https://tomoushie.github.io/ChaturbateRecorder/
   + PR par sous-tâche, mergées via squash-merge par l'API GitHub (`gh` non
   installé, curl + token du Credential Manager comme pour les releases).
   Checks CI (`build-test`, CodeQL, `dependencies`) vérifiés avant merge.
+
+**25.0 (suite)/25.1 traités (2026-08-03)** — bascule FR/EN étendue à tout ce
+qui restait en français uniquement :
+- **25.0 (suite)** : les 3 pages Jekyll de 37.0 (`docs/features.md`,
+  `docs/roadmap.md`, `docs/screenshots.md`) étaient restées en français
+  uniquement. Même principe que `index.html` mais adapté au contenu long
+  (prose plutôt que cartes courtes) : tout le contenu FR et tout le contenu
+  EN dupliqués dans deux `<div class="lang-fr"|"lang-en" markdown="1">` par
+  page, `docs/assets/lang-toggle.js` bascule leur `display`. **Piège** :
+  kramdown ne parse pas le Markdown à l'intérieur d'un bloc HTML par défaut
+  — `markdown="1"` sur le `<div>` est nécessaire, sinon le contenu apparaît
+  en texte brut. Partage la même clé `localStorage("lang")` que
+  `index.html`, donc la langue reste cohérente en naviguant entre toutes
+  les pages du site. Vérifié en production (bascule + persistance
+  inter-pages testées sur les 3 pages).
+- **25.1** : description + champ `homepage` du dépôt GitHub passés en
+  anglais (API, pas de fichier). Wiki : 7 pages anglaises ajoutées dans
+  `ChaturbateRecorder.wiki.git`, convention `NomPage-EN.md` (ex.
+  `Installation-EN.md`), lien de bascule en haut de chaque page (FR comme
+  EN), `_Sidebar.md` mise à jour avec les deux listes. README :
+  `README.en.md` (traduction complète) + lien réciproque en haut des deux
+  fichiers — pas de mécanisme JS possible sur un README (rendu statique
+  GitHub), donc fichiers séparés comme pour le wiki plutôt qu'une bascule à
+  la volée.
+  **Piège découvert (clone du wiki)** : cloner `ChaturbateRecorder.wiki.git`
+  dans un chemin trop profond (scratchpad avec UUID de session) échoue sur
+  Windows avec `Filename too long` — cloner avec `git -c core.longpaths=true
+  clone ...` résout le problème sans avoir à changer d'emplacement.
+  **Piège découvert (commit)** : `git commit -am` ne stage QUE les fichiers
+  déjà trackés modifiés, pas les nouveaux fichiers non trackés (les 7 pages
+  `-EN.md` avaient été oubliées du premier commit/push du wiki) — toujours
+  `git add` explicitement les nouveaux fichiers avant de committer, ne pas
+  se fier à `-a` pour eux.
+  Traduction complète des messages d'erreur/notifications/logs/guide de
+  démarrage/changelog de l'app **toujours hors périmètre** (seule l'UI
+  principale de l'app est traduite depuis 20.0) — non demandé ici, ne pas
+  se lancer dedans sans demande explicite.
 
 **Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
 
