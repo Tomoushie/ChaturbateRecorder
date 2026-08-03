@@ -6,7 +6,7 @@ title: Fonctionnalités
 # Fonctionnalités
 
 Détail des mécanismes internes de Chaturbate Recorder. Pour une vue
-d'ensemble plus courte, voir la [page d'accueil](./).
+d'ensemble plus courte, voir la [page d'accueil](index.html).
 
 ## 🧱 Sandbox
 
