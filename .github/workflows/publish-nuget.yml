@@ -100,6 +100,18 @@ jobs:
 
       # --skip-duplicate : republier un tag existant ne fait pas échouer le job.
       # nuget.org refuse d'écraser une version déjà publiée, c'est voulu.
+      # Le chemin est résolu ici plutôt que passé en motif générique :
+      # `dotnet nuget push "artifacts/*.nupkg"` échoue sur Windows avec
+      # "File does not exist" — ni pwsh (motif entre guillemets) ni NuGet ne
+      # développent le motif avec des séparateurs '/'. Constaté en vrai sur le
+      # premier essai de publication de la v1.0.0.
+      # Le .snupkg voisin est envoyé automatiquement par NuGet avec le .nupkg
+      # du même nom, il n'y a donc pas à le pousser séparément.
       - name: Publier sur nuget.org
         if: github.event_name == 'push' || inputs.dry_run == false
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem artifacts -File | Where-Object { $_.Extension -eq '.nupkg' } | Select-Object -First 1
+          if (-not $pkg) { throw "Aucun .nupkg trouve dans artifacts/." }
+          Write-Host "Publication de $($pkg.Name) ($([math]::Round($pkg.Length/1KB,1)) Ko)"
+          dotnet nuget push $pkg.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
