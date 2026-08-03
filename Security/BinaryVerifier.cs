@@ -23,18 +23,27 @@ namespace ChaturbateRecorderApp.Security
                 return false;
             }
 
+            var actualHex = ComputeSha256(filePath);
+            return actualHex != null && string.Equals(actualHex, expectedHashHex.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Calcule le hash SHA256 d'un fichier, sans le comparer à quoi que ce
+        /// soit. Utilisé pour afficher/enregistrer un hash "de confiance à la
+        /// première utilisation" (voir Services/TrustedBinaryStore.cs).
+        /// </summary>
+        public static string? ComputeSha256(string filePath)
+        {
             try
             {
                 using var sha256 = SHA256.Create();
                 using var stream = File.OpenRead(filePath);
-                var hashBytes = sha256.ComputeHash(stream);
-                var actualHex = Convert.ToHexString(hashBytes);
-                return string.Equals(actualHex, expectedHashHex.Trim(), StringComparison.OrdinalIgnoreCase);
+                return Convert.ToHexString(sha256.ComputeHash(stream));
             }
             catch (Exception ex)
             {
                 Logger.Log($"Erreur lors du calcul du hash du fichier : {ex.Message}", LogLevel.ERROR);
-                return false;
+                return null;
             }
         }
 
