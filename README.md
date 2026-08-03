@@ -210,7 +210,7 @@ ChaturbateRecorderApp/
 
 ## Contribuer
 
-Contributions, retours et rapports de bugs bienvenus via les [issues du dépôt](https://github.com/Tomoushie/ChaturbateRecorder/issues) — ou directement depuis l'application via le bouton **Signaler un bug**.
+Contributions, retours et rapports de bugs bienvenus via les [issues du dépôt](https://github.com/Tomoushie/ChaturbateRecorder/issues) — ou directement depuis l'application via le bouton **Signaler un bug**. Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour le détail, ou les [Discussions](https://github.com/Tomoushie/ChaturbateRecorder/discussions) pour une question/idée. Vulnérabilité de sécurité : voir [SECURITY.md](SECURITY.md).
 
 ## Soutenir le projet
 
