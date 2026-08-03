@@ -9,6 +9,7 @@
   [![Téléchargements](https://img.shields.io/github/downloads/Tomoushie/ChaturbateRecorder/total?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases)
   [![Build + Test](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml)
   [![Security Scan](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml)
+  [![Licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue)](#licence)
   ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
   ![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows11&logoColor=white)
   ![Langage principal](https://img.shields.io/github/languages/top/Tomoushie/ChaturbateRecorder?color=0078D4)
@@ -214,3 +215,11 @@ Contributions, retours et rapports de bugs bienvenus via les [issues du dépôt]
 ## Soutenir le projet
 
 [![Faire un don](https://img.shields.io/badge/PayPal-Faire%20un%20don-00457C?logo=paypal&logoColor=white)](https://paypal.me/tomoushie)
+
+## Licence
+
+Double licence, au choix : [MIT](LICENSE-MIT) ou [Apache License 2.0](LICENSE-APACHE).
+
+Sauf mention contraire explicite de ta part, toute contribution soumise pour
+inclusion dans ce projet est placée sous cette double licence, sans condition
+supplémentaire.
