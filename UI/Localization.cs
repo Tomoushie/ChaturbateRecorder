@@ -46,6 +46,15 @@ namespace ChaturbateRecorderApp.UI
             ["codec.h264"] = ("H.264 (libx264 — compatibilité universelle)", "H.264 (libx264 — universal compatibility)"),
             ["codec.h265"] = ("H.265 (libx265 — fichier plus léger)", "H.265 (libx265 — smaller file)"),
 
+            ["label.duration"] = ("Durée maximale :", "Maximum duration:"),
+            ["duration.unlimited"] = ("Illimité", "Unlimited"),
+            ["duration.15min"] = ("15 minutes", "15 minutes"),
+            ["duration.30min"] = ("30 minutes", "30 minutes"),
+            ["duration.1h"] = ("1 heure", "1 hour"),
+            ["duration.2h"] = ("2 heures", "2 hours"),
+            ["duration.4h"] = ("4 heures", "4 hours"),
+            ["duration.8h"] = ("8 heures", "8 hours"),
+
             ["label.format"] = ("Format de sortie :", "Output format:"),
             ["format.mp4"] = ("MP4 (recommandé)", "MP4 (recommended)"),
             ["format.mkv"] = ("MKV (plus robuste)", "MKV (more robust)"),
