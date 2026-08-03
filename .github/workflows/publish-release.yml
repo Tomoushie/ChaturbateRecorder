@@ -67,6 +67,18 @@ jobs:
           # site ni le vérificateur de mise à jour de l'app ne la voient — c'est
           # ce qui rend la chaîne testable sans toucher à la version publiée.
           prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
+          # Seul un tag fraîchement poussé devient "latest". Sans ça, l'action
+          # met make_latest à true par défaut, donc republier un ancien tag par
+          # workflow_dispatch (rattraper les ZIP d'une vieille release, par ex.)
+          # désigne cette vieille release comme "latest" — et update-latest-json,
+          # qui lit /releases/latest, fait aussitôt régresser le site et le
+          # vérificateur de mise à jour de l'app vers cette version. Observé le
+          # 2026-08-03 : le site est repassé de 1.17.0 à 1.16.0.
+          # Pour qu'une exécution manuelle devienne quand même "latest" :
+          # cocher "Set as the latest release" sur la page de la release.
+          # La condition sur le suffixe reprend celle de prerelease ci-dessus :
+          # l'API refuse qu'une pré-version soit "latest", inutile de le demander.
+          make_latest: ${{ github.event_name == 'push' && !contains(steps.version.outputs.tag, '-') }}
           files: |
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-standard.zip
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-portable.zip
