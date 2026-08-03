@@ -55,6 +55,13 @@ namespace ChaturbateRecorderApp
         private ListBox logListBox = null!;
 
         /// <summary>
+        /// Ce que doit afficher une ligne de job indépendamment de la langue
+        /// courante — voir RefreshJobRowLabels, seul endroit qui traduit ces
+        /// états en texte réel.
+        /// </summary>
+        private enum JobRowStatus { Preparing, Running, ReconnectPending, Cancelled, Finished }
+
+        /// <summary>
         /// Un enregistrement affiché dans la liste "Enregistrements en cours" :
         /// lie un RecordingJob (moteur + métadonnées) à sa ligne d'UI dédiée.
         /// Plusieurs peuvent tourner en parallèle, chacun avec son propre
@@ -72,6 +79,12 @@ namespace ChaturbateRecorderApp
             public Button OpenButton = null!;
             public Action RestartEngine = null!;
             public System.Windows.Forms.Timer? PendingReconnectTimer;
+
+            public JobRowStatus Status = JobRowStatus.Preparing;
+            public DownloadState? FinishedState;
+            public int ReconnectDelaySeconds;
+            public bool HasProgressPct;
+            public double LastProgressPct;
         }
 
         // --- État ---
@@ -264,10 +277,10 @@ namespace ChaturbateRecorderApp
         {
             var container = new Panel { Size = new Size(605, 46), Margin = new Padding(2) };
             var nameLabel = new Label { Text = job.RoomName, Location = new Point(2, 2), AutoSize = true, Font = new Font(Font, FontStyle.Bold) };
-            var openButton = new Button { Text = "Ouvrir", Location = new Point(505, 0), Size = new Size(95, 20) };
+            var openButton = new Button { Location = new Point(505, 0), Size = new Size(95, 20) };
             var progressBar = new ProgressBar { Location = new Point(2, 22), Size = new Size(350, 18), Minimum = 0, Maximum = 100 };
-            var statusLabel = new Label { Text = "Préparation...", Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
-            var stopButton = new Button { Text = "Stop", Location = new Point(505, 22), Size = new Size(95, 22) };
+            var statusLabel = new Label { Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
+            var stopButton = new Button { Location = new Point(505, 22), Size = new Size(95, 22) };
 
             openButton.Image = IconManager.Render("open", 14, IconColor);
             openButton.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -312,8 +325,8 @@ namespace ChaturbateRecorderApp
                     row.PendingReconnectTimer = null;
                     job.AutoReconnectEnabled = false;
                     AppendJobLog(job, "Reconnexion automatique annulée.");
-                    row.StopButton.Text = "Retirer";
-                    row.StatusLabel.Text = "Annulé";
+                    row.Status = JobRowStatus.Cancelled;
+                    RefreshJobRowLabels(row);
                 }
                 else
                 {
@@ -326,14 +339,65 @@ namespace ChaturbateRecorderApp
             job.Engine.OnProgress     += pct  => SafeInvoke(() => UpdateJobProgress(row, pct));
             job.Engine.OnStateChanged += state => SafeInvoke(() => HandleJobStateChanged(row, state));
 
+            RefreshJobRowLabels(row);
             return row;
         }
+
+        /// <summary>
+        /// Seul endroit qui traduit l'état logique d'une ligne de job
+        /// (JobRowStatus) en texte affiché — appelé à chaque changement d'état
+        /// ET depuis ApplyLanguage pour retraduire les lignes déjà affichées
+        /// sans perdre leur état courant (ex : ne pas remplacer un pourcentage
+        /// en cours par "En cours...").
+        /// </summary>
+        private void RefreshJobRowLabels(JobRow row)
+        {
+            string L(string key) => Localization.Get(key, _currentLanguage);
+
+            row.OpenButton.Text = L("job.open");
+
+            switch (row.Status)
+            {
+                case JobRowStatus.Preparing:
+                case JobRowStatus.Running:
+                    row.StopButton.Text = L("job.stop");
+                    row.StatusLabel.Text = row.HasProgressPct
+                        ? FormatProgressPct(row.LastProgressPct)
+                        : L(row.Status == JobRowStatus.Running ? "job.running" : "job.preparing");
+                    break;
+
+                case JobRowStatus.ReconnectPending:
+                    row.StopButton.Text = L("job.cancel");
+                    row.StatusLabel.Text = string.Format(L("job.reconnectIn"), row.ReconnectDelaySeconds);
+                    break;
+
+                case JobRowStatus.Cancelled:
+                    row.StopButton.Text = L("job.remove");
+                    row.StatusLabel.Text = L("job.cancelled");
+                    break;
+
+                case JobRowStatus.Finished:
+                    row.StopButton.Text = L("job.remove");
+                    row.StatusLabel.Text = row.FinishedState switch
+                    {
+                        DownloadState.Completed => L("job.state.completed"),
+                        DownloadState.Failed => L("job.state.failed"),
+                        _ => L("job.state.stopped"),
+                    };
+                    break;
+            }
+        }
+
+        private static string FormatProgressPct(double pct) =>
+            $"{pct.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
 
         private void UpdateJobProgress(JobRow row, double pct)
         {
             var clamped = Math.Min(100, Math.Max(0, (int)Math.Round(pct)));
             row.ProgressBar.Value = clamped;
-            row.StatusLabel.Text = $"{pct.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
+            row.HasProgressPct = true;
+            row.LastProgressPct = pct;
+            row.StatusLabel.Text = FormatProgressPct(pct);
         }
 
         private void HandleJobStateChanged(JobRow row, DownloadState state)
@@ -342,18 +406,21 @@ namespace ChaturbateRecorderApp
             {
                 case DownloadState.Running:
                     row.Job.ReconnectAttempt = 0;
-                    row.StopButton.Text = "Stop";
+                    row.Status = JobRowStatus.Running;
+                    row.HasProgressPct = false;
+                    RefreshJobRowLabels(row);
                     row.StopButton.Enabled = true;
                     row.ProgressBar.Style = ProgressBarStyle.Marquee;
                     row.ProgressBar.MarqueeAnimationSpeed = 30;
-                    row.StatusLabel.Text = "En cours...";
                     PulseProgressBar(row.ProgressBar, RunningColor);
                     break;
 
                 case DownloadState.Completed:
                 case DownloadState.Failed:
                 case DownloadState.Stopped:
-                    row.StopButton.Text = "Retirer";
+                    row.Status = JobRowStatus.Finished;
+                    row.FinishedState = state;
+                    RefreshJobRowLabels(row);
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
                     AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
                     row.ProgressBar.SetBarColor(state switch
@@ -362,7 +429,6 @@ namespace ChaturbateRecorderApp
                         DownloadState.Failed => FailedColor,
                         _ => StoppedColor,
                     });
-                    row.StatusLabel.Text = $"{state}";
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
                     RefreshHistoryAsync();
 
@@ -408,8 +474,9 @@ namespace ChaturbateRecorderApp
             var delaySeconds = AppConfig.AutoReconnectDelaySeconds;
 
             AppendJobLog(row.Job, $"Reconnexion automatique dans {delaySeconds}s (tentative {attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
-            row.StatusLabel.Text = $"Reco. dans {delaySeconds}s...";
-            row.StopButton.Text = "Annuler";
+            row.Status = JobRowStatus.ReconnectPending;
+            row.ReconnectDelaySeconds = delaySeconds;
+            RefreshJobRowLabels(row);
 
             var timer = new System.Windows.Forms.Timer { Interval = delaySeconds * 1000 };
             row.PendingReconnectTimer = timer;
@@ -1107,6 +1174,9 @@ namespace ChaturbateRecorderApp
             donateLabel.Text = L("label.donate");
 
             grpLogs.Title = L("panel.logs");
+
+            foreach (var row in _jobRows)
+                RefreshJobRowLabels(row);
         }
 
         /// <summary>

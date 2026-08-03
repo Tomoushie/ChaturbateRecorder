@@ -5,11 +5,13 @@ namespace ChaturbateRecorderApp.UI
     public enum AppLanguage { French, English }
 
     /// <summary>
-    /// Traductions de l'UI principale (20.0) : uniquement les libellés fixes
-    /// posés dans InitializeComponent (labels, boutons, cases à cocher,
-    /// en-têtes de colonnes, items de ComboBox, bascule de mode). Les
-    /// messages d'erreur/confirmations, notifications toast, logs, le guide
-    /// de démarrage (TutorialForm) et l'historique des nouveautés (Changelog)
+    /// Traductions de l'UI principale (20.0) : les libellés fixes posés dans
+    /// InitializeComponent (labels, boutons, cases à cocher, en-têtes de
+    /// colonnes, items de ComboBox, bascule de mode), plus les libellés
+    /// dynamiques des lignes de job du panneau "Enregistrements en cours"
+    /// (préfixe "job.", voir MainForm.RefreshJobRowLabels). Les messages
+    /// d'erreur/confirmations, notifications toast, logs, le guide de
+    /// démarrage (TutorialForm) et l'historique des nouveautés (Changelog)
     /// restent en français pour l'instant — hors périmètre de ce premier
     /// passage de traduction, ils sont générés dynamiquement à des dizaines
     /// d'endroits différents du code.
@@ -87,6 +89,22 @@ namespace ChaturbateRecorderApp.UI
             // 18.0 : bouton de rapport de bug.
             ["button.reportBug"] = ("Signaler un bug", "Report a bug"),
             ["button.diagnostic"] = ("Diagnostic", "Diagnostics"),
+
+            // Lignes de job dynamiques (panneau "Enregistrements en cours") :
+            // construites en code (BuildJobRow) plutôt que par InitializeComponent,
+            // donc absentes du premier passage de traduction (20.0) — voir
+            // MainForm.RefreshJobRowLabels.
+            ["job.open"] = ("Ouvrir", "Open"),
+            ["job.stop"] = ("Stop", "Stop"),
+            ["job.remove"] = ("Retirer", "Remove"),
+            ["job.cancel"] = ("Annuler", "Cancel"),
+            ["job.preparing"] = ("Préparation...", "Preparing..."),
+            ["job.running"] = ("En cours...", "Running..."),
+            ["job.cancelled"] = ("Annulé", "Cancelled"),
+            ["job.reconnectIn"] = ("Reco. dans {0}s...", "Reco. in {0}s..."),
+            ["job.state.completed"] = ("Terminé", "Completed"),
+            ["job.state.failed"] = ("Échec", "Failed"),
+            ["job.state.stopped"] = ("Arrêté", "Stopped"),
         };
 
         public static string Get(string key, AppLanguage lang)
