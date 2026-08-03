@@ -12,6 +12,11 @@ namespace ChaturbateRecorderApp.UI
     /// Volontairement sans dépendance à ThemeManager/Localization : au moment
     /// où ce dialogue s'affiche, l'état de l'application peut être corrompu —
     /// un rendu simple et statique est plus fiable qu'un rendu thémé.
+    ///
+    /// Reste donc en français après le passage de traduction 24.0, et c'est
+    /// aussi le choix voulu : comme DiagnosticForm, ce texte finit collé dans
+    /// un ticket GitHub, où des rapports dans deux langues compliqueraient le
+    /// dépouillement côté mainteneur.
     /// </summary>
     public class CrashReportForm : Form
     {

@@ -1,8 +1,10 @@
 using System;
+using System.Globalization;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
 using ChaturbateRecorderApp.Security;
 using ChaturbateRecorderApp.Services;
+using ChaturbateRecorderApp.UI;
 
 namespace ChaturbateRecorderApp
 {
@@ -11,13 +13,24 @@ namespace ChaturbateRecorderApp
         [STAThread]
         private static void Main()
         {
+            // La langue choisie par l'utilisateur vit dans settings.json, à côté
+            // de l'exe — donc dans le dossier que le contrôle ci-dessous n'a
+            // justement pas encore validé. Ce contrôle reste volontairement la
+            // toute première chose exécutée : pour ce seul message on se rabat
+            // sur la langue de l'OS plutôt que de lire un fichier depuis un
+            // emplacement encore non vérifié. MainForm réaligne ensuite
+            // Localization.Current sur le réglage persisté.
+            Localization.Current =
+                CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("fr", StringComparison.OrdinalIgnoreCase)
+                    ? AppLanguage.French
+                    : AppLanguage.English;
+
             if (!WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir))
             {
                 MessageBox.Show(
-                    "Cette application ne peut pas s'exécuter depuis cet emplacement " +
-                    "(partage réseau, dossier temporaire/éphémère ou dossier compressé NTFS). " +
-                    "Déplace l'exécutable vers un dossier local standard.",
-                    "Emplacement non autorisé", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Localization.Get("error.unauthorizedLocation"),
+                    Localization.Get("error.unauthorizedLocation.title"),
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
