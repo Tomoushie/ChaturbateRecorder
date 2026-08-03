@@ -39,8 +39,9 @@ et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 ## 🚧 Prévu
 
 - **Portage macOS** de l'application.
-- **Extension navigateur** (déjà disponible sur Windows) portée sur
-  macOS/Safari.
+- **Extension navigateur** détectant automatiquement les sources
+  compatibles pour les intégrer au logiciel, puis portée sur macOS/Safari
+  une fois disponible sur Windows.
 - **Installateur** Windows avec étapes d'installation graphiques, en plus
   du format portable actuel.
 
@@ -92,8 +93,8 @@ and the [GitHub tracking board](https://github.com/users/Tomoushie/projects/2).
 ## 🚧 Planned
 
 - **macOS port** of the application.
-- **Browser extension** (already available on Windows) ported to
-  macOS/Safari.
+- **Browser extension** auto-detecting compatible sources to feed into
+  the app, later ported to macOS/Safari once available on Windows.
 - Windows **installer** with graphical setup steps, in addition to the
   current portable format.
 

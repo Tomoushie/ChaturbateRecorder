@@ -208,8 +208,12 @@ namespace ChaturbateRecorderApp.UI
             browseDirButton = new Button { Text = "Parcourir...", Location = new Point(342, 73), Size = new Size(126, 24) };
             browseDirButton.Image = IconManager.Render("folder", 16, Color.White);
             browseDirButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+            // ImageAlign et TextAlign sur le même côté (Left) : les mettre sur des
+            // côtés opposés (icône à gauche, texte à droite) avec TextImageRelation
+            // actif amène WinForms à mal calculer la position verticale de l'image
+            // (rognée en bas) sur certains DPI/échelles d'affichage.
             browseDirButton.ImageAlign = ContentAlignment.MiddleLeft;
-            browseDirButton.TextAlign = ContentAlignment.MiddleRight;
+            browseDirButton.TextAlign = ContentAlignment.MiddleLeft;
             browseDirButton.Click += OnBrowseCaptureDirClick;
 
             cookiesLabel = new Label { Text = "Cookies (optionnel) :", Location = new Point(12, 112), AutoSize = true };
