@@ -326,7 +326,14 @@ qui restait en français uniquement :
   principale de l'app est traduite depuis 20.0) — non demandé ici, ne pas
   se lancer dedans sans demande explicite.
 
-**Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
+**Dossier du projet** : `E:\Corpus\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp`.
+Il a déjà bougé deux fois — successivement `...\Projet logiciel\NET 8 Old\...`, puis
+`E:\Corpus\Documents\Chaturbate Record\...`, aujourd'hui sans le `Documents`. Ne pas
+supposer ce chemin : le vérifier au démarrage d'une session (le répertoire de travail
+annoncé fait foi), et ne coder en dur aucun chemin absolu ailleurs que dans cette note.
+Les seuls chemins absolus légitimes du dépôt sont `E:\Streamlink\videos` et
+`E:\Streamlink\logs` dans `Config/AppConfig.cs` : ce sont les dossiers de capture et de
+logs par défaut de l'app, sans rapport avec l'emplacement du projet.
 
 v1.14.0 — items 18.0/19.0/25.0 du fichier de notes perso :
 - **19.0** (le plus gros morceau) : `UI/SettingsForm.cs`, nouvelle fenêtre modale séparée qui regroupe thème/langue/dossier de sauvegarde/cookies/proxy/reconnexion automatique par défaut (déplacés hors de `MainForm` — qualité/codec/format y restent, ce sont des choix par enregistrement). Communique avec `MainForm` par callbacks (`Action<AppTheme>`/`Action<AppLanguage>`/`Action<string>`), pas par référence directe aux contrôles. `AutoReconnectDefault` devient un vrai réglage persisté (ne l'était pas avant). Le X de la fenêtre principale masque désormais (`Hide`) au lieu de fermer l'app (`_isReallyClosing` distingue ce cas du clic sur "Fermer" du nouveau menu contextuel de la zone de notification : Ouvrir/Paramètres/Fermer, double-clic = Ouvrir) — un enregistrement en cours continue donc en arrière-plan. Notice affichée une seule fois (`UserSettings.HasSeenTrayHint`).
