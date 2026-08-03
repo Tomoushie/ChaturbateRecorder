@@ -86,6 +86,7 @@ namespace ChaturbateRecorderApp.UI
 
             // 18.0 : bouton de rapport de bug.
             ["button.reportBug"] = ("Signaler un bug", "Report a bug"),
+            ["button.diagnostic"] = ("Diagnostic", "Diagnostics"),
         };
 
         public static string Get(string key, AppLanguage lang)
