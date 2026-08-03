@@ -72,6 +72,7 @@ namespace ChaturbateRecorderApp.UI
             ["button.removeFavorite"] = ("Supprimer favori", "Remove favorite"),
 
             ["panel.donate"] = ("Soutenir le projet", "Support the project"),
+            ["button.sponsor"] = ("Sponsoriser (GitHub)", "Sponsor (GitHub)"),
             ["button.donate"] = ("Faire un don (PayPal)", "Donate (PayPal)"),
             ["button.website"] = ("Site web", "Website"),
             ["label.donate"] = ("Scanne le QR code avec ton téléphone, ou clique sur le bouton.", "Scan the QR code with your phone, or click the button."),
@@ -135,6 +136,9 @@ namespace ChaturbateRecorderApp.UI
             ["error.cannotOpenFolder"] = ("Impossible d'ouvrir le dossier : {0}", "Cannot open the folder: {0}"),
             ["error.cannotOpenDonateLink"] = ("Impossible d'ouvrir le lien de don : {0}", "Cannot open the donation link: {0}"),
             ["error.cannotOpenWebsite"] = ("Impossible d'ouvrir le site web : {0}", "Cannot open the website: {0}"),
+            ["error.cannotOpenSponsor"] = (
+                "Impossible d'ouvrir la page de parrainage : {0}",
+                "Cannot open the sponsor page: {0}"),
             ["error.cannotOpenBugReport"] = (
                 "Impossible d'ouvrir le formulaire de rapport de bug : {0}",
                 "Cannot open the bug report form: {0}"),
@@ -243,6 +247,11 @@ namespace ChaturbateRecorderApp.UI
             ["tutorial.tracking.body"] = (
                 "Chaque enregistrement actif apparaît comme une ligne dans \"Enregistrements en cours\", avec :\n\n•  sa propre barre de progression\n•  un bouton \"Ouvrir\" (accès direct à la page du stream)\n•  un bouton Stop individuel (qui devient \"Retirer\" une fois terminé)",
                 "Each active recording appears as a row under \"Active recordings\", with:\n\n•  its own progress bar\n•  an \"Open\" button (direct access to the stream page)\n•  its own Stop button (which becomes \"Remove\" once finished)"),
+
+            ["tutorial.support.title"] = ("Soutenir le projet", "Supporting the project"),
+            ["tutorial.support.body"] = (
+                "Chaturbate Recorder est gratuit, sans publicité et sans collecte de données.\n\nSi tu souhaites soutenir son développement, le panneau \"Soutenir le projet\" propose un parrainage récurrent via GitHub Sponsors, ou un don ponctuel via PayPal.\n\nAucune fonctionnalité n'est réservée aux contributeurs : l'application est identique dans tous les cas.",
+                "Chaturbate Recorder is free, ad-free, and collects no data.\n\nIf you would like to support its development, the \"Support the project\" panel offers recurring sponsorship through GitHub Sponsors, or a one-off donation through PayPal.\n\nNo feature is ever reserved for contributors: the application is the same either way."),
 
             ["tutorial.security.title"] = ("Sécurité et mises à jour", "Security and updates"),
             ["tutorial.security.body"] = (

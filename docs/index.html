@@ -196,6 +196,8 @@
   <p>
     <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>
     ·
+    <a href="https://github.com/sponsors/Tomoushie" id="footerSponsor"></a>
+    ·
     <a href="https://paypal.me/tomoushie" id="footerDonate"></a>
   </p>
 </footer>
@@ -232,6 +234,7 @@
       installNote: "Nécessite le <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe et ffmpeg.exe ne sont pas inclus (voir le README du dépôt) pour rester neutre vis-à-vis de leurs licences respectives — place tes propres binaires dans un dossier <code>Tools\\</code> à côté de l'exécutable.",
       sourceTitle: "Code source",
       sourceText: "Le projet est open source sur <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, retours et rapports de bugs sont les bienvenus via les issues du dépôt.",
+      footerSponsor: "❤ Sponsoriser",
       footerDonate: "Soutenir le projet",
     },
     en: {
@@ -261,6 +264,7 @@
       installNote: "Requires the <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe and ffmpeg.exe are not included (see the repo's README) to stay neutral regarding their respective licenses — place your own binaries in a <code>Tools\\</code> folder next to the executable.",
       sourceTitle: "Source code",
       sourceText: "The project is open source on <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, feedback, and bug reports are welcome via the repo's issues.",
+      footerSponsor: "❤ Sponsor",
       footerDonate: "Support the project",
     },
   };
@@ -286,6 +290,7 @@
     document.getElementById("installNote").innerHTML = s.installNote;
     document.getElementById("sourceTitle").textContent = s.sourceTitle;
     document.getElementById("sourceText").innerHTML = s.sourceText;
+    document.getElementById("footerSponsor").textContent = s.footerSponsor;
     document.getElementById("footerDonate").textContent = s.footerDonate;
     localStorage.setItem("lang", lang);
   }

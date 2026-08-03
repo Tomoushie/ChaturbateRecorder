@@ -48,6 +48,7 @@ namespace ChaturbateRecorderApp
         private ListBox favoritesListBox = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
+        private Button sponsorButton = null!;
         private Button donateButton = null!;
         private Button websiteButton = null!;
         private PictureBox qrPictureBox = null!;
@@ -1082,6 +1083,19 @@ namespace ChaturbateRecorderApp
             }
         }
 
+        private void OnSponsorClick(object? sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(AppConfig.SponsorUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Localization.Format("error.cannotOpenSponsor", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void OnWebsiteClick(object? sender, EventArgs e)
         {
             try
@@ -1182,6 +1196,7 @@ namespace ChaturbateRecorderApp
             removeFavoriteButton.Text = L("button.removeFavorite");
 
             grpDonate.Title = L("panel.donate");
+            sponsorButton.Text = L("button.sponsor");
             donateButton.Text = L("button.donate");
             websiteButton.Text = L("button.website");
             donateLabel.Text = L("label.donate");
@@ -1297,6 +1312,7 @@ namespace ChaturbateRecorderApp
             SetIcon(tutorialButton, "book");
             SetIcon(reportBugButton, "alert");
             SetIcon(diagnosticButton, "pulse");
+            SetIcon(sponsorButton, "heart");
             SetIcon(websiteButton, "globe");
 
             foreach (var row in _jobRows)
@@ -1733,9 +1749,21 @@ namespace ChaturbateRecorderApp
             removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             // --- Panel : Soutenir le projet ---
-            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 100) };
-            donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 34), Size = new Size(220, 32) };
-            websiteButton = new Button { Text = "Site web", Location = new Point(12, 70), Size = new Size(220, 24) };
+            // Hauteur portée de 100 à 136 pour loger un troisième bouton : les
+            // deux précédents descendaient déjà jusqu'à y=94.
+            //
+            // 136 et pas moins : RoundedGroupPanel dessine son corps jusqu'à
+            // Height - 1 - ShadowSize, soit Height - 4. Le dernier bouton finit
+            // à y=130, donc 136 lui laisse les 2 px de garde qu'avait déjà le
+            // panneau d'origine (100 - 4 = 96 pour un bouton finissant à 94).
+            // À 132 il débordait sous la bordure — constaté à la capture.
+            //
+            // La position de grpLogs est recalculée à partir de
+            // grpDonate.Bottom dans ApplyUiMode, elle suit automatiquement.
+            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 136) };
+            sponsorButton = new Button { Text = "Sponsoriser (GitHub)", Location = new Point(12, 34), Size = new Size(220, 32) };
+            donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 70), Size = new Size(220, 32) };
+            websiteButton = new Button { Text = "Site web", Location = new Point(12, 106), Size = new Size(220, 24) };
             qrPictureBox = new PictureBox
             {
                 Location = new Point(250, 12),
@@ -1750,10 +1778,11 @@ namespace ChaturbateRecorderApp
                 Size = new Size(300, 40)
             };
 
+            sponsorButton.Click += OnSponsorClick;
             donateButton.Click += OnDonateClick;
             websiteButton.Click += OnWebsiteClick;
 
-            grpDonate.Controls.AddRange(new Control[] { donateButton, websiteButton, qrPictureBox, donateLabel });
+            grpDonate.Controls.AddRange(new Control[] { sponsorButton, donateButton, websiteButton, qrPictureBox, donateLabel });
 
             // --- Panel : Logs ---
             grpLogs = new RoundedGroupPanel { Title = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };

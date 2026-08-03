@@ -63,6 +63,14 @@ namespace ChaturbateRecorderApp.UI
             ["pulse"] = Wrap(
                 "<polyline points=\"3,12 8,12 10,6 14,18 16,12 21,12\" fill=\"none\" stroke=\"{COLOR}\" " +
                 "stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"),
+
+            // Cœur plein (80.0, bouton "Sponsoriser"). Deux arcs symétriques
+            // fermés par une pointe en bas, dessinés à la courbe plutôt qu'avec
+            // un caractère ❤ : le rendu reste net à toute taille et suit la
+            // couleur du thème, comme les autres icônes.
+            ["heart"] = Wrap(
+                "<path d=\"M12 20.8 4.2 13a4.6 4.6 0 0 1 0-6.5 4.6 4.6 0 0 1 6.5 0l1.3 1.3 1.3-1.3a4.6 4.6 0 0 1 " +
+                "6.5 0 4.6 4.6 0 0 1 0 6.5z\" fill=\"{COLOR}\"/>"),
         };
 
         private static string Wrap(string inner) =>
