@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ChaturbateRecorderApp.Config
 {
@@ -10,9 +11,10 @@ namespace ChaturbateRecorderApp.Config
     /// Traduction (24.0) : Entries reste la source canonique en français, et
     /// EnglishChanges ne couvre que les versions à partir de la version courante
     /// au moment de ce passage (1.16.0). L'historique antérieur reste en
-    /// français — son intérêt est surtout archivistique, et le dialogue
-    /// "Nouveautés" n'affiche de toute façon qu'une seule version : celle qui
-    /// vient d'être installée.
+    /// français — son intérêt est surtout archivistique, et une annonce ne
+    /// remonte en pratique que de quelques versions (voir GetChangesSince).
+    /// Un rendu multi-versions peut donc mélanger les deux langues : c'est le
+    /// repli voulu, chaque version étant résolue indépendamment par GetChanges.
     /// </summary>
     public static class Changelog
     {
@@ -137,6 +139,11 @@ namespace ChaturbateRecorderApp.Config
                 "Les lignes de la zone \"Enregistrements en cours\" (statut, bouton Stop / Retirer / Annuler, bouton Ouvrir) suivent également la langue choisie, y compris lorsqu'elle est changée pendant un enregistrement.",
                 "Le panneau de diagnostic et le rapport d'erreur restent volontairement en français : ils sont destinés à être collés dans un ticket, où des rapports en deux langues compliqueraient le dépouillement.",
             }),
+            ("1.18.0", new[]
+            {
+                "Le dialogue \"Nouveautés\" annonce désormais toutes les versions franchies depuis la dernière utilisation, regroupées par version, au lieu de la seule version installée. Passer directement de la 1.14.0 à la 1.18.0 ne fait donc plus disparaître les nouveautés intermédiaires.",
+                "\"Nouveautés\" s'affiche maintenant dans une fenêtre redimensionnable qui défile, au lieu d'une boîte de dialogue système qui tronquait le texte au-delà de la hauteur de l'écran. Son ascenseur suit le thème clair ou sombre, ce que ne fait pas un ascenseur Windows classique.",
+            }),
         };
 
         /// <summary>
@@ -157,6 +164,11 @@ namespace ChaturbateRecorderApp.Config
                 "Rows in the \"Active recordings\" area (status, Stop / Remove / Cancel button, Open button) also follow the selected language, including when it is changed while a recording is running.",
                 "The diagnostics panel and the crash report deliberately stay in French: they are meant to be pasted into an issue, where reports in two languages would make triage harder.",
             },
+            ["1.18.0"] = new[]
+            {
+                "The \"What's new\" dialog now announces every version crossed since the application was last used, grouped by version, instead of the installed version only. Going straight from 1.14.0 to 1.18.0 therefore no longer hides the intermediate changes.",
+                "\"What's new\" is now shown in a resizable, scrolling window, instead of a system dialog box that truncated any text taller than the screen. Its scroll bar follows the light or dark theme, which a standard Windows scroll bar does not.",
+            },
         };
 
         /// <summary>
@@ -176,6 +188,82 @@ namespace ChaturbateRecorderApp.Config
                     return entry.Changes;
 
             return System.Array.Empty<string>();
+        }
+
+        /// <summary>
+        /// Nouveautés à annoncer à quelqu'un qui passe de
+        /// <paramref name="sinceVersion"/> (dernière version qu'il a réellement
+        /// vue) à <paramref name="upToVersion"/> : toutes les entrées
+        /// strictement postérieures à la première et jusqu'à la seconde
+        /// incluse, de la plus récente à la plus ancienne.
+        ///
+        /// N'afficher que l'entrée de la version courante perdait tout
+        /// l'intermédiaire, et ce n'est pas théorique : rien n'oblige un
+        /// utilisateur à installer chaque release, et le projet en publie
+        /// souvent plusieurs de suite. Qui mettait à jour depuis la 1.14.0
+        /// n'apprenait jamais l'existence du Crash Reporter (1.15.0) ni du mode
+        /// Diagnostic (1.16.0), pourtant présents dans le binaire qu'il venait
+        /// d'installer.
+        ///
+        /// Repli volontaire vers la seule entrée de <paramref name="upToVersion"/>
+        /// quand la plage est vide : borne basse absente ou illisible
+        /// (settings.json édité à la main) et retour à une version antérieure.
+        /// Déverser tout l'historique dans ces cas-là serait pire que de ne
+        /// rien dire. Tableau vide seulement quand ce repli ne trouve rien non
+        /// plus, c'est-à-dire quand upToVersion n'a aucune entrée — noter
+        /// qu'une version installée sans entrée annonce quand même ce qui la
+        /// précède tant que la borne basse, elle, est exploitable.
+        ///
+        /// Chaque version est traduite indépendamment : une annonce couvrant
+        /// des versions d'avant et d'après 1.16.0 est donc légitimement mixte
+        /// en anglais (voir le commentaire de classe).
+        /// </summary>
+        public static (string Version, string[] Changes)[] GetChangesSince(
+            string? sinceVersion, string upToVersion, bool english)
+        {
+            var announced = Entries
+                .Where(e => IsAnnounced(e.Version, sinceVersion, upToVersion))
+                .OrderByDescending(e => e.Version, VersionOrder)
+                .ToArray();
+
+            if (announced.Length == 0)
+                announced = Entries.Where(e => e.Version == upToVersion).ToArray();
+
+            return announced
+                .Select(e => (e.Version, Changes: GetChanges(e.Version, english)))
+                .ToArray();
+        }
+
+        private static bool IsAnnounced(string version, string? sinceVersion, string upToVersion)
+        {
+            // Une borne illisible ne doit pas ouvrir la plage en grand : on
+            // laisse GetChangesSince retomber sur la seule version courante.
+            if (!System.Version.TryParse(sinceVersion, out _)) return false;
+            if (!System.Version.TryParse(upToVersion, out _)) return false;
+
+            return CompareVersions(version, sinceVersion) > 0
+                && CompareVersions(version, upToVersion) <= 0;
+        }
+
+        private static readonly IComparer<string> VersionOrder =
+            Comparer<string>.Create((a, b) => CompareVersions(a, b));
+
+        /// <summary>
+        /// Comparaison numérique de versions — "1.9.0" est antérieure à
+        /// "1.10.0", ce qu'une comparaison de chaînes affirme exactement à
+        /// l'envers. Une version illisible est classée avant toutes les autres
+        /// plutôt que de faire lever la comparaison.
+        /// Exposé aux tests : voir ChangelogTests.
+        /// </summary>
+        internal static int CompareVersions(string? a, string? b)
+        {
+            var parsedA = System.Version.TryParse(a, out var va) ? va : null;
+            var parsedB = System.Version.TryParse(b, out var vb) ? vb : null;
+
+            if (parsedA == null) return parsedB == null ? 0 : -1;
+            if (parsedB == null) return 1;
+
+            return parsedA.CompareTo(parsedB);
         }
 
         /// <summary>Exposé aux tests : voir ChangelogTests.</summary>

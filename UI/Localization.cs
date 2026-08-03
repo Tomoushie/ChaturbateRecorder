@@ -123,6 +123,10 @@ namespace ChaturbateRecorderApp.UI
                 "Invalid capture or log folder (path sandbox)."),
 
             ["changelog.title"] = ("Nouveautés — v{0}", "What's new — v{0}"),
+            // En-tête de groupe, affiché seulement quand l'annonce couvre
+            // plusieurs versions d'un coup (mise à jour ayant sauté des
+            // versions) — voir MainForm.ShowChangelog.
+            ["changelog.versionHeader"] = ("Version {0}", "Version {0}"),
             ["changelog.noDetails"] = (
                 "Aucun détail disponible pour cette version.",
                 "No details available for this version."),

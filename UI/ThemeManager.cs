@@ -98,6 +98,13 @@ namespace ChaturbateRecorderApp.UI
                     tb.BackColor = p.Panel;
                     tb.ForeColor = p.Fg;
                     break;
+                // RichTextBox ne dérive pas de TextBox (tous deux dérivent de
+                // TextBoxBase) : sans ce cas, le corps du dialogue "Nouveautés"
+                // resterait blanc sur blanc en thème sombre.
+                case RichTextBox rtb:
+                    rtb.BackColor = p.Panel;
+                    rtb.ForeColor = p.Fg;
+                    break;
                 case ListBox lb:
                     lb.BackColor = p.Panel;
                     lb.ForeColor = p.Fg;
@@ -115,6 +122,17 @@ namespace ChaturbateRecorderApp.UI
                     break;
                 case PictureBox pb:
                     pb.BackColor = p.Panel;
+                    break;
+                // Couleurs dérivées de la palette plutôt qu'ajoutées à Palette :
+                // un curseur d'ascenseur n'est ni du texte ni un fond, c'est un
+                // intermédiaire entre les deux, et l'interpolation le donne
+                // juste dans les deux thèmes sans deux champs de plus à animer
+                // pendant la transition clair/sombre.
+                case ThemedScrollBar tsb:
+                    tsb.TrackColor = p.Panel;
+                    tsb.ThumbColor = Lerp(p.Panel, p.Fg, 0.35f);
+                    tsb.ThumbHoverColor = Lerp(p.Panel, p.Fg, 0.55f);
+                    tsb.Invalidate();
                     break;
                 case Label lbl:
                     lbl.ForeColor = p.Fg;
