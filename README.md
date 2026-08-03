@@ -10,6 +10,8 @@
   [![Build + Test](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml)
   [![Security Scan](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/security-scan.yml)
   [![Licence](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue)](#licence)
+  [![Stars](https://img.shields.io/github/stars/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/stargazers)
+  [![Forks](https://img.shields.io/github/forks/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/forks)
   ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
   ![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows11&logoColor=white)
   ![Langage principal](https://img.shields.io/github/languages/top/Tomoushie/ChaturbateRecorder?color=0078D4)
@@ -39,6 +41,40 @@
 - 🐞 **Signaler un bug** en un clic, directement vers un ticket GitHub pré-rempli.
 
 Historique complet des versions dans le dialogue "Nouveautés" de l'application, ou [`Config/Changelog.cs`](Config/Changelog.cs).
+
+## Pourquoi ce projet existe
+
+Chaturbate Recorder est né d'un [script PowerShell](legacy-powershell/)
+personnel, réécrit en application WinForms .NET 10 pour gagner en
+fiabilité, en ergonomie et en maintenabilité.
+
+**Ce qui le distingue** : la plupart des enregistreurs de ce type sont
+de simples wrappers autour de `yt-dlp`, sans se soucier de ce qu'ils
+exécutent ni d'où. Ici, la sécurité n'est pas une option qu'on ajoute
+après coup — c'est le point de départ du design.
+
+**Pourquoi il est sécurisé** : aucun binaire externe (`yt-dlp`, `ffmpeg`)
+n'est exécuté sans vérification préalable de son hash SHA256 et,
+optionnellement, de sa signature Authenticode. Les chemins de fichiers
+et les URLs passent par une sandbox stricte avant utilisation. Les ACL
+des dossiers sensibles sont surveillées. Le détail complet est sur la
+page [Sécurité du wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki/Securite)
+et la [page Fonctionnalités du site](https://tomoushie.github.io/ChaturbateRecorder/features.html).
+
+**Pourquoi il est fiable** : suite de tests xUnit (build+tests exécutés
+automatiquement sur chaque changement, voir les badges plus haut), un
+watchdog anti-freeze surveille `yt-dlp`/`ffmpeg` en continu, et chaque
+enregistrement est identifié par un nom de fichier déterministe (pas
+d'heuristique fragile) pour que miniature/réencodage retrouvent toujours
+le bon fichier.
+
+**Ce qu'il apporte de nouveau** par rapport au script PowerShell
+d'origine : enregistrement multi-stream, interface bilingue, mises à
+jour automatiques, package NuGet réutilisable
+([`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security))
+pour qui veut les mêmes validations dans un autre projet .NET, et un
+pipeline CI/CD complet (build, tests, releases et déploiement du site
+automatisés).
 
 ## Installation (utilisateurs)
 
@@ -207,6 +243,13 @@ ChaturbateRecorderApp/
 ```
 
 </details>
+
+## Roadmap
+
+Suivi détaillé (fait / prévu / écarté) sur la
+[page Roadmap du site](https://tomoushie.github.io/ChaturbateRecorder/roadmap.html),
+et backlog restant sur le
+[tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 
 ## Contribuer
 
