@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- Voir ChaturbateRecorderApp.csproj : nécessaire pour restaurer ce
+         projet (référence le premier) depuis un OS non-Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
