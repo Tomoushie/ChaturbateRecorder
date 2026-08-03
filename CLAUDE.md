@@ -41,6 +41,24 @@ uniquement, pas de bump de version ni d'entrée de changelog) :
   en bout **sans** toucher au `latest.json` du site ni au vérificateur de mise
   à jour de l'app (la régénération tourne, ne voit aucune différence, ne
   committe rien).
+- **Défaut préexistant révélé par le test** : `softprops/action-gh-release`
+  met `make_latest` à `true` par défaut, donc **republier un ancien tag par
+  `workflow_dispatch`** (rattraper les ZIP d'une vieille release) désigne cette
+  vieille release comme "latest". Constaté en vrai le 2026-08-03 : 4
+  republications (v1.14.1/v1.15.0/v1.15.1/v1.16.0) lancées pendant le test ont
+  fait descendre `latest.json` jusqu'à 1.16.0 (site en régression ~2 min, remis
+  à v1.17.0 via `make_latest` sur la release + un `workflow_dispatch` de Update
+  Checker). Le défaut est antérieur au correctif 38.0 — le cron aurait produit
+  le même résultat, juste 24 h plus tard donc moins visible. Corrigé par
+  `make_latest: ${{ github.event_name == 'push' && !contains(tag, '-') }}` :
+  seul un tag fraîchement poussé et non-pré-version devient "latest". La
+  condition sur le suffixe évite de demander à l'API une combinaison qu'elle
+  refuse (une pré-version ne peut pas être "latest"). Pour qu'une exécution
+  manuelle devienne quand même "latest" : cocher "Set as the latest release"
+  sur la page de la release.
+- **Validé au passage** : le `concurrency` s'est fait éprouver pour de vrai —
+  5 runs simultanés poussant chacun un commit `latest.json` sur `main`,
+  sérialisés, aucun échec en non-fast-forward.
 
 **24.0 traité (2026-08-03) — extension de la traduction FR/EN, 4 commits** :
 - **Libellés dynamiques des lignes de job** : le panneau "Enregistrements en
