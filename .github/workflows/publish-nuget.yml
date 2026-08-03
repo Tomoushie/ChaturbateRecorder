@@ -108,6 +108,7 @@ jobs:
       # Le .snupkg voisin est envoyé automatiquement par NuGet avec le .nupkg
       # du même nom, il n'y a donc pas à le pousser séparément.
       - name: Publier sur nuget.org
+        id: push
         if: github.event_name == 'push' || inputs.dry_run == false
         shell: pwsh
         run: |
@@ -115,3 +116,63 @@ jobs:
           if (-not $pkg) { throw "Aucun .nupkg trouve dans artifacts/." }
           Write-Host "Publication de $($pkg.Name) ($([math]::Round($pkg.Length/1KB,1)) Ko)"
           dotnet nuget push $pkg.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      # Résumé sans ambiguïté, affiché en tête de la page du run.
+      #
+      # Une étape sautée ne fait PAS échouer un workflow : un run lancé avec
+      # dry_run coché se termine donc en vert, exactement comme un run qui a
+      # réellement publié, et la seule façon de les distinguer est de remarquer
+      # l'absence de l'étape de publication dans les logs. Confusion vécue en
+      # vrai lors de la v1.0.0, où une simulation a été prise pour une
+      # publication réussie. D'où ce résumé explicite.
+      #
+      # `if: always()` : le résumé doit aussi s'afficher quand la publication a
+      # échoué, c'est précisément là qu'il est le plus utile.
+      - name: Résumé
+        if: always()
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem artifacts -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Extension -eq '.nupkg' } | Select-Object -First 1
+          $nom = if ($pkg) { $pkg.Name } else { "(aucun package construit)" }
+
+          switch ("${{ steps.push.outcome }}") {
+            "success" {
+              $lignes = @(
+                "# ✅ Publié sur nuget.org",
+                "",
+                "``$nom`` a été poussé avec succès.",
+                "",
+                "La fiche n'apparaît pas immédiatement : nuget.org valide le paquet",
+                "(analyse antivirus, vérification de signature) avant de l'indexer.",
+                "Comptez quelques minutes avant que <https://www.nuget.org/packages/SentinelGuard>",
+                "soit consultable et le paquet installable."
+              )
+            }
+            "skipped" {
+              $lignes = @(
+                "# ⚠️ SIMULATION — rien n'a été publié",
+                "",
+                "L'étape de publication a été **sautée** parce que l'option ``dry_run``",
+                "était cochée. Le paquet ``$nom`` a bien été construit et est",
+                "téléchargeable en artefact de ce run, mais **il n'est pas sur nuget.org**.",
+                "",
+                "Pour publier réellement : relancer ce workflow en **décochant** ``dry_run``."
+              )
+            }
+            default {
+              $lignes = @(
+                "# ❌ Échec de la publication",
+                "",
+                "L'étape de publication s'est terminée en ``${{ steps.push.outcome }}``.",
+                "Le paquet ``$nom`` n'est pas sur nuget.org — consulter le log de l'étape",
+                "``Publier sur nuget.org`` ci-dessus.",
+                "",
+                "Le numéro de version reste disponible : nuget.org n'enregistre rien",
+                "tant qu'un envoi n'a pas abouti."
+              )
+            }
+          }
+
+          $lignes -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Write-Host ($lignes -join "`n")
