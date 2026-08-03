@@ -76,6 +76,28 @@ namespace ChaturbateRecorderApp.Tests
             Assert.False(BinaryVerifier.VerifyFileHash(missing, "AABBCC"));
         }
 
+        [Fact]
+        public void ComputeSha256_MatchesExpectedHash()
+        {
+            var path = WriteTempFile("contenu pour ComputeSha256"u8.ToArray());
+            try
+            {
+                var expected = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+                Assert.Equal(expected, BinaryVerifier.ComputeSha256(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void ComputeSha256_ReturnsNullForMissingFile()
+        {
+            var missing = Path.Combine(Path.GetTempPath(), "bv-missing-" + Guid.NewGuid().ToString("N") + ".exe");
+            Assert.Null(BinaryVerifier.ComputeSha256(missing));
+        }
+
         private static string WriteTempFile(byte[] content)
         {
             var path = Path.Combine(Path.GetTempPath(), "bv-test-" + Guid.NewGuid().ToString("N") + ".bin");
