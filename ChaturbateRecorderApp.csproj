@@ -5,6 +5,13 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <!--
+      Permet à "dotnet restore" de résoudre le FrameworkReference WinForms
+      depuis un OS non-Windows (ex: le job GitHub natif "Automatic Dependency
+      Submission (NuGet)", qui tourne sur ubuntu-latest et échouait avec
+      NETSDK1100 sans ce flag). Sans effet sur un build Windows classique.
+    -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ChaturbateRecorder</AssemblyName>
     <RootNamespace>ChaturbateRecorderApp</RootNamespace>
