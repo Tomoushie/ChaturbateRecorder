@@ -57,7 +57,7 @@ et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 
 ---
 
-[← Retour à l'accueil](index.html) · [Fonctionnalités](features.html) · [Captures d'écran](screenshots.html)
+[← Retour à l'accueil](index.html) · [Fonctionnalités](features.html) · [Captures d'écran](screenshots.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 
@@ -110,7 +110,7 @@ and the [GitHub tracking board](https://github.com/users/Tomoushie/projects/2).
 
 ---
 
-[← Home](index.html) · [Features](features.html) · [Screenshots](screenshots.html)
+[← Home](index.html) · [Features](features.html) · [Screenshots](screenshots.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 

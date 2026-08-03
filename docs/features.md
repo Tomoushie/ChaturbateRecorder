@@ -92,7 +92,7 @@ d'ensemble plus courte, voir la [page d'accueil](index.html).
 
 ---
 
-[← Retour à l'accueil](index.html) · [Captures d'écran](screenshots.html) · [Roadmap](roadmap.html)
+[← Retour à l'accueil](index.html) · [Captures d'écran](screenshots.html) · [Roadmap](roadmap.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 
@@ -181,7 +181,7 @@ overview, see the [home page](index.html).
 
 ---
 
-[← Home](index.html) · [Screenshots](screenshots.html) · [Roadmap](roadmap.html)
+[← Home](index.html) · [Screenshots](screenshots.html) · [Roadmap](roadmap.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 

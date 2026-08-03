@@ -27,7 +27,7 @@ fictifs — aucune donnée réelle d'utilisateur.*
 
 ---
 
-[← Retour à l'accueil](index.html) · [Fonctionnalités](features.html) · [Roadmap](roadmap.html)
+[← Retour à l'accueil](index.html) · [Fonctionnalités](features.html) · [Roadmap](roadmap.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 
@@ -52,7 +52,7 @@ user data.*
 
 ---
 
-[← Home](index.html) · [Features](features.html) · [Roadmap](roadmap.html)
+[← Home](index.html) · [Features](features.html) · [Roadmap](roadmap.html) · [SentinelGuard](sentinelguard.html)
 
 </div>
 
