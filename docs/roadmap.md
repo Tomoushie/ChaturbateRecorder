@@ -3,6 +3,11 @@ layout: default
 title: Roadmap
 ---
 
+<link rel="stylesheet" href="assets/lang-toggle.css">
+<button id="langToggle" class="lang-toggle-btn" type="button"></button>
+
+<div class="lang-fr" markdown="1">
+
 # Roadmap
 
 État d'avancement du projet — voir aussi le
@@ -52,3 +57,60 @@ et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 ---
 
 [← Retour à l'accueil](index.html) · [Fonctionnalités](features.html) · [Captures d'écran](screenshots.html)
+
+</div>
+
+<div class="lang-en" markdown="1" style="display:none">
+
+# Roadmap
+
+Project progress — see also the
+[full release changelog](https://github.com/Tomoushie/ChaturbateRecorder/releases)
+and the [GitHub tracking board](https://github.com/users/Tomoushie/projects/2).
+
+## ✅ Already in place
+
+- **Security**: path/URL sandboxing, external binary integrity
+  verification, permissive-ACL detection, remote server TLS/SAN — see the
+  [Features page](features.html).
+- **Robustness**: anti-freeze watchdog, `ffmpeg`/`yt-dlp` handling off the
+  UI thread, structured JSON logs with rotation.
+- **Modernized interface**: animated light/dark theme, simple/advanced
+  mode, toast notifications, vector icons, dedicated Settings window.
+- **Multi-language**: French/English selector for the main interface.
+- **Built-in updates**: automatic checking and installation of new GitHub
+  releases.
+- **CI/CD**: automatic build + tests, automated release publishing
+  (build, standard/portable ZIP, upload), security analysis (CodeQL +
+  dependency audit), automatic deployment of this site.
+- **Distribution**: releases in standard format (requires the .NET
+  runtime) and portable format (self-contained, single-file).
+- **NuGet package**: the security validators are also available
+  separately in
+  [`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security).
+
+## 🚧 Planned
+
+- **macOS port** of the application.
+- **Browser extension** (already available on Windows) ported to
+  macOS/Safari.
+- Windows **installer** with graphical setup steps, in addition to the
+  current portable format.
+
+## ⛔ Dropped or blocked
+
+- **Authenticode signing of the executable**: requires a code-signing
+  certificate, not currently available — no purely software-side
+  solution exists.
+- **NativeAOT**: not supported by WinForms at this time — a framework
+  limitation, not a configuration choice.
+- **Pastel color palette**: the current Windows 11 blue palette was
+  deliberately kept instead.
+
+---
+
+[← Home](index.html) · [Features](features.html) · [Screenshots](screenshots.html)
+
+</div>
+
+<script src="assets/lang-toggle.js"></script>
