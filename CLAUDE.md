@@ -50,9 +50,21 @@ GitHub Packages) :
   republier la bibliothèque). Vérifie que le tag correspond à `<Version>` du
   csproj avant de publier. `workflow_dispatch` avec `dry_run` par défaut à
   `true` pour tester sans publier.
-- **Action manuelle requise de l'utilisateur** (je ne manipule jamais la clé) :
-  créer une clé API sur nuget.org, puis Settings > Secrets and variables >
-  Actions > secret `NUGET_API_KEY`.
+- **Authentification par Trusted Publishing (OIDC), pas de clé API** —
+  nuget.org déconseille désormais fortement les clés API pour la publication
+  automatisée. Aucun secret n'est stocké : le job échange un jeton OIDC signé
+  par GitHub contre une clé temporaire (1 h) via `NuGet/login@v1`, d'où
+  `permissions: id-token: write` sur le job. **Piège** : les champs de la
+  politique sur nuget.org doivent correspondre exactement, et « Dépôt »
+  attend le **dépôt GitHub** (`ChaturbateRecorder`), pas le nom du package —
+  erreur commise à la première tentative. « Flux de travail » attend le nom
+  de fichier seul (`publish-nuget.yml`), sans le chemin. « Environnement »
+  doit rester vide tant que le job ne déclare pas d'`environment:`.
+  Autre piège : une politique neuve n'est que **temporairement active 7
+  jours** ; sans publication réussie dans ce délai elle devient inactive (la
+  fenêtre est relançable). La première publication réussie l'active
+  définitivement en enregistrant les identifiants GitHub du dépôt, ce qui
+  protège d'une attaque par recréation du dépôt sous le même nom.
 
 **38.0 traité (2026-08-03) — `docs/latest.json` en retard d'une release** (CI
 uniquement, pas de bump de version ni d'entrée de changelog) :

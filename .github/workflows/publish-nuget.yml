@@ -6,10 +6,22 @@ name: Publish SentinelGuard to NuGet
 # tags "vX.Y.Z" de l'application — le package et l'app ont des cycles de version
 # indépendants, et un tag applicatif ne doit pas republier la bibliothèque.
 #
-# Prérequis (à faire une seule fois, côté dépôt) :
-#   Settings > Secrets and variables > Actions > New repository secret
-#   Nom : NUGET_API_KEY   Valeur : la clé API créée sur nuget.org
-# La clé n'apparaît jamais dans les logs : elle est masquée par GitHub Actions.
+# Authentification : Trusted Publishing (OIDC), PAS de clé API. Aucun secret
+# à stocker ni à faire tourner — le job échange un jeton OIDC signé par GitHub
+# contre une clé temporaire valable 1 h, obtenue juste avant le push.
+#
+# La politique correspondante doit exister sur nuget.org (menu utilisateur >
+# Trusted Publishing) et ses champs doivent correspondre EXACTEMENT, sinon
+# l'échange de jeton est refusé :
+#   Propriétaire du dépôt : Tomoushie
+#   Dépôt                 : ChaturbateRecorder      <- le dépôt, pas le package
+#   Flux de travail       : publish-nuget.yml       <- nom de fichier seul
+#   Environnement         : (vide, ce workflow n'en déclare aucun)
+#
+# À savoir : une politique fraîchement créée est "temporairement active" 7
+# jours. Sans publication réussie dans ce délai elle devient inactive (la
+# fenêtre est relançable depuis nuget.org). La première publication réussie la
+# rend définitivement active, en enregistrant les identifiants GitHub du dépôt.
 
 on:
   push:
@@ -28,6 +40,11 @@ permissions:
 jobs:
   publish:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      # Autorise GitHub à émettre le jeton OIDC présenté à nuget.org.
+      # Sans ça, NuGet/login échoue faute de jeton à échanger.
+      id-token: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,8 +85,21 @@ jobs:
           name: sentinelguard-nupkg
           path: artifacts/*
 
+      # Échange du jeton OIDC contre une clé temporaire (valable 1 h). Placé
+      # juste avant le push, comme recommandé : une clé demandée trop tôt
+      # pourrait expirer avant l'envoi. Un jeton = une seule clé.
+      # `user` est le nom de profil nuget.org (pas l'adresse e-mail) ; il est
+      # public — il figure déjà dans <Authors> et l'URL du dépôt — donc inutile
+      # de le cacher dans un secret.
+      - name: Obtenir une clé temporaire nuget.org (OIDC)
+        id: login
+        if: github.event_name == 'push' || inputs.dry_run == false
+        uses: NuGet/login@v1
+        with:
+          user: Tomoushie
+
       # --skip-duplicate : republier un tag existant ne fait pas échouer le job.
       # nuget.org refuse d'écraser une version déjà publiée, c'est voulu.
       - name: Publier sur nuget.org
         if: github.event_name == 'push' || inputs.dry_run == false
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
