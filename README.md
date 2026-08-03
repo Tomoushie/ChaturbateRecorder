@@ -71,7 +71,7 @@ le bon fichier.
 **Ce qu'il apporte de nouveau** par rapport au script PowerShell
 d'origine : enregistrement multi-stream, interface bilingue, mises à
 jour automatiques, package NuGet réutilisable
-([`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security))
+([`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard))
 pour qui veut les mêmes validations dans un autre projet .NET, et un
 pipeline CI/CD complet (build, tests, releases et déploiement du site
 automatisés).

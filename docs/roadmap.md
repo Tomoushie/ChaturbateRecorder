@@ -34,7 +34,7 @@ et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
   .NET) et portable (autonome, single-file).
 - **Package NuGet** : les validateurs de sécurité sont aussi disponibles
   séparément dans
-  [`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security).
+  [`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard).
 
 ## 🚧 Prévu
 
@@ -88,7 +88,7 @@ and the [GitHub tracking board](https://github.com/users/Tomoushie/projects/2).
   runtime) and portable format (self-contained, single-file).
 - **NuGet package**: the security validators are also available
   separately in
-  [`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security).
+  [`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard).
 
 ## 🚧 Planned
 

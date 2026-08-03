@@ -1,9 +1,9 @@
 using System;
 using System.IO;
-using ChaturbateRecorder.Security;
+using SentinelGuard;
 using Xunit;
 
-namespace ChaturbateRecorder.Security.Tests
+namespace SentinelGuard.Tests
 {
     public class AclValidatorTests
     {

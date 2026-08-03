@@ -5,7 +5,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Vérification TLS explicite d'un serveur distant (pinning optionnel) et
@@ -18,10 +18,42 @@ namespace ChaturbateRecorder.Security
     /// </summary>
     public static class CertificateValidator
     {
+        /// <summary>
+        /// Opens a TLS connection to <paramref name="hostName"/> and pins the
+        /// certificate it presents, on top of the platform's own chain
+        /// validation. Use it to detect an intercepting proxy before sending
+        /// anything sensitive.
+        /// </summary>
+        /// <param name="hostName">Host to connect to.</param>
+        /// <param name="port">TCP port, usually 443.</param>
+        /// <param name="expectedThumbprint">
+        /// Expected certificate thumbprint, or empty to skip that comparison.
+        /// </param>
+        /// <param name="expectedIssuer">
+        /// Expected issuer, or empty to skip that comparison.
+        /// </param>
+        /// <returns><see langword="true"/> if the presented certificate matches.</returns>
+        /// <remarks>
+        /// Pinning breaks when the server legitimately rotates its certificate.
+        /// Plan how you will update the pinned values before enabling this.
+        /// </remarks>
         public static bool VerifyRemoteCertificate(
             string hostName, int port, string expectedThumbprint, string expectedIssuer) =>
             VerifyRemoteCertificate(hostName, port, expectedThumbprint, expectedIssuer, out _);
 
+        /// <summary>
+        /// Same as
+        /// <see cref="VerifyRemoteCertificate(string, int, string, string)"/>,
+        /// but also reports why verification failed.
+        /// </summary>
+        /// <param name="hostName">Host to connect to.</param>
+        /// <param name="port">TCP port, usually 443.</param>
+        /// <param name="expectedThumbprint">Expected thumbprint, or empty to skip.</param>
+        /// <param name="expectedIssuer">Expected issuer, or empty to skip.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the presented certificate matches.</returns>
         public static bool VerifyRemoteCertificate(
             string hostName, int port, string expectedThumbprint, string expectedIssuer, out string? reason)
         {
@@ -101,9 +133,33 @@ namespace ChaturbateRecorder.Security
             }
         }
 
+        /// <summary>
+        /// Checks that a certificate's Subject Alternative Name covers
+        /// <paramref name="expectedHostName"/>, including wildcard entries.
+        /// </summary>
+        /// <param name="cert">The certificate to inspect.</param>
+        /// <param name="expectedHostName">The host name it must cover.</param>
+        /// <returns><see langword="true"/> if the SAN matches the host.</returns>
+        /// <remarks>
+        /// The SAN extension is decoded from raw ASN.1 rather than through
+        /// <c>X509Extension.Format()</c> on purpose: that method returns text
+        /// localised by the OS, so parsing it silently fails on a non-English
+        /// Windows. This was a real bug, found and fixed by the test suite.
+        /// </remarks>
         public static bool VerifySubjectAlternativeName(X509Certificate2 cert, string expectedHostName) =>
             VerifySubjectAlternativeName(cert, expectedHostName, out _);
 
+        /// <summary>
+        /// Same as
+        /// <see cref="VerifySubjectAlternativeName(X509Certificate2, string)"/>,
+        /// but also reports why the name did not match.
+        /// </summary>
+        /// <param name="cert">The certificate to inspect.</param>
+        /// <param name="expectedHostName">The host name it must cover.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the SAN matches the host.</returns>
         public static bool VerifySubjectAlternativeName(X509Certificate2 cert, string expectedHostName, out string? reason)
         {
             reason = null;

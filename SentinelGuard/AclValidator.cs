@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Détecte si un groupe largement partagé (Everyone, BUILTIN\Users,
@@ -21,6 +21,31 @@ namespace ChaturbateRecorder.Security
             FileSystemRights.Write | FileSystemRights.Modify | FileSystemRights.FullControl |
             FileSystemRights.WriteData | FileSystemRights.CreateFiles;
 
+        /// <summary>
+        /// Looks for an NTFS access rule granting write access to a broad group
+        /// (<c>Everyone</c>, <c>Authenticated Users</c>, <c>Users</c>) on
+        /// <paramref name="directoryPath"/> — the kind of permission that lets
+        /// another local account swap out a binary you are about to run.
+        /// </summary>
+        /// <param name="directoryPath">
+        /// The directory to inspect. A path that does not exist returns
+        /// <see langword="false"/> rather than throwing.
+        /// </param>
+        /// <param name="details">
+        /// A description of the offending rule when one is found; an empty
+        /// string otherwise.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> when a broad write permission was found.
+        /// Note the inverted sense compared to the other validators here: this
+        /// method reports a <em>problem</em>, it does not certify safety.
+        /// </returns>
+        /// <remarks>
+        /// Deliberately advisory: on most non-hardened Windows installs,
+        /// <c>Authenticated Users</c> inherits Modify on many directories, so
+        /// treating a hit as fatal would block legitimate setups. Warn, log, or
+        /// harden — but think twice before refusing to start.
+        /// </remarks>
         public static bool TryFindBroadWriteAccess(string directoryPath, out string details)
         {
             details = "";

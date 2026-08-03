@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "nuget"
-    directory: "/ChaturbateRecorder.Security"
+    directory: "/SentinelGuard"
     schedule:
       interval: "weekly"
 

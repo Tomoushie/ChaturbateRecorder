@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Sandbox de chemins de fichiers : interdiction des UNC, chemins étendus
@@ -18,9 +18,39 @@ namespace ChaturbateRecorder.Security
             "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
         };
 
+        /// <summary>
+        /// Checks that <paramref name="path"/> is a plain, absolute, local path,
+        /// free of the tricks commonly used to escape a directory or to reach a
+        /// device: UNC paths, extended paths, <c>\Device\</c> namespace,
+        /// alternate data streams, control characters, reserved device names,
+        /// and symlinks or reparse points (on the path itself and on every
+        /// existing parent directory).
+        /// </summary>
+        /// <param name="path">The path to validate.</param>
+        /// <param name="mustExist">
+        /// When <see langword="true"/>, a path that does not exist on disk is
+        /// rejected. When <see langword="false"/> (default), a well-formed path
+        /// that does not exist yet is accepted — useful for an output file you
+        /// are about to create.
+        /// </param>
+        /// <returns><see langword="true"/> if the path is acceptable.</returns>
         public static bool IsValidPath(string path, bool mustExist = false) =>
             IsValidPath(path, mustExist, out _);
 
+        /// <summary>
+        /// Same as <see cref="IsValidPath(string, bool)"/>, but also reports why
+        /// the path was rejected.
+        /// </summary>
+        /// <param name="path">The path to validate.</param>
+        /// <param name="mustExist">
+        /// When <see langword="true"/>, a path that does not exist on disk is rejected.
+        /// </param>
+        /// <param name="reason">
+        /// On rejection, a human-readable explanation; <see langword="null"/>
+        /// when the path is accepted. Nothing is logged — what you do with this
+        /// message is up to you.
+        /// </param>
+        /// <returns><see langword="true"/> if the path is acceptable.</returns>
         public static bool IsValidPath(string path, bool mustExist, out string? reason)
         {
             reason = null;

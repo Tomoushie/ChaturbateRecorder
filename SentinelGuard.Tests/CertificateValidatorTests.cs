@@ -1,10 +1,10 @@
 using System;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using ChaturbateRecorder.Security;
+using SentinelGuard;
 using Xunit;
 
-namespace ChaturbateRecorder.Security.Tests
+namespace SentinelGuard.Tests
 {
     public class CertificateValidatorTests
     {

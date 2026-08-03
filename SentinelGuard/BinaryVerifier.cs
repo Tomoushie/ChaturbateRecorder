@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Vérification d'intégrité de binaires externes : hash SHA256, signature
@@ -11,9 +11,29 @@ namespace ChaturbateRecorder.Security
     /// </summary>
     public static class BinaryVerifier
     {
+        /// <summary>
+        /// Computes the SHA-256 of a file and compares it, case-insensitively,
+        /// to <paramref name="expectedHashHex"/>.
+        /// </summary>
+        /// <param name="filePath">Path to the file to hash.</param>
+        /// <param name="expectedHashHex">Expected SHA-256, as a hex string.</param>
+        /// <returns>
+        /// <see langword="true"/> only if the file exists, is readable, and its
+        /// hash matches exactly.
+        /// </returns>
         public static bool VerifyFileHash(string filePath, string expectedHashHex) =>
             VerifyFileHash(filePath, expectedHashHex, out _);
 
+        /// <summary>
+        /// Same as <see cref="VerifyFileHash(string, string)"/>, but also
+        /// reports why verification failed.
+        /// </summary>
+        /// <param name="filePath">Path to the file to hash.</param>
+        /// <param name="expectedHashHex">Expected SHA-256, as a hex string.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the hash matches.</returns>
         public static bool VerifyFileHash(string filePath, string expectedHashHex, out string? reason)
         {
             reason = null;
@@ -39,11 +59,47 @@ namespace ChaturbateRecorder.Security
             }
         }
 
+        /// <summary>
+        /// Full check on an external executable before running it: SHA-256, and
+        /// optionally its Authenticode signature, signer thumbprint and signer
+        /// subject.
+        /// </summary>
+        /// <param name="filePath">Path to the executable.</param>
+        /// <param name="expectedSha256">
+        /// Expected SHA-256 as hex. Pass an empty string to skip the hash check
+        /// and rely on the signature alone.
+        /// </param>
+        /// <param name="requireAuthenticode">
+        /// When <see langword="true"/>, the file must carry a valid Authenticode
+        /// signature. Beware: public builds of many tools (yt-dlp, ffmpeg…) are
+        /// not signed at all, so enabling this will reject them.
+        /// </param>
+        /// <param name="expectedSignerThumbprint">
+        /// Expected signing certificate thumbprint, or empty to accept any signer.
+        /// </param>
+        /// <param name="expectedSignerSubject">
+        /// Expected signing certificate subject, or empty to accept any subject.
+        /// </param>
+        /// <returns><see langword="true"/> if every requested check passed.</returns>
         public static bool VerifyTrustedBinary(
             string filePath, string expectedSha256, bool requireAuthenticode,
             string expectedSignerThumbprint, string expectedSignerSubject) =>
             VerifyTrustedBinary(filePath, expectedSha256, requireAuthenticode, expectedSignerThumbprint, expectedSignerSubject, out _);
 
+        /// <summary>
+        /// Same as
+        /// <see cref="VerifyTrustedBinary(string, string, bool, string, string)"/>,
+        /// but also reports which check failed.
+        /// </summary>
+        /// <param name="filePath">Path to the executable.</param>
+        /// <param name="expectedSha256">Expected SHA-256 as hex, or empty to skip.</param>
+        /// <param name="requireAuthenticode">Whether a valid signature is mandatory.</param>
+        /// <param name="expectedSignerThumbprint">Expected signer thumbprint, or empty.</param>
+        /// <param name="expectedSignerSubject">Expected signer subject, or empty.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if every requested check passed.</returns>
         public static bool VerifyTrustedBinary(
             string filePath, string expectedSha256, bool requireAuthenticode,
             string expectedSignerThumbprint, string expectedSignerSubject, out string? reason)
@@ -127,9 +183,24 @@ namespace ChaturbateRecorder.Security
         /// thumbprint/issuer attendu. Note : ceci épingle le certificat FEUILLE
         /// du signataire, pas une CA racine au sens strict.
         /// </summary>
+        /// <param name="filePath">Path to the signed executable.</param>
+        /// <param name="expectedThumbprint">Expected certificate thumbprint.</param>
+        /// <param name="expectedIssuer">Expected certificate issuer.</param>
+        /// <returns><see langword="true"/> if the pinned certificate matches.</returns>
         public static bool VerifyCaPinning(string filePath, string expectedThumbprint, string expectedIssuer) =>
             VerifyCaPinning(filePath, expectedThumbprint, expectedIssuer, out _);
 
+        /// <summary>
+        /// Same as <see cref="VerifyCaPinning(string, string, string)"/>, but
+        /// also reports why pinning failed.
+        /// </summary>
+        /// <param name="filePath">Path to the signed executable.</param>
+        /// <param name="expectedThumbprint">Expected certificate thumbprint.</param>
+        /// <param name="expectedIssuer">Expected certificate issuer.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the pinned certificate matches.</returns>
         public static bool VerifyCaPinning(string filePath, string expectedThumbprint, string expectedIssuer, out string? reason)
         {
             reason = null;

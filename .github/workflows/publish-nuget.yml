@@ -1,0 +1,105 @@
+name: Publish SentinelGuard to NuGet
+
+# Publie le package SentinelGuard sur nuget.org.
+#
+# Déclencheur : un tag dédié "sentinelguard-vX.Y.Z", volontairement distinct des
+# tags "vX.Y.Z" de l'application — le package et l'app ont des cycles de version
+# indépendants, et un tag applicatif ne doit pas republier la bibliothèque.
+#
+# Authentification : Trusted Publishing (OIDC), PAS de clé API. Aucun secret
+# à stocker ni à faire tourner — le job échange un jeton OIDC signé par GitHub
+# contre une clé temporaire valable 1 h, obtenue juste avant le push.
+#
+# La politique correspondante doit exister sur nuget.org (menu utilisateur >
+# Trusted Publishing) et ses champs doivent correspondre EXACTEMENT, sinon
+# l'échange de jeton est refusé :
+#   Propriétaire du dépôt : Tomoushie
+#   Dépôt                 : ChaturbateRecorder      <- le dépôt, pas le package
+#   Flux de travail       : publish-nuget.yml       <- nom de fichier seul
+#   Environnement         : (vide, ce workflow n'en déclare aucun)
+#
+# À savoir : une politique fraîchement créée est "temporairement active" 7
+# jours. Sans publication réussie dans ce délai elle devient inactive (la
+# fenêtre est relançable depuis nuget.org). La première publication réussie la
+# rend définitivement active, en enregistrant les identifiants GitHub du dépôt.
+
+on:
+  push:
+    tags:
+      - "sentinelguard-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Construire et vérifier le package sans le publier"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      # Autorise GitHub à émettre le jeton OIDC présenté à nuget.org.
+      # Sans ça, NuGet/login échoue faute de jeton à échanger.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # SourceLink a besoin de l'historique pour référencer le bon commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Vérifier que le tag correspond à la version du package
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}" -replace '^sentinelguard-v', ''
+          $csproj = [xml](Get-Content SentinelGuard/SentinelGuard.csproj)
+          $pkgVersion = $csproj.Project.PropertyGroup.Version | Where-Object { $_ }
+          Write-Host "Tag : $tagVersion / csproj : $pkgVersion"
+          if ($tagVersion -ne $pkgVersion) {
+            Write-Error "Le tag ($tagVersion) ne correspond pas a <Version> du csproj ($pkgVersion). Publier une version qui ne correspond pas au tag rendrait la release intracable."
+            exit 1
+          }
+
+      - name: Tests (net8.0 + net10.0)
+        run: dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
+
+      - name: Créer le package
+        run: dotnet pack SentinelGuard/SentinelGuard.csproj -c Release -o artifacts
+
+      - name: Inventaire du package
+        shell: pwsh
+        run: Get-ChildItem artifacts | Select-Object Name, Length | Format-Table -AutoSize
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sentinelguard-nupkg
+          path: artifacts/*
+
+      # Échange du jeton OIDC contre une clé temporaire (valable 1 h). Placé
+      # juste avant le push, comme recommandé : une clé demandée trop tôt
+      # pourrait expirer avant l'envoi. Un jeton = une seule clé.
+      # `user` est le nom de profil nuget.org (pas l'adresse e-mail) ; il est
+      # public — il figure déjà dans <Authors> et l'URL du dépôt — donc inutile
+      # de le cacher dans un secret.
+      - name: Obtenir une clé temporaire nuget.org (OIDC)
+        id: login
+        if: github.event_name == 'push' || inputs.dry_run == false
+        uses: NuGet/login@v1
+        with:
+          user: Tomoushie
+
+      # --skip-duplicate : republier un tag existant ne fait pas échouer le job.
+      # nuget.org refuse d'écraser une version déjà publiée, c'est voulu.
+      - name: Publier sur nuget.org
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
