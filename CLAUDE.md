@@ -4,7 +4,70 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.14.1 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-03 (soir) — version courante : v1.16.0 (app), traduction étendue FR/EN EN COURS sur `feature/extended-translation`
+
+**EN COURS — traduction étendue FR/EN (branche `feature/extended-translation`, pas
+encore mergée, pas encore poussée sur origin)** : suite au second point de l'issue
+GitHub #16 (les dialogues/tutoriel/messages d'erreur restaient en français même avec
+l'UI en anglais), extension du système `UI/Localization.cs` — jusqu'ici volontairement
+limité à l'UI principale (voir 20.0 plus bas) — pour couvrir aussi : messages d'erreur,
+confirmations, notifications, panneau Logs, `TutorialForm`, `CrashReportForm`,
+`DiagnosticForm`. `Config/Changelog.cs` et la sortie de `Services/Logger.cs` restent
+volontairement en français uniquement (limite de périmètre inchangée).
+Sauvegarde intermédiaire committée localement (PAS poussée) : commit `56949e7` sur
+`feature/extended-translation` (créée depuis `origin/main` après merge de la Diagnostic
+Mode PR #17 et du correctif TOFU PR #18) — `dotnet build` vérifié vert (0 erreur/
+avertissement) à ce commit, mais travail incomplet :
+- **Fait** : `UI/Localization.cs` (~90+ nouvelles clés + helper
+  `Format(key, lang, args)`) ; `TutorialForm`/`CrashReportForm`/`DiagnosticForm` prennent
+  désormais un paramètre constructeur `AppLanguage` ; tous les `MessageBox.Show` de
+  `MainForm.cs`/`SettingsForm.cs`/`Program.cs` et tous les `ShowNotification` traduits ;
+  `VerifyOrTrustBinary` (TOFU) entièrement localisé.
+- **Reste à faire** : (1) labels dynamiques des job rows dans `MainForm.cs`
+  (`BuildJobRow` ~L266, `HandleJobStateChanged` ~L342, `ScheduleReconnect` ~L407) —
+  clés déjà prêtes (`job.open`, `job.preparing`, `job.stop`, `job.remove`,
+  `job.cancelled`, `job.running`, `job.reconnectingIn`, `job.cancelReconnect`,
+  `job.state.Completed/Failed/Stopped`) mais pas encore branchées ; partie non résolue :
+  `ApplyLanguage` (~L1047) ne touche que les contrôles fixes, jamais `_jobRows` — il
+  faut un mécanisme pour retraduire les job rows déjà créées si l'utilisateur change de
+  langue en cours de session avec des jobs actifs/affichés. (2) `FormatSize` (unités
+  o/Ko/Mo/Go codées en dur au lieu de `units.bytes/kb/mb/gb`) et le format de date de
+  `RefreshHistoryAsync` (`"dd/MM/yyyy HH:mm"` codé en dur au lieu de `format.dateTime`).
+  (3) messages du panneau Logs encore en français dans `MainForm.cs` (BuildJobRow,
+  HandleJobStateChanged, ScheduleReconnect, GenerateThumbnail, ReencodeCaptureAsync,
+  OnStartClick) — clés `log.*` déjà créées. (4) build+test complet (61 tests avant cette
+  branche), vérification visuelle DrawToBitmap en anglais (fenêtre principale, un
+  MessageBox, TutorialForm, SettingsForm, CrashReportForm, DiagnosticForm), bump de
+  version (depuis 1.16.0) + entrée Changelog, puis cycle habituel branche→build→test→
+  PR→merge validé par l'utilisateur.
+
+**2.1/TOFU(#16)/2.3 traités (2026-08-03), pas encore documentés en détail ci-dessous
+avant ce jour** :
+- **2.1 Crash Reporter (v1.15.0)** : `Services/CrashReporter.cs` installe des handlers
+  sur `Application.ThreadException` et `AppDomain.CurrentDomain.UnhandledException`,
+  écrit un fichier de crash dédié sous `LogDir/crashes/`, puis affiche
+  `UI/CrashReportForm.cs` (fenêtre volontairement sans ThemeManager — rendu simple plus
+  fiable si l'état de l'app est corrompu). Comme la classe est statique et n'a pas de
+  référence à `MainForm`, la langue est relue depuis `SettingsManager.Load()` au moment
+  du crash plutôt que depuis un état en mémoire.
+- **Correctif issue #16 (v1.15.1)** : bug critique signalé par un utilisateur externe —
+  le hash SHA256 figé de yt-dlp/ffmpeg dans `AppConfig` bloquait totalement
+  l'application dès que l'utilisateur mettait à jour l'un des deux binaires (mise à jour
+  fréquente pour yt-dlp en particulier). Remplacé par un modèle Trust-On-First-Use :
+  nouveau `Services/TrustedBinaryStore.cs` (JSON persistant, `trusted-binaries.json`
+  dans `AppConfig.AppDir`) + `VerifyOrTrustBinary(...)` dans `MainForm.cs` qui demande
+  confirmation à l'utilisateur (affiche le hash calculé) avant de faire confiance à un
+  binaire dont le hash ne correspond pas à celui codé en dur. Nouveau
+  `BinaryVerifier.ComputeSha256(...)` public (extrait de `VerifyFileHash` existant, sans
+  régression). Vérifié de bout en bout (pas seulement en tests unitaires) via
+  `SendKeys.SendWait` piloté depuis un thread d'arrière-plan pour répondre aux
+  `MessageBox` modales pendant un test automatisé.
+- **2.3 Diagnostic Mode (v1.16.0)** : `UI/DiagnosticForm.cs`, réutilise directement les
+  validateurs de `Security/` (hash, ACL, dossier d'exécution) plutôt que de dupliquer
+  leur logique — rapport texte copiable avec versions .NET/app/yt-dlp/ffmpeg,
+  joignabilité réseau (chaturbate.com/api.github.com), intégrité des hash (y compris les
+  hash approuvés manuellement via TOFU), permissions ACL. Bouton accessible depuis
+  `MainForm`.
 
 **30.0/33.0 traités (2026-08-03)** :
 - **30.0** : premier package NuGet publié sur GitHub Packages —
