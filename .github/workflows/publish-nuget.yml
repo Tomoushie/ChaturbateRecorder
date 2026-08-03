@@ -1,0 +1,75 @@
+name: Publish SentinelGuard to NuGet
+
+# Publie le package SentinelGuard sur nuget.org.
+#
+# Déclencheur : un tag dédié "sentinelguard-vX.Y.Z", volontairement distinct des
+# tags "vX.Y.Z" de l'application — le package et l'app ont des cycles de version
+# indépendants, et un tag applicatif ne doit pas republier la bibliothèque.
+#
+# Prérequis (à faire une seule fois, côté dépôt) :
+#   Settings > Secrets and variables > Actions > New repository secret
+#   Nom : NUGET_API_KEY   Valeur : la clé API créée sur nuget.org
+# La clé n'apparaît jamais dans les logs : elle est masquée par GitHub Actions.
+
+on:
+  push:
+    tags:
+      - "sentinelguard-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Construire et vérifier le package sans le publier"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # SourceLink a besoin de l'historique pour référencer le bon commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Vérifier que le tag correspond à la version du package
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}" -replace '^sentinelguard-v', ''
+          $csproj = [xml](Get-Content SentinelGuard/SentinelGuard.csproj)
+          $pkgVersion = $csproj.Project.PropertyGroup.Version | Where-Object { $_ }
+          Write-Host "Tag : $tagVersion / csproj : $pkgVersion"
+          if ($tagVersion -ne $pkgVersion) {
+            Write-Error "Le tag ($tagVersion) ne correspond pas a <Version> du csproj ($pkgVersion). Publier une version qui ne correspond pas au tag rendrait la release intracable."
+            exit 1
+          }
+
+      - name: Tests (net8.0 + net10.0)
+        run: dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
+
+      - name: Créer le package
+        run: dotnet pack SentinelGuard/SentinelGuard.csproj -c Release -o artifacts
+
+      - name: Inventaire du package
+        shell: pwsh
+        run: Get-ChildItem artifacts | Select-Object Name, Length | Format-Table -AutoSize
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sentinelguard-nupkg
+          path: artifacts/*
+
+      # --skip-duplicate : republier un tag existant ne fait pas échouer le job.
+      # nuget.org refuse d'écraser une version déjà publiée, c'est voulu.
+      - name: Publier sur nuget.org
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

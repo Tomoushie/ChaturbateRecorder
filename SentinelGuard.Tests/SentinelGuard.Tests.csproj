@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!--
+      Mêmes cibles que la bibliothèque : la suite tourne donc sur net8.0 ET
+      net10.0, ce qui vérifie que le multi-ciblage annoncé aux consommateurs
+      fonctionne réellement sur les deux, et pas seulement à la compilation.
+    -->
+    <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
@@ -15,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChaturbateRecorder.Security\ChaturbateRecorder.Security.csproj" />
+    <ProjectReference Include="..\SentinelGuard\SentinelGuard.csproj" />
   </ItemGroup>
 
 </Project>

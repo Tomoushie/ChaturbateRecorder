@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multi-ciblage net8.0 (LTS) + net10.0 : la majorité des projets .NET vivent
+      sur la LTS, ne cibler que net10.0 réduirait fortement l'audience du package.
+      Aucune API propre à .NET 10 n'est utilisée — les deux cibles compilent sans
+      avertissement.
+
+      Windows uniquement, en connaissance de cause : AclValidator s'appuie sur
+      System.Security.AccessControl (ACL NTFS), BinaryVerifier/CertificateValidator
+      sur des vérifications Authenticode/certificats propres à Windows. Pas de
+      support cross-platform prévu pour l'instant.
+    -->
+    <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+    <!--
+      Permet de restaurer/compiler depuis un runner non-Windows (le job GitHub
+      natif "Automatic Dependency Submission" tourne sur ubuntu-latest).
+    -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Documentation XML : alimente l'IntelliSense chez les consommateurs. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>SentinelGuard</PackageId>
+    <AssemblyName>SentinelGuard</AssemblyName>
+    <RootNamespace>SentinelGuard</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>Tomoushie</Authors>
+    <Product>SentinelGuard</Product>
+    <Title>SentinelGuard — Windows security guardrails for .NET</Title>
+    <Description>Defensive preflight checks for .NET desktop applications on Windows. Validates file paths (UNC, extended paths, alternate data streams, reserved device names, reparse points), URLs (HTTPS only, domain allow/deny lists), external binaries (SHA-256 hash, Authenticode signature, certificate chain pinning), NTFS ACLs (overly broad write access), remote TLS certificates (explicit pinning and SAN validation) and the process execution location (network share, temporary folder, recycle bin, NTFS-compressed folder). Pure functions: every check returns a boolean, with an optional 'out string? reason' overload giving the exact rejection cause — no logging, no hidden side effects. Extracted from the Chaturbate Recorder project.</Description>
+    <PackageTags>security;sandbox;hardening;path-validation;url-validation;acl;authenticode;code-signing;tls;certificate-pinning;windows;desktop</PackageTags>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Tomoushie/ChaturbateRecorder</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Tomoushie/ChaturbateRecorder</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) Tomoushie</Copyright>
+
+    <!--
+      SourceLink + build déterministe : un consommateur peut déboguer pas-à-pas
+      dans le source du package depuis son IDE, et le binaire est reproductible
+      (même source -> même binaire). ContinuousIntegrationBuild n'est activé que
+      sur le runner : en local il normaliserait les chemins et gênerait le debug.
+    -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!--
+      SYSLIB0057 : X509Certificate.CreateFromSignedFile(...) est marquée obsolète
+      depuis .NET 8, mais reste la seule API de la BCL permettant d'extraire le
+      certificat Authenticode signataire d'un binaire PE déjà signé (même choix
+      que dans l'application principale ChaturbateRecorderApp).
+    -->
+    <NoWarn>SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

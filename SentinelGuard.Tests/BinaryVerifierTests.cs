@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using ChaturbateRecorder.Security;
+using SentinelGuard;
 using Xunit;
 
-namespace ChaturbateRecorder.Security.Tests
+namespace SentinelGuard.Tests
 {
     public class BinaryVerifierTests
     {

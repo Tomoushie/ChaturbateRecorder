@@ -69,7 +69,7 @@ thumbnails/re-encodes always find the right file.
 **What's new** compared to the original PowerShell script:
 multi-stream recording, a bilingual interface, automatic updates, a
 reusable NuGet package
-([`ChaturbateRecorder.Security`](https://github.com/Tomoushie/ChaturbateRecorder/pkgs/nuget/ChaturbateRecorder.Security))
+([`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard))
 for anyone wanting the same validations in another .NET project, and a
 full CI/CD pipeline (automated build, tests, releases, and site
 deployment).

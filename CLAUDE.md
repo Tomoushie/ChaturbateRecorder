@@ -4,10 +4,55 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.17.0 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-03 — version courante : v1.18.0 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (v1.15.0 Crash Reporter et v1.16.0 Diagnostic Mode ont été livrés sans que
 l'en-tête ci-dessus soit mis à jour — corrigé ici.)
+
+**Package de sécurité renommé `SentinelGuard` et destiné à nuget.org
+(2026-08-03)** — remplace/complète 30.0 (`ChaturbateRecorder.Security` sur
+GitHub Packages) :
+- **Pourquoi quitter GitHub Packages** : NuGet sur GitHub Packages **exige une
+  authentification même pour un package public** — un consommateur doit créer
+  un PAT `read:packages` et ajouter une source personnalisée avant un simple
+  `dotnet add package`. Personne ne fait ça pour une bibliothèque tierce, donc
+  le package publié en 30.0 était de fait inutilisable par des tiers. nuget.org
+  = restauration anonyme + trouvable depuis Visual Studio.
+- **Renommage `ChaturbateRecorder.Security` -> `SentinelGuard`** (répertoires,
+  csproj, `AssemblyName`/`RootNamespace`, espace de noms, tests, workflows,
+  dependabot, README/roadmap). Raison : un identifiant nuget.org est
+  **définitif** (ni renommage ni suppression, seulement délistage), et une
+  bibliothèque de sécurité Windows généraliste portant le nom d'un enregistreur
+  de cams adultes ne sera pas ajoutée aux `.csproj`/SBOM d'entreprise.
+- **Diligence de nommage — à refaire pour tout futur package** : vérifier non
+  seulement que la racine est libre (`api.nuget.org/v3-flatcontainer/<id>/index.json`
+  -> 404), mais **aussi qu'aucune famille `<id>.*` n'existe déjà**
+  (`azuresearch-usnc.nuget.org/query?q=<id>`). Le premier choix de
+  l'utilisateur, `RuntimeSentinel`, avait sa racine libre mais trois packages
+  `RuntimeSentinel.Analyzers`/`.CodeFixes`/`.Scoring` appartenant à
+  RenatoCarvalho, dans un domaine voisin (fiabilité .NET) : publier la racine
+  aurait fait passer le package pour l'élément principal de sa suite. Même
+  défaut écarté pour `WinSentinel` (`.Cli`, `.Core`), `Bulwark`, `Rampart`,
+  `Aegis`, `Preflight`, `HardHat`. `SentinelGuard` est sans collision.
+- **Multi-ciblage `net8.0-windows;net10.0-windows`** : ne cibler que net10.0
+  aurait réduit fortement l'audience (la LTS est net8.0). Les tests tournent
+  sur **les deux** cibles (63 x 2), pour valider le multi-ciblage à l'exécution
+  et pas seulement à la compilation.
+- **Qualité de package** : `GenerateDocumentationFile` (IntelliSense côté
+  consommateur — a révélé que les 19 membres publics n'avaient aucun commentaire
+  XML, tous documentés en anglais depuis), SourceLink + `snupkg` + build
+  déterministe (`ContinuousIntegrationBuild` uniquement sur le runner, sinon il
+  normalise les chemins et gêne le debug local), README en anglais servant de
+  fiche nuget.org.
+- **`.github/workflows/publish-nuget.yml`** : déclenché par un tag dédié
+  **`sentinelguard-vX.Y.Z`**, volontairement distinct des tags `vX.Y.Z` de
+  l'app (cycles de version indépendants ; un tag applicatif ne doit pas
+  republier la bibliothèque). Vérifie que le tag correspond à `<Version>` du
+  csproj avant de publier. `workflow_dispatch` avec `dry_run` par défaut à
+  `true` pour tester sans publier.
+- **Action manuelle requise de l'utilisateur** (je ne manipule jamais la clé) :
+  créer une clé API sur nuget.org, puis Settings > Secrets and variables >
+  Actions > secret `NUGET_API_KEY`.
 
 **38.0 traité (2026-08-03) — `docs/latest.json` en retard d'une release** (CI
 uniquement, pas de bump de version ni d'entrée de changelog) :

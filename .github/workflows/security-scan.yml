@@ -32,7 +32,7 @@ jobs:
       - name: Build (nécessaire à l'analyse CodeQL)
         run: |
           dotnet build ChaturbateRecorderApp.csproj -c Release
-          dotnet build ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj -c Release
+          dotnet build SentinelGuard/SentinelGuard.csproj -c Release
 
       - uses: github/codeql-action/analyze@v4
         with:
@@ -51,10 +51,10 @@ jobs:
         run: |
           dotnet restore ChaturbateRecorderApp.csproj
           dotnet list ChaturbateRecorderApp.csproj package --vulnerable --include-transitive
-          dotnet restore ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj
-          dotnet list ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj package --vulnerable --include-transitive
+          dotnet restore SentinelGuard/SentinelGuard.csproj
+          dotnet list SentinelGuard/SentinelGuard.csproj package --vulnerable --include-transitive
 
       - name: Dépendances obsolètes
         run: |
           dotnet list ChaturbateRecorderApp.csproj package --outdated
-          dotnet list ChaturbateRecorder.Security/ChaturbateRecorder.Security.csproj package --outdated
+          dotnet list SentinelGuard/SentinelGuard.csproj package --outdated

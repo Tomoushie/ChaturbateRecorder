@@ -38,7 +38,7 @@ jobs:
         run: |
           dotnet build ChaturbateRecorderApp.csproj -c Release
           dotnet test Tests/ChaturbateRecorderApp.Tests.csproj -c Release
-          dotnet test ChaturbateRecorder.Security.Tests/ChaturbateRecorder.Security.Tests.csproj -c Release
+          dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
 
       # Tools/ (yt-dlp.exe, ffmpeg.exe) est gitignored : absent sur le runner,
       # donc jamais copié dans publish/ (voir Condition="Exists(...)" du .csproj).

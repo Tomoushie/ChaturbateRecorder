@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Vérifie qu'un exécutable tourne depuis un emplacement légitime : ni un
@@ -12,9 +12,35 @@ namespace ChaturbateRecorder.Security
     /// </summary>
     public static class WorkingDirectoryValidator
     {
+        /// <summary>
+        /// Checks that the application is running from a sane location. Rejects
+        /// UNC paths and mapped network drives, temporary and ephemeral folders
+        /// (<c>%TEMP%</c>, Downloads, Desktop), the recycle bin, and
+        /// NTFS-compressed folders — all places where a binary is easy to
+        /// replace, or where execution is a sign the app was launched straight
+        /// out of an archive.
+        /// </summary>
+        /// <param name="appDir">
+        /// The directory to check, typically <see cref="System.AppContext.BaseDirectory"/>.
+        /// </param>
+        /// <returns><see langword="true"/> if the location is acceptable.</returns>
+        /// <remarks>
+        /// This is a deny list, not an allow list: an unknown location is
+        /// accepted. It catches accidental and opportunistic cases, not a
+        /// determined attacker who controls where the app is installed.
+        /// </remarks>
         public static bool IsAuthorizedLocation(string appDir) =>
             IsAuthorizedLocation(appDir, out _);
 
+        /// <summary>
+        /// Same as <see cref="IsAuthorizedLocation(string)"/>, but also reports
+        /// why the location was rejected.
+        /// </summary>
+        /// <param name="appDir">The directory to check.</param>
+        /// <param name="reason">
+        /// On rejection, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the location is acceptable.</returns>
         public static bool IsAuthorizedLocation(string appDir, out string? reason)
         {
             reason = null;

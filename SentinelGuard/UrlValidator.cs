@@ -1,7 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
 
-namespace ChaturbateRecorder.Security
+namespace SentinelGuard
 {
     /// <summary>
     /// Validation stricte des URLs (schéma, hôte, segments, query string).
@@ -25,6 +25,14 @@ namespace ChaturbateRecorder.Security
         private static readonly Regex QueryStringPattern =
             new(@"^([a-zA-Z0-9_\-\.=&]|%[0-9A-Fa-f]{2})+$", RegexOptions.Compiled);
 
+        /// <summary>
+        /// Checks that <paramref name="domain"/> is a syntactically valid DNS
+        /// name: at most 253 characters, every label 1–63 characters of
+        /// letters, digits or hyphens, and never starting or ending with a
+        /// hyphen. A single trailing dot (fully-qualified form) is tolerated.
+        /// </summary>
+        /// <param name="domain">The domain name to check.</param>
+        /// <returns><see langword="true"/> if the format is valid.</returns>
         public static bool IsValidDomainFormat(string domain)
         {
             if (string.IsNullOrWhiteSpace(domain)) return false;
@@ -38,6 +46,21 @@ namespace ChaturbateRecorder.Security
             return true;
         }
 
+        /// <summary>
+        /// Decides whether a domain is allowed, matching subdomains as well:
+        /// an entry <c>example.com</c> also covers <c>cdn.example.com</c>.
+        /// The deny list always wins over the allow list.
+        /// </summary>
+        /// <param name="domain">The domain to test.</param>
+        /// <param name="whitelist">
+        /// Allowed domains. If empty or <see langword="null"/>, any domain not
+        /// denied is accepted — pass a non-empty list to get strict allow-listing.
+        /// </param>
+        /// <param name="blacklist">Denied domains, checked first.</param>
+        /// <returns>
+        /// <see langword="true"/> if the domain is well-formed, not denied, and
+        /// either allow-listed or the allow list is empty.
+        /// </returns>
         public static bool IsDomainAllowed(string domain, string[] whitelist, string[] blacklist)
         {
             if (!IsValidDomainFormat(domain)) return false;
@@ -64,6 +87,14 @@ namespace ChaturbateRecorder.Security
             return true;
         }
 
+        /// <summary>
+        /// Checks a single URL path segment (the part between two slashes).
+        /// Rejects traversal segments (<c>.</c>, <c>..</c>), percent-encoding,
+        /// query/fragment delimiters, whitespace, quotes and backslashes, so a
+        /// segment cannot smuggle in a second path or escape upwards.
+        /// </summary>
+        /// <param name="segment">A single segment, without its slashes.</param>
+        /// <returns><see langword="true"/> if the segment is safe.</returns>
         public static bool IsSafePathSegment(string segment)
         {
             if (string.IsNullOrEmpty(segment)) return false;
@@ -74,6 +105,14 @@ namespace ChaturbateRecorder.Security
             return true;
         }
 
+        /// <summary>
+        /// Checks a URL query string. An empty query is accepted. Otherwise it
+        /// must be at most 512 characters and contain only unreserved
+        /// characters, <c>=</c>, <c>&amp;</c>, or well-formed <c>%XX</c> escape
+        /// sequences — a lone <c>%</c> is rejected.
+        /// </summary>
+        /// <param name="query">The query string, without the leading <c>?</c>.</param>
+        /// <returns><see langword="true"/> if the query string is safe.</returns>
         public static bool IsSafeQueryString(string query)
         {
             if (string.IsNullOrEmpty(query)) return true;
@@ -81,9 +120,32 @@ namespace ChaturbateRecorder.Security
             return QueryStringPattern.IsMatch(query);
         }
 
+        /// <summary>
+        /// Full URL check: HTTPS only (<c>javascript:</c>, <c>file:</c>,
+        /// <c>ftp:</c>, <c>data:</c> and <c>blob:</c> are refused), host allowed
+        /// by <paramref name="allowedDomains"/> / <paramref name="blacklist"/>,
+        /// and every path segment and the query string individually safe.
+        /// </summary>
+        /// <param name="urlToTest">The URL to validate.</param>
+        /// <param name="allowedDomains">
+        /// Allowed domains, subdomains included. Empty means "any domain not denied".
+        /// </param>
+        /// <param name="blacklist">Denied domains, which always take precedence.</param>
+        /// <returns><see langword="true"/> if the URL is safe to open.</returns>
         public static bool IsSafeUrl(string urlToTest, string[] allowedDomains, string[] blacklist) =>
             IsSafeUrl(urlToTest, allowedDomains, blacklist, out _);
 
+        /// <summary>
+        /// Same as <see cref="IsSafeUrl(string, string[], string[])"/>, but also
+        /// reports why the URL was rejected.
+        /// </summary>
+        /// <param name="urlToTest">The URL to validate.</param>
+        /// <param name="allowedDomains">Allowed domains, subdomains included.</param>
+        /// <param name="blacklist">Denied domains, which always take precedence.</param>
+        /// <param name="reason">
+        /// On rejection, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns><see langword="true"/> if the URL is safe to open.</returns>
         public static bool IsSafeUrl(string urlToTest, string[] allowedDomains, string[] blacklist, out string? reason)
         {
             reason = null;
