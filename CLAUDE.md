@@ -4,7 +4,7 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.14.0 (app), README/Wiki à jour (docs uniquement, pas de bump de version)
+## État au 2026-08-03 — version courante : v1.14.1 (app), CI/CD + site Jekyll en place (34.0/37.0)
 
 **30.0/33.0 traités (2026-08-03)** :
 - **30.0** : premier package NuGet publié sur GitHub Packages —
@@ -48,6 +48,74 @@ Site : https://tomoushie.github.io/ChaturbateRecorder/
 - **31.0** : refonte du `README.md` — logo (`Assets/logo.png`, extrait de `app.ico`), capture d'écran (`Assets/screenshot.png`, générée avec des données factices — jamais le vrai contenu de capture de l'utilisateur), badges shields.io, nouvelle section "Installation (utilisateurs)" avant la partie développeur, section "Fonctionnalités" alignée sur le site, contenu existant conservé mais réorganisé sous des `<details>` repliables. Cible clarifiée avec l'utilisateur avant de commencer : les deux profils GitHub donnés en exemple (ishandutta2007, grigorkalajdziev) étaient des profils **personnels** (bannière, stats de contributions, typing animation) — l'utilisateur a confirmé vouloir améliorer le README du **projet**, pas un profil perso, donc emprunt du style badges/structure uniquement.
 - **32.0** : Wiki GitHub créé (`https://github.com/Tomoushie/ChaturbateRecorder/wiki`, dépôt séparé `ChaturbateRecorder.wiki.git`) — 7 pages : Home, Installation, Guide-utilisation, Configuration, Securite, FAQ-Depannage, Contribuer, plus `_Sidebar.md`. **Piège découvert** : impossible de créer la toute première page d'un wiki GitHub par API ou par simple `git push` sur `<repo>.wiki.git` (repo inexistant tant qu'aucune page n'a été sauvegardée une fois via l'interface web) — a fallu demander à l'utilisateur de cliquer une fois sur "Create the first page", ensuite tout le contenu a pu être poussé normalement par git comme n'importe quel dépôt. Contenu en français uniquement (pas bilingue, à la différence du site/de l'app) — scope non demandé, à proposer seulement si demandé.
 
+**34.0/37.0 traités (2026-08-03)** :
+- **34.0** : 5 workflows GitHub Actions dans `.github/workflows/` — Build + Test
+  (build + tests xUnit sur push/PR vers `main`) ; Publish Release (sur tag
+  `vX.Y.Z` : build/tests, `dotnet publish` standard + portable, zip, création
+  de la release GitHub avec les deux ZIP attachés — remplace le script curl
+  manuel de la section Conventions ci-dessous, qui reste utilisable en
+  secours) ; Update Checker (régénère `docs/latest.json` avec version/URLs/
+  SHA256 à chaque release publiée + cron quotidien en filet de sécurité,
+  découplé de Publish Release pour couvrir aussi une release créée
+  manuellement) ; Security Scan (CodeQL C# + `dotnet list package
+  --vulnerable`/`--outdated` sur les deux projets) ; Pages Build (déploie
+  `docs/` via `actions/deploy-pages`). Complété par `.github/dependabot.yml`
+  (PRs auto pour NuGet + GitHub Actions — 5 PRs de bump de versions d'actions
+  déjà mergées). Ces workflows utilisent le `GITHUB_TOKEN` par défaut
+  (permissions lecture/écriture activées dans les réglages du dépôt) plutôt
+  que le PAT classique du Credential Manager.
+  **Correctif trouvé en concevant Publish Release** : avec deux ZIP
+  (standard/portable) désormais systématiquement attachés à chaque release,
+  `Services/UpdateChecker.cs` prenait juste "le premier .zip trouvé", ce qui
+  pouvait faire télécharger la mauvaise variante à "Rechercher une mise à
+  jour" (ex: remplacer un build portable self-contained par le build
+  standard sans runtime .NET). Détection du build en cours (présence de
+  `ChaturbateRecorder.dll` à côté de l'exe) pour choisir le bon ZIP, avec
+  repli sur l'ancien comportement si une release ne suit pas la convention
+  de nommage. Bump 1.14.0 -> 1.14.1 (patch, pattern 1.13.1) + changelog.
+  **Piège découvert** : le job GitHub natif "Automatic Dependency
+  Submission (NuGet)" (Settings > Code security > Dependency graph,
+  indépendant de nos workflows, activé par défaut) tourne sur `ubuntu-latest`
+  et échouait avec `NETSDK1100` en tentant de restaurer
+  `ChaturbateRecorderApp.csproj` — `UseWindowsForms=true` tire le
+  FrameworkReference `Microsoft.WindowsDesktop.App.WindowsForms`, que le SDK
+  .NET refuse de résoudre hors Windows sans
+  `<EnableWindowsTargeting>true</EnableWindowsTargeting>` (ajouté sur ce
+  projet et sur `Tests/ChaturbateRecorderApp.Tests.csproj`, qui le référence ;
+  `ChaturbateRecorder.Security.csproj` n'est pas concerné, il n'a pas
+  `UseWindowsForms`). Sans effet sur un build Windows classique.
+  **Deux réglages de dépôt à activer manuellement une fois** (pas
+  automatisables sans risque depuis l'agent) pour que ces workflows
+  fonctionnent : Settings > Actions > General > Workflow permissions =
+  "Read and write permissions" ; Settings > Pages > Source = "GitHub
+  Actions" (au lieu de "Deploy from a branch") — fait par l'utilisateur.
+- **37.0** : thème Jekyll (`jekyll-theme-cayman`, `docs/_config.yml`) + 3
+  nouvelles pages sur le site : `docs/features.md` (sandbox, sécurité, logs,
+  UI, historique, update checker, watchdog — contenu tiré du code),
+  `docs/screenshots.md` (3 captures dans `docs/assets/` : thème clair
+  réutilisé du README, thème sombre + fenêtre Paramètres nouvellement
+  générées via la technique `DrawToBitmap` habituelle, données factices),
+  `docs/roadmap.md` (fait/prévu/écarté, public). Contenu en français
+  uniquement (comme le wiki), pas de toggle FR/EN — refaire le mécanisme JS
+  de la page d'accueil pour 3 pages Markdown statiques n'apportait pas
+  grand-chose ; à étendre si demandé. Liens de navigation bilingues ajoutés
+  sur la page d'accueil vers les 3 nouvelles pages.
+  **Piège découvert** : `pages-build.yml` (créé en 34.0) publiait `docs/` tel
+  quel via `upload-pages-artifact`, sans jamais passer par un build Jekyll —
+  sans correction, `_config.yml`/le thème/le rendu Markdown des nouvelles
+  pages n'auraient eu aucun effet (les `.md` auraient été servis en texte
+  brut). Ajout d'une étape `actions/jekyll-build-pages` avant l'upload
+  (`source: ./docs`, `destination: ./_site`). `docs/index.html` n'a pas de
+  front matter YAML : Jekyll le copie tel quel sans lui appliquer le thème,
+  donc la page d'accueil personnalisée bilingue existante n'est pas
+  affectée — vérifié en production après déploiement. Liens internes en
+  `.html` explicite (permalink par défaut de Jekyll pour une page racine,
+  pas d'URL "pretty" configurée).
+- Workflow git utilisé pour 34.0/37.0 (nouveau pour ce projet) : une branche
+  + PR par sous-tâche, mergées via squash-merge par l'API GitHub (`gh` non
+  installé, curl + token du Credential Manager comme pour les releases).
+  Checks CI (`build-test`, CodeQL, `dependencies`) vérifiés avant merge.
+
 **Dossier du projet déplacé** : `E:\Corpus\Documents\Chaturbate Record\Projet logiciel\ChaturbateRecorderApp` (l'ancien `...\Projet logiciel\NET 8 Old\ChaturbateRecorderApp` n'existe plus/est obsolète, l'utilisateur devait supprimer "NET 8 Old" après la copie).
 
 v1.14.0 — items 18.0/19.0/25.0 du fichier de notes perso :
@@ -89,7 +157,12 @@ Restent dans le fichier de notes perso, non traités, à proposer seulement si d
 
 ## Conventions établies dans ce projet
 
-**Versioning & releases** — à chaque lot de fonctionnalités livré :
+**Versioning & releases** — depuis 34.0, le workflow GitHub Actions "Publish
+Release" automatise les étapes 6 (publish standard+portable, zip, upload sur
+la release) à partir d'un tag poussé — les étapes manuelles ci-dessous
+restent documentées comme méthode de secours/référence :
+
+À chaque lot de fonctionnalités livré :
 1. Bump `<Version>` dans `ChaturbateRecorderApp.csproj` (incrément mineur, ex: 1.9.0 -> 1.10.0)
 2. Ajouter une entrée dans `Config/Changelog.cs` (affichée en local via le dialogue "Nouveautés")
 3. `dotnet build` + `dotnet test Tests/ChaturbateRecorderApp.Tests.csproj` avant de committer
