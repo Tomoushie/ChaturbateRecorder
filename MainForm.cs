@@ -21,6 +21,7 @@ namespace ChaturbateRecorderApp
         private Button checkUpdateButton = null!;
         private Button tutorialButton = null!;
         private Button reportBugButton = null!;
+        private Button diagnosticButton = null!;
         private Button modeToggleButton = null!;
         private Label urlLabel = null!;
         private TextBox urlTextBox = null!;
@@ -997,6 +998,7 @@ namespace ChaturbateRecorderApp
             checkUpdateButton.Text = L("button.checkUpdate");
             tutorialButton.Text = L("button.tutorial");
             reportBugButton.Text = L("button.reportBug");
+            diagnosticButton.Text = L("button.diagnostic");
             modeToggleButton.Text = _advancedMode ? L("mode.switchToSimple") : L("mode.switchToAdvanced");
 
             _trayOpenItem.Text = L("tray.open");
@@ -1153,6 +1155,7 @@ namespace ChaturbateRecorderApp
             SetIcon(checkUpdateButton, "update");
             SetIcon(tutorialButton, "book");
             SetIcon(reportBugButton, "alert");
+            SetIcon(diagnosticButton, "pulse");
             SetIcon(websiteButton, "globe");
 
             foreach (var row in _jobRows)
@@ -1177,7 +1180,9 @@ namespace ChaturbateRecorderApp
         {
             _advancedMode = advanced;
 
-            const int grpRecordY = 75;
+            // 105 (pas 75) depuis l'ajout du bouton Diagnostic (2.3) sur une
+            // troisième rangée de la barre du haut.
+            const int grpRecordY = 105;
             const int grpRecordHeightAdvanced = 172;
             const int grpRecordHeightSimple = 110;
             const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
@@ -1186,11 +1191,13 @@ namespace ChaturbateRecorderApp
             tutorialButton.Visible = advanced;
             checkUpdateButton.Visible = advanced;
             reportBugButton.Visible = advanced;
+            diagnosticButton.Visible = advanced;
             grpHistory.Visible = advanced;
             grpFavorites.Visible = advanced;
             grpDonate.Visible = advanced;
             grpLogs.Visible = advanced;
 
+            grpRecord.Location = new Point(12, grpRecordY);
             grpRecord.Height = advanced ? grpRecordHeightAdvanced : grpRecordHeightSimple;
 
             var progressY = grpRecordY + grpRecord.Height + sectionGap;
@@ -1432,6 +1439,9 @@ namespace ChaturbateRecorderApp
             reportBugButton = new Button { Location = new Point(437, 39), Size = new Size(160, 24) };
             reportBugButton.Click += OnReportBugClick;
 
+            diagnosticButton = new Button { Location = new Point(12, 69), Size = new Size(160, 24) };
+            diagnosticButton.Click += (s, e) => new DiagnosticForm().ShowDialog(this);
+
             // --- Panel : Enregistrement ---
             // Ancrage Left+Right (fenêtre redimensionnable, v1.7.0) : le panneau
             // et son contenu large (URL, dossier, proxy) suivent la largeur de
@@ -1612,7 +1622,7 @@ namespace ChaturbateRecorderApp
             grpLogs.Controls.Add(logListBox);
             logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
             Controls.Add(contentPanel);
 
             // Ancrage des panneaux eux-mêmes, posé après leur ajout à

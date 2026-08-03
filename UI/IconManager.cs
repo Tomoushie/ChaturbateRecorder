@@ -58,6 +58,11 @@ namespace ChaturbateRecorderApp.UI
                 "<circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>" +
                 "<line x1=\"12\" y1=\"7\" x2=\"12\" y2=\"13\" stroke=\"{COLOR}\" stroke-width=\"2\" stroke-linecap=\"round\"/>" +
                 "<circle cx=\"12\" cy=\"16.5\" r=\"1.3\" fill=\"{COLOR}\"/>"),
+
+            // Ligne de pouls/ECG (2.3, bouton "Diagnostic").
+            ["pulse"] = Wrap(
+                "<polyline points=\"3,12 8,12 10,6 14,18 16,12 21,12\" fill=\"none\" stroke=\"{COLOR}\" " +
+                "stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"),
         };
 
         private static string Wrap(string inner) =>
