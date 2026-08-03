@@ -110,6 +110,10 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Correctif : \"Rechercher une mise à jour\" pouvait télécharger la mauvaise variante (standard/portable) quand une release en propose plusieurs — l'exécutable en cours est maintenant détecté pour choisir le bon ZIP.",
             }),
+            ("1.15.0", new[]
+            {
+                "Crash Reporter : les erreurs inattendues (thread principal ou non) sont désormais capturées, journalisées dans un fichier de rapport dédié, et affichées dans un dialogue proposant d'ouvrir le dossier des logs ou de redémarrer proprement l'application.",
+            }),
         };
     }
 }

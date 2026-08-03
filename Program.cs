@@ -2,6 +2,7 @@ using System;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
 using ChaturbateRecorderApp.Security;
+using ChaturbateRecorderApp.Services;
 
 namespace ChaturbateRecorderApp
 {
@@ -23,6 +24,13 @@ namespace ChaturbateRecorderApp
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            // Crash Reporter (2.1) : capture les exceptions non gérées, thread UI
+            // (ThreadException) et hors UI (AppDomain.UnhandledException), avant
+            // de démarrer la boucle de messages.
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            CrashReporter.Install();
+
             Application.Run(new MainForm());
         }
     }
