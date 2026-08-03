@@ -1,9 +1,18 @@
 name: Update Checker
 
 # Régénère docs/latest.json à partir de la dernière release GitHub publiée.
-# Découplé de "Publish Release" : se redéclenche aussi sur une release créée
-# manuellement, et via le cron en filet de sécurité si l'évènement a été raté.
+#
+# Déclenchement principal : appel direct depuis "Publish Release"
+# (workflow_call). C'est le SEUL chemin fiable après une release automatisée :
+# GitHub ne déclenche jamais de workflow à partir d'un évènement créé avec le
+# GITHUB_TOKEN par défaut (protection anti-boucle), et c'est bien ce token qui
+# crée la release dans publish-release.yml. Le trigger "release: published"
+# ci-dessous ne part donc JAMAIS pour nos releases automatisées — il ne sert
+# qu'aux releases créées à la main depuis l'interface web (identité
+# utilisateur, donc évènement bien émis).
+# Le cron et workflow_dispatch restent des filets de sécurité.
 on:
+  workflow_call:
   release:
     types: [published]
   schedule:
@@ -12,6 +21,13 @@ on:
 
 permissions:
   contents: write
+
+# Sérialise les exécutions : le cron, un dispatch manuel et l'appel depuis
+# "Publish Release" poussent tous un commit sur main — deux runs simultanés
+# feraient échouer le push du second (non fast-forward).
+concurrency:
+  group: update-latest-json
+  cancel-in-progress: false
 
 jobs:
   update-latest-json:
