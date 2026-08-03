@@ -4,7 +4,72 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.14.1 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-03 — version courante : v1.17.0 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+
+(v1.15.0 Crash Reporter et v1.16.0 Diagnostic Mode ont été livrés sans que
+l'en-tête ci-dessus soit mis à jour — corrigé ici.)
+
+**24.0 traité (2026-08-03) — extension de la traduction FR/EN, 4 commits** :
+- **Libellés dynamiques des lignes de job** : le panneau "Enregistrements en
+  cours" est construit en code (`BuildJobRow`), donc il était resté hors du
+  premier passage 20.0. Nouvel enum `JobRowStatus` + `RefreshJobRowLabels`,
+  seul endroit qui traduit l'état en texte, appelé aussi depuis
+  `ApplyLanguage` — changer de langue en pleine session retraduit les lignes
+  déjà affichées **sans** écraser un pourcentage en cours ou un compte à
+  rebours de reconnexion. Corrige au passage un vrai bug : l'état terminal
+  affichait `$"{state}"`, donc les noms d'enum anglais (Completed/Failed/
+  Stopped) même en français.
+- **Messages/dialogues/notifications** : 25 `MessageBox` + 5 notifications.
+  **Point d'architecture** : `Get(key, lang)` obligeait à faire circuler la
+  langue jusqu'au point d'affichage, impossible pour `Program.Main` qui
+  affiche un `MessageBox` AVANT que `MainForm` n'existe. D'où
+  `Localization.Current` statique + `Format(key, args)`.
+  **Piège évité** : `Format` n'a délibérément PAS de surcharge prenant une
+  `AppLanguage` — l'enum se lierait silencieusement au `params object[]`
+  (donc au premier trou) au lieu de choisir la langue.
+  **Arbitrage sécurité** : la langue vit dans `settings.json` à côté de
+  l'exe, donc dans le dossier que `WorkingDirectoryValidator` n'a pas encore
+  validé. Le contrôle d'emplacement reste la toute première instruction et ce
+  seul message se rabat sur `CultureInfo.CurrentUICulture` plutôt que de lire
+  un fichier depuis un emplacement non vérifié.
+- **Guide de démarrage** : `TutorialForm.Steps` stocke des clés résolues dans
+  `RenderStep` (pas à l'initialisation statique, qui figerait le guide dans la
+  langue du démarrage). Les noms cités entre guillemets dans la prose
+  reprennent mot pour mot les libellés traduits (`button.start`,
+  `panel.progress`, `job.open`...) : sinon le guide anglais décrit des boutons
+  qui n'existent pas sous ce nom.
+- **Changelog** : traduit **à partir de la version courante seulement**
+  (1.16.0+), décision de l'utilisateur — l'historique ancien reste français,
+  son intérêt étant archivistique et le dialogue "Nouveautés" n'affichant
+  qu'une version à la fois. `GetChanges(version, bool english)` prend un bool
+  et pas un `AppLanguage` : `Config` est la couche basse (référencée par
+  `Security`/`Services`) et n'a pas à dépendre de `UI`.
+- **Restent en français par choix documenté** (dans le code) :
+  `DiagnosticForm` et `CrashReportForm` (leur sortie est collée dans un ticket
+  GitHub — des rapports en deux langues compliqueraient le dépouillement ;
+  `CrashReportForm` avait déjà une raison plus forte de ne pas dépendre de
+  `Localization` : l'état de l'app peut être corrompu quand il s'affiche), les
+  logs, et l'historique ancien du changelog.
+- **Tests** : `Tests/LocalizationTests.cs` (8) + `Tests/ChangelogTests.cs` (8),
+  77 au total. Les deux garde-fous qui comptent : (a) FR et EN doivent avoir
+  exactement les mêmes trous `{0}` — sinon `Format` lève une exception dans
+  **une seule** des deux langues, invisible à un test manuel fait en français ;
+  (b) toute version >= 1.16.0 doit avoir sa traduction, donc **le prochain bump
+  fera échouer la suite** tant que la nouvelle entrée n'est pas traduite. Les
+  deux ont été vérifiés en les cassant volontairement.
+
+**26.0 (russe + chinois) — analysé puis reporté (2026-08-03)**, ne pas
+re-proposer sans demande explicite. Mesuré : les 76 sites d'appel passent tous
+par `Get`/`Format`, le tuple `(Fr, En)` ne fuit que dans `Localization.cs` et
+ses tests — un passage à 4 langues toucherait **2 fichiers**, pas 76 sites. Le
+faire "en prévision" n'économiserait donc rien. Le vrai coût est ailleurs et
+un 4ᵉ champ de tuple ne le règle pas : **pluriels russes** (3 formes selon le
+nombre ; `update.runningJobsWarning` dit "{0} enregistrement(s)", que
+`string.Format` ne sait pas décliner), **polices CJK** (Segoe UI, imposée par
+l'app, n'a aucun glyphe chinois), et **libellés à taille fixe** (le corps du
+tutoriel est en 440x196 et l'anglais gagne déjà une ligne à l'étape 3 ; le
+russe est ~10-15% plus long que l'anglais). S'ajoute le fait qu'une IA ne peut
+pas produire ~300 chaînes RU/ZH vérifiables par le mainteneur.
 
 **30.0/33.0 traités (2026-08-03)** :
 - **30.0** : premier package NuGet publié sur GitHub Packages —
@@ -179,7 +244,9 @@ Toutes les sections d'une liste de tâches numérotée (1 à 9) ont été trait�
 
 20.0 Sélecteur de langue (v1.13.0) : Français/English, `UI/Localization.cs` (dictionnaire clé -> (Fr,En)) + `MainForm.ApplyLanguage(lang)`. **Portée volontairement limitée à l'UI principale** (labels, boutons, cases à cocher, en-têtes de colonnes, items de ComboBox, bascule de mode) — décision prise avec l'utilisateur. Messages d'erreur/confirmations, notifications toast, logs, guide de démarrage (TutorialForm) et historique des nouveautés (Changelog) restent en français, pas couverts par ce passage (générés à des dizaines d'endroits différents dans le code). Nouveau sélecteur "Langue :" à côté du thème, visible en mode avancé seulement ; barre du haut passée à deux lignes (plus assez de place sur une seule) — `grpRecordY` à 75 au lieu de 50. Choix persisté dans `UserSettings.Language` ("fr"/"en").
 
-**Prochaine étape logique si l'utilisateur redemande une traduction plus poussée** : messages d'erreur/MessageBox (21 occurrences), notifications toast, ou guide de démarrage/changelog — ne pas se lancer dedans sans qu'il le demande explicitement, l'ampleur a été volontairement limitée cette fois.
+**(Traité depuis)** : cette "prochaine étape" — messages d'erreur/MessageBox,
+notifications, guide de démarrage, changelog — a été faite en 24.0 (v1.17.0),
+voir la section en haut de ce fichier.
 
 Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvelle :
 - 1.1 et 6.3 (signature Authenticode) : bloqués sur certificat, pas de solution logicielle possible.
@@ -187,7 +254,13 @@ Items explicitement en attente/écartés, ne pas re-proposer sans raison nouvell
 - 9.1 (couleurs pastel) : écarté par l'utilisateur, palette bleu Windows 11 conservée.
 - 17.0 (extension navigateur) : gros projet à part, reporté à la demande de l'utilisateur.
 - 15.0 (portable vs installeur choisi au 1er lancement) : concept corrigé — c'est un choix de *publication* (deux fichiers de release séparés), pas un dialogue runtime. Déjà en place via les deux formats de release.
-- 20.0 (traduction des messages/notifications/guide/changelog) : hors périmètre du premier passage de traduction (v1.13.0/v1.14.0), à proposer seulement si demandé. Les nouveaux textes ajoutés en v1.14.0 (menu de la zone de notification, fenêtre Paramètres) SONT traduits ; messages d'erreur/notifications/logs restent français.
+- 20.0 (traduction des messages/notifications/guide/changelog) : **fait en
+  24.0 / v1.17.0**. Restent en français par choix documenté : DiagnosticForm,
+  CrashReportForm, les logs et l'historique ancien du changelog.
+- 26.0 (russe + chinois) : analysé et reporté en 2026-08-03, voir la section
+  dédiée en haut de ce fichier. Le blocage n'est pas la structure de données
+  (2 fichiers à toucher) mais pluriels russes / polices CJK / libellés à
+  taille fixe / impossibilité de produire des traductions vérifiables.
 
 Restent dans le fichier de notes perso, non traités, à proposer seulement si demandé :
 - 21.0 (portage Macintosh), 22.0 (extension navigateur portée sur Mac/Safari — dépend aussi de 17.0), 23.0 (installateur avec étapes d'installation).

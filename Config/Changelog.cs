@@ -131,6 +131,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Nouveau bouton \"Diagnostic\" (mode avancé) : panneau affichant les versions (.NET, application, yt-dlp, ffmpeg), l'intégrité des binaires externes, l'état des ACL et du dossier d'exécution, et la joignabilité réseau — copiable en un clic pour un rapport de bug.",
             }),
+            ("1.17.0", new[]
+            {
+                "Traduction étendue : les messages d'erreur, les dialogues, les notifications, le guide de démarrage et l'annonce des nouveautés suivent désormais la langue choisie, au lieu de rester en français quel que soit le réglage.",
+                "Les lignes de la zone \"Enregistrements en cours\" (statut, bouton Stop / Retirer / Annuler, bouton Ouvrir) suivent également la langue choisie, y compris lorsqu'elle est changée pendant un enregistrement.",
+                "Le panneau de diagnostic et le rapport d'erreur restent volontairement en français : ils sont destinés à être collés dans un ticket, où des rapports en deux langues compliqueraient le dépouillement.",
+            }),
         };
 
         /// <summary>
@@ -144,6 +150,12 @@ namespace ChaturbateRecorderApp.Config
             ["1.16.0"] = new[]
             {
                 "New \"Diagnostics\" button (advanced mode): a panel showing versions (.NET, application, yt-dlp, ffmpeg), the integrity of external binaries, the state of the ACLs and of the execution folder, and network reachability — copied in one click for a bug report.",
+            },
+            ["1.17.0"] = new[]
+            {
+                "Extended translation: error messages, dialogs, notifications, the getting started guide and the what's-new announcement now follow the selected language, instead of staying in French whatever the setting.",
+                "Rows in the \"Active recordings\" area (status, Stop / Remove / Cancel button, Open button) also follow the selected language, including when it is changed while a recording is running.",
+                "The diagnostics panel and the crash report deliberately stay in French: they are meant to be pasted into an issue, where reports in two languages would make triage harder.",
             },
         };
 
