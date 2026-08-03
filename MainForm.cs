@@ -168,8 +168,9 @@ namespace ChaturbateRecorderApp
         /// Sur un tout premier lancement (aucune version jamais vue), affiche le
         /// tutoriel plutôt que le changelog complet — moins redondant pour un
         /// nouvel utilisateur qui ne connaît encore aucune fonctionnalité.
-        /// Pour une mise à jour (version déjà vue mais différente), affiche le
-        /// changelog de la nouvelle version.
+        /// Pour une mise à jour (version déjà vue mais différente), affiche les
+        /// nouveautés de TOUTES les versions franchies depuis, pas seulement
+        /// celle qui vient d'être installée (voir Changelog.GetChangesSince).
         /// </summary>
         private void ShowFirstRunDialogs()
         {
@@ -186,21 +187,19 @@ namespace ChaturbateRecorderApp
 
             if (_settings.LastSeenVersion != version)
             {
-                ShowChangelog(version);
+                ShowChangelog(_settings.LastSeenVersion, version);
                 _settings.LastSeenVersion = version;
                 SettingsManager.Save(_settings);
             }
         }
 
-        private void ShowChangelog(string version)
+        private void ShowChangelog(string? lastSeenVersion, string version)
         {
-            var changes = Changelog.GetChanges(version, Localization.Current == AppLanguage.English);
-            var body = changes.Length > 0
-                ? string.Join(Environment.NewLine, changes.Select(c => "• " + c))
-                : Localization.Get("changelog.noDetails");
+            var announced = Changelog.GetChangesSince(
+                lastSeenVersion, version, Localization.Current == AppLanguage.English);
 
-            MessageBox.Show(this, body, Localization.Format("changelog.title", version),
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using var dialog = new ChangelogForm(announced, version, _currentTheme);
+            dialog.ShowDialog(this);
         }
 
         private void ShowTutorial()
