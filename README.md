@@ -5,6 +5,7 @@
 
   Enregistreur de lives multi-stream pour Windows — sécurité, qualité et confidentialité configurables.
 
+  [![Sponsoriser](https://img.shields.io/badge/Sponsor-%E2%9D%A4-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Tomoushie)
   [![Dernière version](https://img.shields.io/github/v/release/Tomoushie/ChaturbateRecorder?label=version&color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest)
   [![Téléchargements](https://img.shields.io/github/downloads/Tomoushie/ChaturbateRecorder/total?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases)
   [![Build + Test](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml)
@@ -21,6 +22,7 @@
   📦 [Dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) ·
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·
   🛡️ [SentinelGuard sur NuGet](https://www.nuget.org/packages/SentinelGuard) ·
+  ❤️ [Sponsoriser le projet](https://github.com/sponsors/Tomoushie) ·
   📜 [Version PowerShell d'origine](legacy-powershell/)
 
   🇫🇷 **Français** · 🇬🇧 [English](README.en.md)
@@ -288,7 +290,26 @@ Contributions, retours et rapports de bugs bienvenus via les [issues du dépôt]
 
 ## Soutenir le projet
 
+[![Sponsoriser sur GitHub](https://img.shields.io/badge/GitHub%20Sponsors-%E2%9D%A4-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Tomoushie)
 [![Faire un don](https://img.shields.io/badge/PayPal-Faire%20un%20don-00457C?logo=paypal&logoColor=white)](https://paypal.me/tomoushie)
+
+**[GitHub Sponsors](https://github.com/sponsors/Tomoushie)** pour un soutien
+récurrent, **PayPal** pour un don ponctuel. L'application reste entièrement
+gratuite et sans publicité dans les deux cas.
+
+### Pourquoi sponsoriser ?
+
+Au-delà du temps passé, un point précis est aujourd'hui bloqué faute de budget :
+la **signature Authenticode de l'exécutable**. Un certificat de signature de
+code est payant et délivré à une entité vérifiée. Sans lui :
+
+- Windows SmartScreen affiche un avertissement au premier lancement, que chaque
+  utilisateur doit contourner manuellement
+- l'application ne peut pas vérifier sa propre intégrité au démarrage, et donc
+  pas détecter qu'elle a été modifiée ou « crackée »
+
+C'est la seule fonctionnalité de la roadmap bloquée par de l'argent plutôt que
+par du travail. Le reste avance sans.
 
 ## Licence
 

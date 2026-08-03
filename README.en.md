@@ -5,6 +5,7 @@
 
   Multi-stream live recorder for Windows — configurable security, quality, and privacy.
 
+  [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Tomoushie)
   [![Latest version](https://img.shields.io/github/v/release/Tomoushie/ChaturbateRecorder?label=version&color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest)
   [![Downloads](https://img.shields.io/github/downloads/Tomoushie/ChaturbateRecorder/total?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/releases)
   [![Build + Test](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml/badge.svg)](https://github.com/Tomoushie/ChaturbateRecorder/actions/workflows/build-test.yml)
@@ -21,6 +22,7 @@
   📦 [Latest release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) ·
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·
   🛡️ [SentinelGuard on NuGet](https://www.nuget.org/packages/SentinelGuard) ·
+  ❤️ [Sponsor the project](https://github.com/sponsors/Tomoushie) ·
   📜 [Original PowerShell version](legacy-powershell/)
 
   🇬🇧 **English** · 🇫🇷 [Français](README.md)
@@ -286,7 +288,26 @@ Contributions, feedback, and bug reports are welcome via the [repo's issues](htt
 
 ## Support the project
 
+[![Sponsor on GitHub](https://img.shields.io/badge/GitHub%20Sponsors-%E2%9D%A4-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Tomoushie)
 [![Donate](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal&logoColor=white)](https://paypal.me/tomoushie)
+
+**[GitHub Sponsors](https://github.com/sponsors/Tomoushie)** for recurring
+support, **PayPal** for a one-off donation. The application stays entirely free
+and ad-free either way.
+
+### Why sponsor?
+
+Beyond the time spent, one specific item is currently blocked by budget rather
+than by work: **Authenticode signing of the executable**. A code-signing
+certificate is paid for and issued to a verified entity. Without it:
+
+- Windows SmartScreen shows a warning on first launch, which every user has to
+  dismiss manually
+- the application cannot verify its own integrity at startup, and therefore
+  cannot detect that it has been tampered with or cracked
+
+It is the only roadmap item held up by money rather than effort. Everything
+else moves forward regardless.
 
 ## License
 

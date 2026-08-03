@@ -1,0 +1,12 @@
+# Active le bouton "Sponsor" natif de GitHub, affiché en haut de la page du
+# dépôt et sur chaque page de release — l'emplacement le plus visible, sans
+# rien avoir à écrire dans le README.
+#
+# GitHub n'affiche le bouton que si le compte est éligible au programme
+# Sponsors ; la page https://github.com/sponsors/Tomoushie doit répondre.
+
+github: [Tomoushie]
+
+# "custom" accepte des URL libres : le lien PayPal existant reste proposé à
+# côté du parrainage récurrent, pour qui préfère un don ponctuel.
+custom: ["https://paypal.me/tomoushie"]
