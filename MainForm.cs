@@ -110,6 +110,9 @@ namespace ChaturbateRecorderApp
         {
             _settings = SettingsManager.Load();
             _currentLanguage = _settings.Language == "en" ? AppLanguage.English : AppLanguage.French;
+            // Réaligne sur le réglage persisté la valeur provisoire posée par
+            // Program.Main depuis la langue de l'OS (24.0).
+            Localization.Current = _currentLanguage;
             if (!string.IsNullOrWhiteSpace(_settings.CaptureDir) && PathValidator.IsValidPath(_settings.CaptureDir))
                 AppConfig.CaptureDir = _settings.CaptureDir;
             if (!string.IsNullOrWhiteSpace(_settings.CookiesFilePath) && File.Exists(_settings.CookiesFilePath))
@@ -124,8 +127,8 @@ namespace ChaturbateRecorderApp
             if (!PathValidator.IsValidPath(AppConfig.CaptureDir) || !PathValidator.IsValidPath(AppConfig.LogDir))
             {
                 MessageBox.Show(
-                    "Dossier de capture ou de logs invalide (sandbox de chemins).",
-                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Localization.Get("error.invalidCaptureOrLogDir"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(1);
             }
 
@@ -194,9 +197,10 @@ namespace ChaturbateRecorderApp
             var entry = Changelog.Entries.FirstOrDefault(e => e.Version == version);
             var body = entry.Changes is { Length: > 0 }
                 ? string.Join(Environment.NewLine, entry.Changes.Select(c => "• " + c))
-                : "Aucun détail disponible pour cette version.";
+                : Localization.Get("changelog.noDetails");
 
-            MessageBox.Show(this, body, $"Nouveautés — v{version}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, body, Localization.Format("changelog.title", version),
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ShowTutorial()
@@ -295,7 +299,8 @@ namespace ChaturbateRecorderApp
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Impossible d'ouvrir la page : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(Localization.Format("error.cannotOpenPage", ex.Message),
+                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -440,9 +445,10 @@ namespace ChaturbateRecorderApp
                     {
                         GenerateThumbnail(row.Job);
                         if (state == DownloadState.Completed)
-                            ShowNotification("Enregistrement terminé", row.Job.RoomName);
+                            ShowNotification(Localization.Get("notify.recordingDone.title"), row.Job.RoomName);
                         else
-                            ShowNotification("Erreur d'enregistrement", $"{row.Job.RoomName} : flux inaccessible ou interrompu de façon inattendue.", ToolTipIcon.Error);
+                            ShowNotification(Localization.Get("notify.recordingError.title"),
+                                Localization.Format("notify.recordingError.body", row.Job.RoomName), ToolTipIcon.Error);
 
                         // Reconnexion automatique (4.2) : uniquement si le job ne s'est
                         // PAS arrêté manuellement (cas déjà exclu ci-dessus) et que
@@ -698,7 +704,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Impossible d'ouvrir le dossier : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Format("error.cannotOpenFolder", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -838,14 +845,16 @@ namespace ChaturbateRecorderApp
         {
             if (!File.Exists(path))
             {
-                MessageBox.Show(this, $"{displayName} introuvable : {path}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Format("error.binaryNotFound", displayName, path),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
             var actualHash = BinaryVerifier.ComputeSha256(path);
             if (actualHash == null)
             {
-                MessageBox.Show(this, $"Impossible de calculer le hash de {displayName}.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Format("error.cannotComputeHash", displayName),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
@@ -856,16 +865,9 @@ namespace ChaturbateRecorderApp
 
             if (!hashKnown)
             {
-                var message =
-                    $"Le hash de {displayName} ne correspond ni à la version testée par le " +
-                    $"mainteneur, ni à un hash déjà approuvé sur cette machine.\n\n" +
-                    $"Hash calculé : {actualHash}\n\n" +
-                    "C'est normal si tu viens de télécharger une version plus récente depuis " +
-                    "une source officielle — yt-dlp et ffmpeg sont mis à jour fréquemment. " +
-                    "Si tu ne sais pas d'où vient ce fichier, réponds Non.\n\n" +
-                    $"Faire confiance à ce {displayName} et continuer ?";
+                var message = Localization.Format("verify.hashMismatch", displayName, actualHash);
 
-                var result = MessageBox.Show(this, message, $"Vérification de {displayName}",
+                var result = MessageBox.Show(this, message, Localization.Format("verify.title", displayName),
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (result != DialogResult.Yes) return false;
 
@@ -876,7 +878,8 @@ namespace ChaturbateRecorderApp
             if (requireAuthenticode &&
                 !BinaryVerifier.VerifyTrustedBinary(path, actualHash, true, expectedSignerThumbprint, expectedSignerSubject))
             {
-                MessageBox.Show(this, $"Signature Authenticode invalide pour {displayName}.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Format("error.invalidAuthenticode", displayName),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
 
@@ -889,7 +892,8 @@ namespace ChaturbateRecorderApp
 
             if (!UrlValidator.IsSafeUrl(urlInput, AppConfig.Whitelist, AppConfig.Blacklist))
             {
-                MessageBox.Show("URL refusée par la validation de sécurité (voir log de session).", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Get("error.urlRejected"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -910,7 +914,8 @@ namespace ChaturbateRecorderApp
                 var ffOk = ytOk && BinaryVerifier.VerifyCaPinning(AppConfig.FFmpegPath, AppConfig.TrustedCaThumbprint, AppConfig.TrustedCaIssuer);
                 if (!ffOk)
                 {
-                    MessageBox.Show("Échec du pinning CA pour les binaires.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(Localization.Get("error.caPinningFailed"),
+                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 Logger.Log("CA pinning activé et validé pour yt-dlp.exe et ffmpeg.exe.");
@@ -924,7 +929,8 @@ namespace ChaturbateRecorderApp
             // contre un remplacement du dossier par un lien symbolique entre-temps).
             if (!PathValidator.IsValidPath(AppConfig.CaptureDir))
             {
-                MessageBox.Show($"Dossier de sortie invalide ou interdit par la sandbox : {AppConfig.CaptureDir}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Format("error.invalidOutputDir", AppConfig.CaptureDir),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -934,7 +940,8 @@ namespace ChaturbateRecorderApp
             {
                 if (!CertificateValidator.VerifyRemoteCertificate(uri.Host, 443, AppConfig.ServerExpectedThumbprint, AppConfig.ServerExpectedIssuer))
                 {
-                    MessageBox.Show($"Échec de la vérification TLS du serveur distant ({uri.Host}).", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(Localization.Format("error.tlsVerificationFailed", uri.Host),
+                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 Logger.Log($"TLS server pinning activé et validé pour {uri.Host}.");
@@ -949,7 +956,8 @@ namespace ChaturbateRecorderApp
 
             if (_jobRows.Any(r => r.Job.RoomName == roomName && r.Job.Engine.State == DownloadState.Running))
             {
-                MessageBox.Show($"Un enregistrement pour '{roomName}' est déjà en cours.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Localization.Format("info.alreadyRecording", roomName),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -958,7 +966,8 @@ namespace ChaturbateRecorderApp
             // valide invalide.
             if (!PathValidator.IsValidPath(Path.Combine(AppConfig.LogDir, $"{roomName}-test.log")))
             {
-                MessageBox.Show("Chemin de log invalide.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Get("error.invalidLogPath"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -1019,7 +1028,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Impossible de démarrer le téléchargement : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Format("error.cannotStartDownload", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 jobsListPanel.Controls.Remove(row.Container);
                 _jobRows.Remove(row);
             }
@@ -1039,11 +1049,12 @@ namespace ChaturbateRecorderApp
             var url = urlTextBox.Text.Trim();
             if (!_favorites.AddFavorite(url))
             {
-                MessageBox.Show("URL invalide ou déjà présente dans les favoris.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Localization.Get("info.invalidOrDuplicateFavorite"),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             favoritesListBox.Items.Add(url);
-            ShowNotification("Favori ajouté", url);
+            ShowNotification(Localization.Get("notify.favoriteAdded.title"), url);
         }
 
         private void OnRemoveFavoriteClick(object? sender, EventArgs e)
@@ -1067,7 +1078,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Impossible d'ouvrir le lien de don : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Format("error.cannotOpenDonateLink", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1079,7 +1091,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Impossible d'ouvrir le site web : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(Localization.Format("error.cannotOpenWebsite", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1098,6 +1111,7 @@ namespace ChaturbateRecorderApp
         private void HandleLanguageChangedFromSettings(AppLanguage language)
         {
             _currentLanguage = language;
+            Localization.Current = language;
             ApplyLanguage(language);
 
             _settings.Language = language == AppLanguage.English ? "en" : "fr";
@@ -1373,18 +1387,19 @@ namespace ChaturbateRecorderApp
                 var update = await UpdateChecker.CheckForUpdateAsync(CurrentVersion);
                 if (update == null)
                 {
-                    MessageBox.Show(this, $"Tu utilises déjà la dernière version (v{CurrentVersion}).", "Mises à jour", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, Localization.Format("update.upToDate", CurrentVersion),
+                        Localization.Get("dialog.updates"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 var runningJobs = _jobRows.Count(r => r.Job.Engine.State == DownloadState.Running);
                 var warning = runningJobs > 0
-                    ? $"\n\n⚠ {runningJobs} enregistrement(s) en cours seront interrompus par le redémarrage."
+                    ? Localization.Format("update.runningJobsWarning", runningJobs)
                     : "";
 
                 var result = MessageBox.Show(this,
-                    $"Version v{update.Version} disponible (actuelle : v{CurrentVersion}).\n\nTélécharger et installer maintenant ? L'application redémarrera automatiquement.{warning}",
-                    "Mise à jour disponible", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    Localization.Format("update.availableBody", update.Version, CurrentVersion, warning),
+                    Localization.Get("update.availableTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (result != DialogResult.Yes) return;
 
@@ -1393,7 +1408,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"Échec de la vérification des mises à jour : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Format("error.updateCheckFailed", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -1418,8 +1434,8 @@ namespace ChaturbateRecorderApp
                 if (!_settings.HasSeenTrayHint)
                 {
                     ShowNotification(
-                        "Toujours actif",
-                        "Chaturbate Recorder continue de tourner dans la zone de notification. Clic droit sur l'icône pour ouvrir, accéder aux paramètres ou fermer complètement.");
+                        Localization.Get("notify.stillActive.title"),
+                        Localization.Get("notify.stillActive.body"));
                     _settings.HasSeenTrayHint = true;
                     SettingsManager.Save(_settings);
                 }
@@ -1474,7 +1490,8 @@ namespace ChaturbateRecorderApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"Impossible d'ouvrir le formulaire de rapport de bug : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Format("error.cannotOpenBugReport", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

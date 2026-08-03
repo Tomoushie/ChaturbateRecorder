@@ -108,7 +108,8 @@ namespace ChaturbateRecorderApp.UI
             var chosen = dialog.SelectedPath;
             if (!PathValidator.IsValidPath(chosen))
             {
-                MessageBox.Show(this, "Dossier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Get("error.invalidFolderSandbox"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -134,7 +135,8 @@ namespace ChaturbateRecorderApp.UI
 
             if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true))
             {
-                MessageBox.Show(this, "Fichier invalide ou interdit par la sandbox de chemins.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, Localization.Get("error.invalidFileSandbox"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
