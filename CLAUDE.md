@@ -11,6 +11,36 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**v1.26.0 (2026-08-05) — 98.0 note de legalite (app + site + README + wiki)** :
+- **Texte redige par le mainteneur**, qui a corrige mes deux versions
+  successives. Trois corrections factuelles apportees en retour : l'art. 550ter
+  est l'atteinte aux donnees et NON le contournement de mesures techniques
+  (celui-ci releve du droit d'auteur) ; la loi du 30 juin 1994 est codifiee
+  depuis 2015, l'art. 22 §1er 5° est devenu l'art. XI.190 CDE ; et l'exception
+  de copie privee exige un usage prive **et non commercial**, precision que le
+  mainteneur a validee.
+- **Point de fond a ne pas perdre** : violer des conditions d'utilisation n'est
+  PAS illegal. C'est une inexecution contractuelle, qui expose a la fermeture du
+  compte, pas a des poursuites. Ne pas melanger les deux dans une future
+  redaction.
+- **Bouton en rangee 1** (visible dans les deux modes), pas en rangee 3 avec
+  Diagnostic : la confusion que ce texte dissipe concerne l'utilisateur au
+  moment ou il enregistre.
+- **Trois defauts trouves par la capture, aucun visible autrement** :
+  (a) un `TextBox` multiligne WinForms n'interprete pas `
+` seul — les
+  paragraphes se collaient ; il faut `Environment.NewLine` ;
+  (b) reposer `BackColor`/`ForeColor` depuis le formulaire APRES
+  `ThemeManager.Apply` casse le rendu — ThemeManager traite deja le cas
+  `TextBox`, ne rien surcharger ;
+  (c) les asterisques d'emphase Markdown s'affichaient tels quels, le texte
+  etant partage entre Markdown et l'application.
+- **Piege d'outillage, deuxieme fois** : ecrire `
+` depuis un script Python
+  passe par un heredoc produit un VRAI saut de ligne dans le source C#. Pour
+  toute chaine contenant des echappements, utiliser l'outil d'edition direct
+  plutot qu'un script.
+
 **v1.25.0 (2026-08-05) — 88.0 / 4.3 « Surveillance »** :
 - **Faisabilite mesuree AVANT d'ecrire**, lecon de l'episode 92.0 : hors ligne
   -> `rc=1` + « Room is currently offline » ; en ligne -> `rc=0`, stderr vide.

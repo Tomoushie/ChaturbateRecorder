@@ -216,6 +216,11 @@ namespace ChaturbateRecorderApp.Config
                 "Un salon dont l'état ne peut pas être déterminé (réseau coupé, salon banni) est affiché comme indéterminé et ne déclenche jamais d'enregistrement.",
                 "La liste surveillée est volontairement distincte des favoris : un favori est un raccourci de saisie, un salon surveillé engage l'application à interroger le site en boucle.",
             }),
+            ("1.26.0", new[]
+            {
+                "Nouveau bouton \"Légalité\", visible en mode simple comme en mode avancé : il affiche une note sur le cadre légal belge — ce que le logiciel fait et ne fait pas, l'exception de copie privée, et l'interdiction pénale de diffuser un enregistrement sans consentement.",
+                "La même note est publiée sur le site, dans les deux README et dans le wiki, pour qu'elle soit trouvable avant même d'installer l'application.",
+            }),
         };
 
         /// <summary>
@@ -312,6 +317,11 @@ namespace ChaturbateRecorderApp.Config
                 "Monitored rooms are checked every 2 minutes by default, adjustable in Settings (1, 2, 5 or 10 minutes). They are checked one after another, never all at once.",
                 "A room whose state cannot be determined (network down, banned room) is shown as unknown and never triggers a recording.",
                 "The monitored list is deliberately separate from favorites: a favorite is an input shortcut, a monitored room commits the application to polling the site in a loop.",
+            },
+            ["1.26.0"] = new[]
+            {
+                "New \"Legality\" button, visible in both simple and advanced mode: it shows a note on the Belgian legal framework — what the software does and does not do, the private-copy exception, and the criminal prohibition on distributing a recording without consent.",
+                "The same note is published on the website, in both READMEs and in the wiki, so that it can be found before even installing the application.",
             },
         };
 

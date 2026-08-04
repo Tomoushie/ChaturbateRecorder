@@ -58,6 +58,8 @@ namespace ChaturbateRecorderApp
         private Button sponsorButton = null!;
         private Button donateButton = null!;
         private Button websiteButton = null!;
+        // 98.0 : note de legalite, rangee 1 donc visible dans les deux modes.
+        private Button legalButton = null!;
         // 50.0 : réseaux sociaux (partage X/Reddit + dépôt GitHub).
         private Button shareXButton = null!;
         private Button shareRedditButton = null!;
@@ -1622,6 +1624,7 @@ namespace ChaturbateRecorderApp
             tutorialButton.Text = L("button.tutorial");
             reportBugButton.Text = L("button.reportBug");
             diagnosticButton.Text = L("button.diagnostic");
+            legalButton.Text = L("button.legal");
             modeToggleButton.Text = _advancedMode ? L("mode.switchToSimple") : L("mode.switchToAdvanced");
 
             _trayOpenItem.Text = L("tray.open");
@@ -2258,6 +2261,17 @@ namespace ChaturbateRecorderApp
             paramsButton.Click += (s, e) => ShowSettingsDialog();
 
             modeToggleButton = new Button { Location = new Point(152, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
+
+            // 98.0 — rangee 1 (toujours visible), et non rangee 3 avec
+            // Diagnostic : la confusion que ce texte dissipe concerne
+            // l'utilisateur au moment ou il enregistre, pas seulement celui qui
+            // explore le mode avance.
+            legalButton = new Button { Location = new Point(292, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
+            legalButton.Click += (s, e) =>
+            {
+                using var dialog = new LegalForm(_currentTheme, _currentLanguage);
+                dialog.ShowDialog(this);
+            };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
             tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, topBarRow2Y), Size = new Size(190, topBarButtonHeight) };
@@ -2545,7 +2559,7 @@ namespace ChaturbateRecorderApp
             grpLogs.Controls.Add(logListBox);
             logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpWatch, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, legalButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpWatch, grpDonate, grpLogs });
             Controls.Add(contentPanel);
 
             // Ancrage des panneaux eux-mêmes, posé après leur ajout à
