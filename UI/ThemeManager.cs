@@ -134,6 +134,15 @@ namespace ChaturbateRecorderApp.UI
                     tsb.ThumbHoverColor = Lerp(p.Panel, p.Fg, 0.55f);
                     tsb.Invalidate();
                     break;
+                // Même raisonnement pour la barre de progression, à une réserve
+                // près : seules la piste et la bordure suivent le thème.
+                // BarColor encode l'état du job (en cours / terminé / erreur /
+                // arrêté) et n'appartient donc pas à la palette — la réappliquer
+                // ici repeindrait en bleu une barre passée au rouge ou au vert.
+                case ThemedProgressBar tpb:
+                    tpb.TrackColor = Lerp(p.Bg, p.Fg, 0.10f);
+                    tpb.BorderColor = p.Border;
+                    break;
                 case Label lbl:
                     lbl.ForeColor = p.Fg;
                     break;

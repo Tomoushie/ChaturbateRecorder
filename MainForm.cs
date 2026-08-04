@@ -76,7 +76,7 @@ namespace ChaturbateRecorderApp
             public RecordingJob Job = null!;
             public Panel Container = null!;
             public Label NameLabel = null!;
-            public ProgressBar ProgressBar = null!;
+            public ThemedProgressBar ProgressBar = null!;
             public Label StatusLabel = null!;
             public Button StopButton = null!;
             public Button OpenButton = null!;
@@ -287,36 +287,51 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private JobRow BuildJobRow(RecordingJob job)
         {
-            var container = new Panel { Size = new Size(605, 46), Margin = new Padding(2) };
-            // Largeur bornée (et non AutoSize) depuis l'ajout du minuteur
-            // (87.0) : le libellé du temps restant commence à x=360, un nom de
-            // salon inhabituellement long viendrait sinon se superposer à lui.
+            // Hauteur 26 (et non 20/22) : en dessous de 24 le bas des lettres est
+            // rogné, jambages compris ("p" de Stop/Open, "y" éventuel d'un futur
+            // libellé) — l'icône de 14 px posée en ImageBeforeText ne laissait pas
+            // assez de place à la police. 24 est le premier palier propre, 26 est
+            // retenu pour la marge et par cohérence avec les autres boutons de
+            // l'app (Actualiser / Ouvrir dossier sont déjà en 26).
+            // Largeur 105 (et non 95) : une fois le thème appliqué aux lignes, le
+            // Padding(8,0,8,0) des boutons thématisés ne laissait plus la place à
+            // "Remove", tronqué en "Remov" (l'anglais est le cas le plus long).
+            const int buttonWidth = 105;
+            const int buttonHeight = 26;
+            const int buttonX = 495; // 495 + 105 = 600, même bord droit qu'avant.
+            const int secondRowY = 30;
+
+            var container = new Panel { Size = new Size(605, 56), Margin = new Padding(2) };
+            // Largeur bornée (et non AutoSize) depuis l'ajout du minuteur (87.0) :
+            // le libellé du temps restant occupe la droite de cette rangée, un nom
+            // de salon inhabituellement long viendrait sinon se superposer à lui.
             // AutoEllipsis coupe proprement avec "..." plutôt que de déborder.
             var nameLabel = new Label
             {
                 Text = job.RoomName,
-                Location = new Point(2, 2),
-                Size = new Size(350, 18),
+                Location = new Point(2, 5),
+                Size = new Size(335, 18),
                 AutoSize = false,
                 AutoEllipsis = true,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = new Font(Font, FontStyle.Bold)
             };
-            var openButton = new Button { Location = new Point(505, 0), Size = new Size(95, 20) };
-            var progressBar = new ProgressBar { Location = new Point(2, 22), Size = new Size(350, 18), Minimum = 0, Maximum = 100 };
-            var statusLabel = new Label { Location = new Point(358, 22), Size = new Size(140, 18), AutoSize = false };
-            var stopButton = new Button { Location = new Point(505, 22), Size = new Size(95, 22) };
-            // Minuteur (87.0) : à droite du nom du salon, sur la rangée du haut
-            // restée libre. Masqué tant qu'aucun minuteur n'est actif, pour ne
-            // rien changer à l'apparence des enregistrements illimités.
+            // Minuteur (87.0) : entre le nom et le bouton Ouvrir, sur la rangée du
+            // haut restée libre. Se termine à x=490, juste avant buttonX (495).
+            // Masqué tant qu'aucun minuteur n'est actif, pour ne rien changer à
+            // l'apparence des enregistrements illimités.
             var timerLabel = new Label
             {
-                Location = new Point(360, 2),
-                Size = new Size(140, 18),
+                Location = new Point(345, 5),
+                Size = new Size(145, 18),
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleRight,
                 Visible = false
             };
+            var openButton = new Button { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
+            var progressBar = new ThemedProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100, BarColor = RunningColor };
+            var statusLabel = new Label { Location = new Point(358, secondRowY + 4), Size = new Size(130, 18), AutoSize = false };
+            var stopButton = new Button { Location = new Point(buttonX, secondRowY), Size = new Size(buttonWidth, buttonHeight) };
 
             openButton.Image = IconManager.Render("open", 14, IconColor);
             openButton.TextImageRelation = TextImageRelation.ImageBeforeText;
@@ -368,9 +383,7 @@ namespace ChaturbateRecorderApp
                 }
                 else
                 {
-                    StopRecordingTimer(row);
-                    jobsListPanel.Controls.Remove(row.Container);
-                    _jobRows.Remove(row);
+                    RemoveJobRow(row);
                 }
             };
 
@@ -379,7 +392,42 @@ namespace ChaturbateRecorderApp
             job.Engine.OnStateChanged += state => SafeInvoke(() => HandleJobStateChanged(row, state));
 
             RefreshJobRowLabels(row);
+
+            // ThemeManager.Apply n'est appelé qu'une fois dans le constructeur,
+            // donc avant qu'aucune ligne n'existe : sans cet appel les contrôles
+            // créés ici gardent leur rendu système (boutons gris clair à bordure,
+            // texte noir) au lieu du bleu d'accent, et une ligne créée en thème
+            // sombre reste claire jusqu'au prochain changement de thème (seul
+            // AnimateThemeTransition repasse récursivement sur tout le
+            // formulaire). N'écrase aucune couleur d'état : le cas
+            // ThemedProgressBar de ThemeManager ne touche que la piste et la
+            // bordure, jamais BarColor (posée juste au-dessus à RunningColor,
+            // puis pilotée par HandleJobStateChanged/PulseProgressBar), et les
+            // icônes sont déjà rendues en IconColor, fixe dans les deux thèmes.
+            ThemeManager.Apply(container, _currentTheme);
             return row;
+        }
+
+        /// <summary>
+        /// Retire une ligne de la liste et libère ses contrôles. Le Dispose
+        /// compte depuis que la barre de progression est dessinée par
+        /// l'application : en mode indéterminé, ThemedProgressBar fait tourner
+        /// un Timer, que seul son Dispose arrête. Un simple Controls.Remove
+        /// laisserait la ligne (et le RecordingJob accroché à ses gestionnaires)
+        /// vivante indéfiniment, sur une application faite pour tourner longtemps.
+        ///
+        /// Le Dispose est différé : l'un des appelants est le gestionnaire Click
+        /// du bouton "Retirer", qui appartient justement à la ligne détruite —
+        /// il doit avoir fini de s'exécuter avant que son bouton disparaisse.
+        /// </summary>
+        private void RemoveJobRow(JobRow row)
+        {
+            // Même raison pour le minuteur d'arrêt (87.0) : c'est aussi un Timer,
+            // que rien n'arrêterait si la ligne disparaissait sans passer ici.
+            StopRecordingTimer(row);
+            jobsListPanel.Controls.Remove(row.Container);
+            _jobRows.Remove(row);
+            BeginInvoke(() => row.Container.Dispose());
         }
 
         /// <summary>
@@ -533,12 +581,12 @@ namespace ChaturbateRecorderApp
                     row.TimerLabel.Visible = false;
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
                     AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
-                    row.ProgressBar.SetBarColor(state switch
+                    row.ProgressBar.BarColor = state switch
                     {
                         DownloadState.Completed => CompletedColor,
                         DownloadState.Failed => FailedColor,
                         _ => StoppedColor,
-                    });
+                    };
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
                     RefreshHistoryAsync();
 
@@ -615,7 +663,7 @@ namespace ChaturbateRecorderApp
         /// brièvement entre une teinte éclaircie et la couleur définitive
         /// avant de s'y stabiliser, pour signaler visuellement le démarrage.
         /// </summary>
-        private void PulseProgressBar(ProgressBar bar, Color settleColor)
+        private void PulseProgressBar(ThemedProgressBar bar, Color settleColor)
         {
             var brighter = Color.FromArgb(255,
                 Math.Min(255, settleColor.R + 70),
@@ -628,13 +676,13 @@ namespace ChaturbateRecorderApp
             {
                 if (bar.IsDisposed) { timer.Stop(); timer.Dispose(); return; }
 
-                bar.SetBarColor(ticks % 2 == 0 ? brighter : settleColor);
+                bar.BarColor = ticks % 2 == 0 ? brighter : settleColor;
                 ticks++;
                 if (ticks >= 6)
                 {
                     timer.Stop();
                     timer.Dispose();
-                    bar.SetBarColor(settleColor);
+                    bar.BarColor = settleColor;
                 }
             };
             timer.Start();
@@ -646,7 +694,7 @@ namespace ChaturbateRecorderApp
         /// reste en Marquee pendant l'enregistrement, donc c'est ici que le
         /// passage en mode "Blocks" devient visible pour la première fois).
         /// </summary>
-        private void AnimateProgressBarFill(ProgressBar bar, int target)
+        private void AnimateProgressBarFill(ThemedProgressBar bar, int target)
         {
             var timer = new System.Windows.Forms.Timer { Interval = 12 };
             timer.Tick += (s, e) =>
@@ -1136,8 +1184,7 @@ namespace ChaturbateRecorderApp
             {
                 MessageBox.Show(Localization.Format("error.cannotStartDownload", ex.Message),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                jobsListPanel.Controls.Remove(row.Container);
-                _jobRows.Remove(row);
+                RemoveJobRow(row);
             }
         }
 
@@ -1456,8 +1503,13 @@ namespace ChaturbateRecorderApp
             _advancedMode = advanced;
 
             // 105 (pas 75) depuis l'ajout du bouton Diagnostic (2.3) sur une
-            // troisième rangée de la barre du haut.
-            const int grpRecordY = 105;
+            // troisième rangée de la barre du haut, puis 111 depuis le passage
+            // de ces boutons de 24 à 26 px de haut (jambages rognés) : les trois
+            // rangées descendent de 2 px chacune, la dernière finissant 6 px plus
+            // bas. Garde la même gouttière de 12 px sous la barre du haut.
+            const int grpRecordY = 111;
+            // 218 (et non 172) depuis l'ajout du minuteur (87.0) sur une deuxième
+            // rangée d'options : advancedOptionsPanel est passé de 66 à 112 px.
             const int grpRecordHeightAdvanced = 218;
             const int grpRecordHeightSimple = 110;
             const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
@@ -1701,26 +1753,39 @@ namespace ChaturbateRecorderApp
             _notifyIcon.ContextMenuStrip = trayMenu;
             _notifyIcon.DoubleClick += (s, e) => ShowMainWindow();
 
-            // Barre du haut sur deux lignes : Paramètres/Mode toujours visibles
-            // (rangée 1), Guide/Mises à jour/Signaler un bug réservés au mode
-            // avancé (rangée 2). Thème/langue ont déménagé dans SettingsForm
-            // (19.0), ce qui simplifie cette barre par rapport à la v1.13.0.
-            paramsButton = new Button { Location = new Point(12, 9), Size = new Size(130, 24) };
+            // Barre du haut sur trois lignes : Paramètres/Mode toujours visibles
+            // (rangée 1), Guide/Mises à jour/Signaler un bug (rangée 2) et
+            // Diagnostic (rangée 3) réservés au mode avancé. Thème/langue ont
+            // déménagé dans SettingsForm (19.0), ce qui simplifie cette barre
+            // par rapport à la v1.13.0.
+            // Hauteur 26 (et non 24) pour la même raison que les lignes de job
+            // (voir BuildJobRow) : à 24, l'icône de 16 px posée en
+            // ImageBeforeText ne laisse pas assez de place à Segoe UI 9pt et le
+            // bas des jambages est rogné ("g" de Guide de démarrage/Diagnostic/
+            // bug, "j" de mise à jour, "p" de Mode simple). Les rangées suivent
+            // donc 9 / 41 / 73 (26 + 6 px de gouttière) au lieu de 9 / 39 / 69,
+            // et grpRecordY dans ApplyUiMode passe de 105 à 111.
+            const int topBarButtonHeight = 26;
+            const int topBarRow1Y = 9;
+            const int topBarRow2Y = topBarRow1Y + topBarButtonHeight + 6;
+            const int topBarRow3Y = topBarRow2Y + topBarButtonHeight + 6;
+
+            paramsButton = new Button { Location = new Point(12, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
             paramsButton.Click += (s, e) => ShowSettingsDialog();
 
-            modeToggleButton = new Button { Location = new Point(152, 9), Size = new Size(130, 24) };
+            modeToggleButton = new Button { Location = new Point(152, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
-            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, 39), Size = new Size(190, 24) };
+            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, topBarRow2Y), Size = new Size(190, topBarButtonHeight) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
-            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(212, 39), Size = new Size(215, 24) };
+            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(212, topBarRow2Y), Size = new Size(215, topBarButtonHeight) };
             checkUpdateButton.Click += OnCheckUpdateClick;
 
-            reportBugButton = new Button { Location = new Point(437, 39), Size = new Size(160, 24) };
+            reportBugButton = new Button { Location = new Point(437, topBarRow2Y), Size = new Size(160, topBarButtonHeight) };
             reportBugButton.Click += OnReportBugClick;
 
-            diagnosticButton = new Button { Location = new Point(12, 69), Size = new Size(160, 24) };
+            diagnosticButton = new Button { Location = new Point(12, topBarRow3Y), Size = new Size(160, topBarButtonHeight) };
             diagnosticButton.Click += (s, e) => new DiagnosticForm().ShowDialog(this);
 
             // --- Panel : Enregistrement ---
@@ -1831,11 +1896,17 @@ namespace ChaturbateRecorderApp
             advancedOptionsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             // --- Panel : Enregistrements en cours (plusieurs jobs possibles) ---
-            grpProgress = new RoundedGroupPanel { Title = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 140) };
+            // Hauteurs suivies sur celle d'une ligne de job (BuildJobRow) : 56 de
+            // conteneur + 2x2 de Margin = 60 par ligne, donc 122 laisse voir deux
+            // lignes entières sans défilement, comme avant l'élargissement des
+            // boutons. Le panneau grandit d'autant (140 -> 154) ; tout ce qui est
+            // en dessous se replace tout seul, ApplyUiMode calculant les positions
+            // à partir de grpProgress.Height.
+            grpProgress = new RoundedGroupPanel { Title = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 154) };
             jobsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
-                Size = new Size(636, 108),
+                Size = new Size(636, 122),
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,

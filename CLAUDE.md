@@ -4,10 +4,120 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-03 — version courante : v1.18.0 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.19.1 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
-(v1.15.0 Crash Reporter et v1.16.0 Diagnostic Mode ont été livrés sans que
-l'en-tête ci-dessus soit mis à jour — corrigé ici.)
+(Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
+v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
+de version**, au même titre que `<Version>` dans le csproj et l'entrée de
+`Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.19.1 (2026-08-04) — 3.4 « couleurs dynamiques de la barre de progression »
+était inerte depuis son écriture** :
+- **Le piège, à retenir au-delà de ce cas** : `PBM_SETBARCOLOR` (0x0409) est
+  **ignoré sans erreur** par comctl32 v6 dès que les styles visuels sont actifs
+  — et `Program.Main` appelle `Application.EnableVisualStyles()`. La
+  fonctionnalité était annoncée dans le changelog de la **1.5.0** et n'a jamais
+  rien affiché : Windows imposait son vert dégradé aux quatre états, donc
+  `RunningColor`/`CompletedColor`/`FailedColor`/`StoppedColor` **et** l'effet
+  `PulseProgressBar` étaient invisibles. Rien dans le code ne signalait l'échec,
+  d'où **14 versions** livrées (1.5.0 -> 1.19.0) en annonçant une fonctionnalité
+  qui n'existait pas. Leçon générale : un message Win32 envoyé par
+  `SendMessage` qui « ne fait rien » ne lève pas d'exception et ne rend pas de
+  code d'erreur exploitable — toute coloration de contrôle natif doit être
+  vérifiée par capture réelle, jamais supposée acquise parce qu'elle compile.
+- **Second défaut trouvé en reproduisant** (non signalé au départ) : en thème
+  sombre la **piste** de la ProgressBar native reste blanche sur fond sombre,
+  exactement le défaut de l'ascenseur natif qui avait motivé `ThemedScrollBar`.
+  C'est ce qui a tranché entre les pistes de correction.
+- **Écarté : `SetWindowTheme(handle, "", "")`** (uxtheme). Ferait bien reprendre
+  effet à `PBM_SETBARCOLOR`, mais en retirant le style visuel du contrôle, qui
+  retombe sur le rendu « classique » plat d'avant XP — et ne règle rien pour la
+  piste. **Écarté aussi** : supprimer la coloration et s'en remettre à
+  `StatusLabel` (perdrait une information déjà annoncée aux utilisateurs).
+- **Retenu : `UI/ThemedProgressBar.cs`**, contrôle dessiné en GDI+ dérivé de
+  `Control`, dans la même veine que `RoundedGroupPanel` et `ThemedScrollBar`.
+  Reprend volontairement les noms de propriétés du contrôle natif
+  (`Minimum`/`Maximum`/`Value`/`Style`/`MarqueeAnimationSpeed`) et son enum
+  `ProgressBarStyle`, pour que les sites d'appel de `MainForm` se lisent comme
+  avant. Rendu en capsule arrondie ; mode indéterminé = segment qui glisse,
+  piloté par son propre `Timer`. `UI/ProgressBarColorExtensions.cs` supprimé.
+- **Piège GDI+ rencontré** : avec `radius = Height / 2` sur un rectangle tracé
+  à `Height - 1` (la bordure se dessine dessus), le diamètre dépasse le
+  rectangle et le chemin arrondi **retombe silencieusement sur des coins
+  carrés**. Le rayon doit se calculer sur la hauteur du rectangle, pas du
+  contrôle. Et le garde-fou de dégénérescence doit comparer **strictement**
+  (`d > côté`) : un diamètre *égal* au côté est la capsule parfaite, pas un cas
+  dégénéré — sinon une progression de quelques pour cent s'affiche en carré.
+- **Interaction avec le correctif de thème de la v1.19.0** : `ThemeManager` a
+  désormais un cas `ThemedProgressBar`, qui ne pose **que** `TrackColor` et
+  `BorderColor`, jamais `BarColor` (elle encode l'état du job, la réappliquer
+  repeindrait en bleu une barre passée au rouge ou au vert). Ça compte parce que
+  `5e97bbc` appelle `ThemeManager.Apply(container)` à la **création** de chaque
+  ligne : le cas s'exécute donc aussi à ce moment-là. Le commentaire de
+  `5e97bbc` justifiant cet appel affirmait qu'aucun cas `ProgressBar` n'existait
+  dans `ThemeManager` — corrigé, sa conclusion restant vraie.
+- **Fuite introduite puis refermée** : en mode indéterminé le contrôle fait
+  tourner un `Timer` que seul son `Dispose` arrête, alors que les deux points de
+  retrait d'une ligne se contentaient d'un `Controls.Remove`. D'où
+  `MainForm.RemoveJobRow`, qui libère aussi les contrôles — `Dispose` différé
+  par `BeginInvoke` parce qu'un des appelants est le gestionnaire `Click` du
+  bouton « Retirer », qui appartient justement à la ligne détruite.
+- **Tests** : `Tests/ThemedProgressBarTests.cs` (17, **120 au total**) sur la
+  seule partie du rendu qui puisse être fausse sans se voir — barre n'atteignant
+  pas tout à fait le bout à 100 %, débordement d'un pixel, et segment de marquee
+  qui se figerait hors piste faute de rebouclage de la phase. Garde-fous
+  éprouvés en les cassant volontairement (3 échecs).
+- **Vérification de rendu** : `DrawToBitmap` en thème clair ET sombre sur de
+  vraies lignes `BuildJobRow`. **Méthode à réutiliser** : pour un effet animé,
+  échantillonner la **couleur du pixel** plutôt que juger à l'œil — deux
+  captures espacées de la demi-période du `Pulse` sont retombées deux fois sur
+  la même phase et donnaient l'illusion d'un effet mort ; la mesure au pixel
+  montre l'alternance `#46BEFF` / `#0078D7` sur ~900 ms.
+
+**v1.19.0 (2026-08-04, session voisine)** — hauteur des boutons portée à 26 px
+(les jambages étaient rognés à 20/22/24 dès qu'une icône est posée en
+`ImageBeforeText`), lignes de job élargies à 105 px (le `Padding` du thème
+tronquait « Remove » en anglais), et surtout `ThemeManager.Apply(container)`
+ajouté à la création d'une ligne : `Apply` n'étant appelé qu'une fois dans le
+constructeur, une ligne créée après coup gardait le rendu système clair. Porte
+aussi GitHub Sponsors (80.0, #34), mergé sans bump — d'où une version mineure
+plutôt qu'un patch.
+
+**Suite de 38.0 (2026-08-04) — le site ne publiait jamais le `latest.json`
+régénéré** (CI uniquement, pas de bump) :
+- **Symptôme** : le 2026-08-04, `docs/latest.json` était correct dans le dépôt
+  (1.19.1) mais `https://tomoushie.github.io/.../latest.json` annonçait encore
+  **1.18.0**. `Pages Build` n'avait plus tourné depuis le 2026-08-03 : le site
+  a raté v1.19.0 **et** v1.19.1.
+- **Cause — le même piège que 38.0, un cran plus bas** : `pages-build.yml` se
+  déclenchait sur `push` avec `paths: docs/**`, or le **seul** producteur de
+  `docs/latest.json` est le job `update-latest-json`, qui pousse avec le
+  `GITHUB_TOKEN` — lequel ne déclenche aucun workflow. Le commit qui satisfait
+  le filtre de chemin est donc exactement celui qui ne déclenche rien. 38.0
+  avait réparé la **régénération** du fichier ; rien n'en assurait la
+  **publication**. Morale : après avoir corrigé un maillon cassé par cette
+  protection anti-boucle, vérifier tout le reste de la chaîne — chaque étape
+  déclenchée par un commit du bot a le même défaut.
+- **Correctif** : `pages-build.yml` accepte `workflow_call`, et
+  `update-checker.yml` l'appelle en job `deploy-pages` (`needs:
+  update-latest-json`), conditionné à un changement réel via une sortie
+  `changed` — le cron quotidien ne redéploie donc pas le site pour rien.
+- **Deux pièges dans le correctif lui-même** :
+  - `actions/checkout` **doit** préciser `ref: main` dans le workflow appelé.
+    Le SHA d'un run est celui de l'évènement **déclencheur** (le tag de la
+    release), pas celui du commit que `update-latest-json` vient de pousser :
+    sans ce `ref`, on déploie le `latest.json` d'AVANT sa mise à jour, soit
+    précisément le bug qu'on corrige.
+  - Les permissions d'un appel imbriqué **ne peuvent que se restreindre**, donc
+    `pages: write` et `id-token: write` ont dû être ajoutés au job appelant
+    dans `publish-release.yml`, qui ne déploie pourtant rien lui-même. Sans ça
+    le déploiement échoue en fin de release automatisée alors qu'il passe très
+    bien en exécution manuelle.
+- **Remise en état immédiate** : `workflow_dispatch` sur `Pages Build` (le
+  workflow le prévoit) — site revenu à 1.19.1, vérifié en ligne.
+- **Non affecté** : le vérificateur de mise à jour de l'app lit
+  `api.github.com/.../releases/latest` (`Services/UpdateChecker.cs`), pas le
+  site — les utilisateurs voyaient donc la bonne version malgré la page figée.
 
 **Package de sécurité renommé `SentinelGuard` et destiné à nuget.org
 (2026-08-03)** — remplace/complète 30.0 (`ChaturbateRecorder.Security` sur
@@ -390,6 +500,11 @@ restent documentées comme méthode de secours/référence :
 À chaque lot de fonctionnalités livré :
 1. Bump `<Version>` dans `ChaturbateRecorderApp.csproj` (incrément mineur, ex: 1.9.0 -> 1.10.0)
 2. Ajouter une entrée dans `Config/Changelog.cs` (affichée en local via le dialogue "Nouveautés")
+   — **en français ET en anglais** dès lors que la version est >= 1.16.0 :
+   `ChangelogTests` échoue sinon, volontairement (voir 24.0)
+2bis. **Mettre à jour l'en-tête « État au ... — version courante » en haut de ce
+   fichier.** Oublié trois fois (v1.15.0, v1.16.0, v1.19.0) : ce n'est pas une
+   formalité, c'est la première chose qu'une session lit pour se situer.
 3. `dotnet build` + `dotnet test Tests/ChaturbateRecorderApp.Tests.csproj` avant de committer
 4. Commit avec identité Git via variables d'environnement (PAS `git config`, jamais autorisé) :
    `GIT_AUTHOR_NAME="Tomoushie" GIT_AUTHOR_EMAIL="Tomoushie@users.noreply.github.com"` (idem COMMITTER)
@@ -410,4 +525,13 @@ restent documentées comme méthode de secours/référence :
 
 **Tests** — `Tests/ChaturbateRecorderApp.Tests.csproj` (xUnit, `net10.0-windows` car référence le projet principal WinForms). `Properties/AssemblyInfo.cs` expose `InternalsVisibleTo` pour tester des méthodes `internal` (ex: `CertificateValidator.VerifySubjectAlternativeName`). Un vrai bug a été trouvé et corrigé via ces tests : le SAN TLS dépendait du texte localisé par l'OS (`Format()`), remplacé par un décodage ASN.1 direct.
 
-**Style de commit utilisateur** — messages de commit en français dans le titre court, corps détaillé technique (avec le "pourquoi"), toujours signés `Co-Authored-By: Claude Sonnet 5`.
+**Style de commit utilisateur** — messages de commit en français dans le titre
+court, corps détaillé technique (avec le "pourquoi"), toujours signés
+`Co-Authored-By: Claude <modèle> <noreply@anthropic.com>`.
+
+Le modèle nommé est **celui qui a réellement écrit le commit**, pas une valeur
+à recopier : l'historique porte déjà `Claude Sonnet 5` et `Claude Opus 5` selon
+l'époque. Cette note disait `Claude Sonnet 5` sans adresse e-mail alors que
+l'adresse était présente dans tous les commits et que plusieurs étaient déjà
+signés Opus 5 — d'où cette formulation générique, qui ne se périmera pas au
+prochain changement de modèle.

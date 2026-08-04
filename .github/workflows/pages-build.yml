@@ -1,6 +1,16 @@
 name: Pages Build
 
+# Le filtre "paths: docs/**" ne suffit pas : le seul producteur de
+# docs/latest.json est le job update-latest-json de "Update Checker", qui pousse
+# avec le GITHUB_TOKEN par défaut — et un évènement créé avec ce token ne
+# déclenche AUCUN workflow (protection anti-boucle de GitHub, déjà rencontrée
+# en 38.0). Le push qui satisfait le filtre est donc précisément celui qui ne
+# déclenche rien, et le site restait figé sur une vieille version : constaté le
+# 2026-08-04, Pages n'avait plus été déployé depuis le 2026-08-03 et annonçait
+# encore la 1.18.0 alors que la 1.19.1 était publiée. D'où workflow_call, que
+# "Update Checker" invoque directement après avoir poussé le fichier.
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -24,7 +34,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # ref: main explicite, indispensable en workflow_call. Le SHA d'un run
+      # est celui de l'évènement DÉCLENCHEUR (le tag de la release, ou le point
+      # de départ du cron), pas celui du commit que "Update Checker" vient de
+      # pousser juste avant de nous appeler. Sans ce ref, on déploierait la
+      # version de docs/latest.json d'AVANT sa mise à jour — soit exactement le
+      # bug que cet appel est censé corriger. Pages ne publie que main, donc ce
+      # ref est aussi le bon pour les déclenchements push et workflow_dispatch.
       - uses: actions/checkout@v7
+        with:
+          ref: main
 
       - uses: actions/configure-pages@v6
 
