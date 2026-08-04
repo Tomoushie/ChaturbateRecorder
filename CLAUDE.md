@@ -82,6 +82,37 @@ de version**, au même titre que `<Version>` dans le csproj et l'entrée de
   d'autre — les deux fonctionnalités vivent dans des zones différentes du
   fichier.
 
+**Suite immédiate à la v1.21.0 — le job `deploy` peut être VERT en publiant le
+`latest.json` d'AVANT sa régénération** (aucun changement de code, note seule) :
+- C'est la réponse au « à surveiller à la prochaine release » de la section
+  ci-dessous. `Publish Release` a bien fini **vert de bout en bout** à la
+  v1.21.0, ses trois jobs en `success`, sans intervention : la politique de
+  déploiement `tag`/`v*` tient, et les bumps majeurs de Dependabot
+  (`action-gh-release` v3, `deploy-pages` v5, `upload-artifact` v7) n'ont rien
+  cassé. **Et pourtant le site servait encore la version précédente.**
+- **Chronologie mesurée** : `update-latest-json` committe `latest.json` à
+  17:59:34, le job `deploy` démarre à 17:59:46 et fait `checkout ref: main` —
+  il aurait donc dû prendre le bon contenu. L'artefact déployé contenait
+  malgré tout le `latest.json` d'avant.
+- **Le test qui tranche, à réutiliser** : comparer **deux** fichiers du site,
+  pas seulement `latest.json`. Ici `features.html` était à jour (donc le
+  déploiement venait bien du commit de la session) alors que `latest.json` ne
+  l'était pas — ce qui exclut d'emblée le cache CDN et désigne le contenu de
+  l'artefact. Vérifier `latest.json` seul aurait laissé croire à un simple
+  retard de propagation. Cache CDN écarté au préalable par 3 requêtes avec
+  chaîne anti-cache sur 30 s, 2,5 min après la fin du déploiement.
+- **Remise en état** : `workflow_dispatch` de `pages-build.yml` (`ref: main`),
+  site revenu à 1.21.0, vérifié en ligne.
+- **C'est INTERMITTENT, donc une course, pas un défaut systématique** : la
+  release suivante (v1.22.0, ~20 min plus tard, même chaîne, mêmes workflows)
+  a publié `latest.json` correctement **sans aucune intervention**. Ne pas
+  conclure d'un déploiement réussi que le problème est réglé, ni d'un
+  déploiement raté qu'un workflow est cassé — les deux se produisent avec le
+  même code. D'où : **exécuter le test à deux fichiers après chaque release**,
+  et rattraper par `workflow_dispatch` le cas échéant. Les utilisateurs de
+  l'app ne sont pas affectés (`Services/UpdateChecker.cs` lit l'API GitHub,
+  pas le site).
+
 **Fin de la chaîne 38.0 (2026-08-04) — l'environnement `github-pages` refusait
 un déploiement lancé depuis un tag** (réglage de dépôt uniquement, aucun
 changement de workflow, pas de bump) :
