@@ -113,6 +113,19 @@ namespace ChaturbateRecorderApp
         // d'un clic sur le X, qui lève le même événement OnFormClosing).
         private bool _isReallyClosing;
 
+        // Recherche automatique de mise à jour (79.0). Le timer tourne toujours
+        // et c'est le tick qui relit _settings.AutoUpdateCheck : activer ou
+        // désactiver le réglage dans la fenêtre Paramètres prend donc effet
+        // immédiatement, sans redémarrage ni plomberie de rappel.
+        private System.Windows.Forms.Timer? _autoUpdateTimer;
+        private UpdateInfo? _pendingUpdate;
+        private bool _autoUpdateCheckRunning;
+        // Action associée à la dernière notification affichée, exécutée si
+        // l'utilisateur clique dessus. Remise à null à chaque nouvelle
+        // notification pour qu'un toast de fin d'enregistrement n'hérite pas
+        // de l'action d'un toast de mise à jour affiché avant lui.
+        private Action? _balloonClickAction;
+
         private readonly UserSettings _settings;
 
         public MainForm()
@@ -168,6 +181,8 @@ namespace ChaturbateRecorderApp
             // dialogues de premier lancement éventuels ci-dessus.
             Opacity = 0;
             Shown += (s, e) => AnimateOpacity(1.0, 250);
+
+            StartAutoUpdateChecks();
         }
 
         private static string CurrentVersion =>
@@ -1569,27 +1584,20 @@ namespace ChaturbateRecorderApp
             checkUpdateButton.Enabled = false;
             try
             {
+                // Toujours une vraie interrogation de l'API, jamais _pendingUpdate :
+                // l'utilisateur qui clique attend une réponse à jour, pas le
+                // résultat mis en cache par la dernière vérification horaire.
                 var update = await UpdateChecker.CheckForUpdateAsync(CurrentVersion);
                 if (update == null)
                 {
+                    ClearPendingUpdate();
                     MessageBox.Show(this, Localization.Format("update.upToDate", CurrentVersion),
                         Localization.Get("dialog.updates"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var runningJobs = _jobRows.Count(r => r.Job.Engine.State == DownloadState.Running);
-                var warning = runningJobs > 0
-                    ? Localization.Format("update.runningJobsWarning", runningJobs)
-                    : "";
-
-                var result = MessageBox.Show(this,
-                    Localization.Format("update.availableBody", update.Version, CurrentVersion, warning),
-                    Localization.Get("update.availableTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result != DialogResult.Yes) return;
-
-                AppendLog($"[{DateTime.Now:HH:mm:ss}] Téléchargement de la mise à jour v{update.Version}...");
-                await UpdateInstaller.DownloadAndInstallAsync(update.DownloadUrl, AppConfig.AppDir);
+                _pendingUpdate = update;
+                await PromptAndInstallAsync(update);
             }
             catch (Exception ex)
             {
@@ -1600,6 +1608,130 @@ namespace ChaturbateRecorderApp
             {
                 checkUpdateButton.Enabled = true;
             }
+        }
+
+        /// <summary>
+        /// Propose l'installation d'une mise à jour déjà détectée. Partagé par
+        /// le bouton "Rechercher une mise à jour" et par le clic sur la
+        /// notification de la vérification automatique (79.0), pour que les
+        /// deux chemins avertissent des enregistrements en cours à l'identique.
+        /// </summary>
+        private async Task PromptAndInstallAsync(UpdateInfo update)
+        {
+            var runningJobs = _jobRows.Count(r => r.Job.Engine.State == DownloadState.Running);
+            var warning = runningJobs > 0
+                ? Localization.Format("update.runningJobsWarning", runningJobs)
+                : "";
+
+            var result = MessageBox.Show(this,
+                Localization.Format("update.availableBody", update.Version, CurrentVersion, warning),
+                Localization.Get("update.availableTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes) return;
+
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Téléchargement de la mise à jour v{update.Version}...");
+            await UpdateInstaller.DownloadAndInstallAsync(update.DownloadUrl, AppConfig.AppDir);
+        }
+
+        // Premier passage rapproché (1 min) plutôt qu'immédiat : le démarrage
+        // enchaîne déjà validation du dossier, purge des logs, contrôle des ACL
+        // et dialogues de premier lancement — inutile d'y ajouter un appel
+        // réseau. Les passages suivants sont horaires (79.0).
+        private const int AutoUpdateFirstDelayMs = 60 * 1000;
+        private const int AutoUpdateIntervalMs = 60 * 60 * 1000;
+
+        private void StartAutoUpdateChecks()
+        {
+            _autoUpdateTimer = new System.Windows.Forms.Timer { Interval = AutoUpdateFirstDelayMs };
+            _autoUpdateTimer.Tick += async (s, e) =>
+            {
+                if (_autoUpdateTimer!.Interval != AutoUpdateIntervalMs)
+                    _autoUpdateTimer.Interval = AutoUpdateIntervalMs;
+                await CheckForUpdateInBackgroundAsync();
+            };
+            _autoUpdateTimer.Start();
+        }
+
+        /// <summary>
+        /// Vérification de fond (79.0) : silencieuse par construction. Elle ne
+        /// vole jamais le focus (pas de MessageBox) — une notification de la
+        /// zone de notification, cliquable, laisse l'utilisateur décider quand
+        /// s'en occuper, ce qui compte pour une application qui tourne en
+        /// arrière-plan pendant des enregistrements de plusieurs heures.
+        /// </summary>
+        private async Task CheckForUpdateInBackgroundAsync()
+        {
+            if (!_settings.AutoUpdateCheck || _autoUpdateCheckRunning) return;
+            _autoUpdateCheckRunning = true;
+            try
+            {
+                var update = await UpdateChecker.CheckForUpdateAsync(CurrentVersion);
+
+                // L'appel réseau dure jusqu'à 10 s : l'application a pu être
+                // fermée entre-temps (OnFormClosing arrête le timer et met
+                // _autoUpdateTimer à null, puis libère _notifyIcon). Sans ce
+                // garde-fou, la reprise après await toucherait une icône déjà
+                // libérée.
+                if (_autoUpdateTimer == null || IsDisposed) return;
+
+                if (update == null)
+                {
+                    ClearPendingUpdate();
+                    return;
+                }
+
+                _pendingUpdate = update;
+                if (!UpdateChecker.ShouldNotify(update.Version, _settings.LastNotifiedUpdateVersion)) return;
+
+                _settings.LastNotifiedUpdateVersion = update.Version;
+                SettingsManager.Save(_settings);
+
+                SetTrayText(Localization.Format("tray.updateAvailable", update.Version));
+                Logger.Log($"Mise à jour v{update.Version} détectée par la recherche automatique.");
+                ShowNotification(
+                    Localization.Get("notify.updateAvailable.title"),
+                    Localization.Format("notify.updateAvailable.body", update.Version),
+                    onClick: () =>
+                    {
+                        ShowMainWindow();
+                        _ = PromptAndInstallAsync(update);
+                    });
+            }
+            catch (Exception ex)
+            {
+                // Réseau coupé, DNS injoignable ou quota de l'API GitHub atteint :
+                // rien de tout ça ne doit interrompre l'utilisateur, contrairement
+                // au bouton où il attend explicitement une réponse. Log seulement,
+                // et on retentera au passage suivant.
+                Logger.Log($"Recherche automatique de mise à jour échouée : {ex.Message}", LogLevel.WARN);
+            }
+            finally
+            {
+                _autoUpdateCheckRunning = false;
+            }
+        }
+
+        /// <summary>
+        /// Remet l'info-bulle de la zone de notification à son état neutre après
+        /// une mise à jour finalement installée (ou une release retirée) — sans
+        /// ça, l'icône continuerait d'annoncer une version déjà en place.
+        /// </summary>
+        private void ClearPendingUpdate()
+        {
+            if (_pendingUpdate == null) return;
+            _pendingUpdate = null;
+            SetTrayText("Chaturbate Recorder");
+        }
+
+        /// <summary>
+        /// NotifyIcon.Text est limité à 63 caractères par Windows et lève une
+        /// exception au-delà — la version est interpolée dans le libellé, donc
+        /// la longueur dépend de la traduction : on tronque plutôt que de faire
+        /// planter l'appli sur un texte trop long.
+        /// </summary>
+        private void SetTrayText(string text)
+        {
+            _notifyIcon.Text = text.Length <= 63 ? text : text[..63];
         }
 
         /// <summary>
@@ -1632,6 +1764,10 @@ namespace ChaturbateRecorderApp
                 StopRecordingTimer(row);
                 row.Job.Engine.Stop();
             }
+
+            _autoUpdateTimer?.Stop();
+            _autoUpdateTimer?.Dispose();
+            _autoUpdateTimer = null;
 
             // Retire l'icône de la zone de notification avant fermeture : sans
             // ça, Windows laisse une icône "fantôme" jusqu'au survol suivant.
@@ -1689,8 +1825,10 @@ namespace ChaturbateRecorderApp
         /// dépendance supplémentaire. Volontairement non bloquant : l'absence
         /// de notification ne doit jamais interrompre l'appli.
         /// </summary>
-        private void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
+        private void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info,
+            Action? onClick = null)
         {
+            _balloonClickAction = onClick;
             try { _notifyIcon.ShowBalloonTip(4000, title, message, icon); }
             catch (Exception ex) { Logger.Log($"Impossible d'afficher la notification : {ex.Message}", LogLevel.WARN); }
         }
@@ -1752,6 +1890,15 @@ namespace ChaturbateRecorderApp
             trayMenu.Items.Add(_trayCloseItem);
             _notifyIcon.ContextMenuStrip = trayMenu;
             _notifyIcon.DoubleClick += (s, e) => ShowMainWindow();
+            // Notification cliquable (79.0). L'action est consommée une fois :
+            // Windows peut relever l'événement pour un toast déjà traité si
+            // l'utilisateur le retrouve dans le centre de notifications.
+            _notifyIcon.BalloonTipClicked += (s, e) =>
+            {
+                var action = _balloonClickAction;
+                _balloonClickAction = null;
+                action?.Invoke();
+            };
 
             // Barre du haut sur trois lignes : Paramètres/Mode toujours visibles
             // (rangée 1), Guide/Mises à jour/Signaler un bug (rangée 2) et

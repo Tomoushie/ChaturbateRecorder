@@ -216,6 +216,19 @@ namespace ChaturbateRecorderApp.UI
             ["notify.stillActive.body"] = (
                 "Chaturbate Recorder continue de tourner dans la zone de notification. Clic droit sur l'icône pour ouvrir, accéder aux paramètres ou fermer complètement.",
                 "Chaturbate Recorder keeps running in the notification area. Right-click the icon to open it, reach the settings, or close it completely."),
+            // --- 79.0 : recherche automatique de mise à jour ---
+            ["notify.updateAvailable.title"] = ("Mise à jour disponible", "Update available"),
+            ["notify.updateAvailable.body"] = (
+                "La version v{0} est disponible. Clique sur cette notification pour l'installer.",
+                "Version v{0} is available. Click this notification to install it."),
+            // Info-bulle de l'icône de la zone de notification : Windows la
+            // tronque à 63 caractères, garder les deux traductions courtes.
+            ["tray.updateAvailable"] = (
+                "Chaturbate Recorder — mise à jour v{0} disponible",
+                "Chaturbate Recorder — update v{0} available"),
+            ["checkbox.autoUpdateCheck"] = (
+                "Rechercher automatiquement les mises à jour (toutes les heures)",
+                "Automatically check for updates (every hour)"),
 
             // --- 24.0 : guide de démarrage (TutorialForm) ---
             // Les noms d'éléments cités entre guillemets dans la prose reprennent

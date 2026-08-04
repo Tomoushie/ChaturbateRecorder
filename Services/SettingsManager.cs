@@ -22,6 +22,14 @@ namespace ChaturbateRecorderApp.Services
         // Affichée une seule fois, la première fois que la fenêtre principale
         // est masquée dans la zone de notification (19.0) au lieu de fermer.
         public bool HasSeenTrayHint { get; set; }
+        // Recherche automatique de mise à jour (79.0), activée par défaut.
+        // L'initialiseur vaut aussi pour un settings.json antérieur à 79.0 :
+        // System.Text.Json construit l'objet puis n'assigne que les propriétés
+        // réellement présentes dans le fichier.
+        public bool AutoUpdateCheck { get; set; } = true;
+        // Dernière version pour laquelle une notification a été affichée, pour
+        // ne pas re-notifier la même à chaque passage horaire (79.0).
+        public string? LastNotifiedUpdateVersion { get; set; }
     }
 
     /// <summary>

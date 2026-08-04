@@ -80,7 +80,20 @@ namespace ChaturbateRecorderApp.Services
             };
         }
 
-        private static bool IsNewer(string latest, string current)
+        /// <summary>
+        /// Vérification automatique (79.0) : une version déjà signalée ne doit
+        /// pas redéclencher une notification à chaque passage horaire. On
+        /// compare à la dernière version notifiée plutôt que de mémoriser un
+        /// simple booléen "déjà prévenu" — sinon une release publiée après
+        /// coup passerait sous silence jusqu'au redémarrage de l'appli.
+        /// </summary>
+        internal static bool ShouldNotify(string latestVersion, string? lastNotifiedVersion)
+        {
+            if (string.IsNullOrWhiteSpace(lastNotifiedVersion)) return true;
+            return IsNewer(latestVersion, lastNotifiedVersion);
+        }
+
+        internal static bool IsNewer(string latest, string current)
         {
             if (Version.TryParse(latest, out var lv) && Version.TryParse(current, out var cv))
                 return lv > cv;

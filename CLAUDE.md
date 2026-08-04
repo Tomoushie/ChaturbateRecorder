@@ -4,12 +4,66 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.20.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.21.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.21.0 (2026-08-04) — 79.0 « recherche automatique des mises à jour »** :
+- **Le constat de départ** : `Services/UpdateChecker.cs` existait depuis la
+  1.2.0 mais n'avait **qu'un seul appelant**, le bouton « Rechercher une mise à
+  jour », lui-même réservé au mode avancé. Toute la fiabilisation de la chaîne
+  de release faite en 38.0 (release -> `latest.json` -> site) n'atteignait donc
+  jamais un utilisateur qui ne clique pas.
+- **Timer + réglage relu à chaque tick** : `MainForm.StartAutoUpdateChecks`
+  crée un `System.Windows.Forms.Timer` qui tourne **toujours** ; c'est le tick
+  qui teste `_settings.AutoUpdateCheck`. Cocher/décocher la case dans
+  `SettingsForm` prend donc effet immédiatement, sans redémarrage ni rappel à
+  faire circuler jusqu'à `MainForm` (les trois autres réglages de cette fenêtre
+  passent par des `Action<T>`, celui-ci n'en avait pas besoin).
+- **Premier passage à 1 min, puis 1 h** : le même timer change son `Interval`
+  au premier tick. Un appel réseau au démarrage se serait ajouté à la
+  validation du dossier, la purge des logs, le contrôle des ACL et les
+  dialogues de premier lancement.
+- **Anti-répétition** : `UserSettings.LastNotifiedUpdateVersion` (une version,
+  **pas** un booléen « déjà prévenu » — celui-ci aurait fait taire toutes les
+  releases suivantes jusqu'au redémarrage). `UpdateChecker.ShouldNotify` porte
+  la règle, `IsNewer` est passée `private` -> `internal` pour être testable.
+- **Jamais de MessageBox en fond** : notification cliquable de la zone de
+  notification uniquement. Une app qui tourne pendant des enregistrements de
+  plusieurs heures ne doit pas voler le focus, et un échec (hors ligne, quota
+  de l'API GitHub) ne produit qu'une ligne de log — contrairement au bouton,
+  où l'utilisateur attend une réponse. `ShowNotification` prend un
+  `Action? onClick` posé dans `_balloonClickAction`, **remis à null à chaque
+  notification** pour qu'un toast de fin d'enregistrement n'hérite pas de
+  l'action du toast de mise à jour précédent.
+- **Piège Win32** : `NotifyIcon.Text` est limité à **63 caractères** et lève
+  au-delà. Le libellé interpole la version et dépend de la traduction, d'où
+  `SetTrayText` qui tronque plutôt que de risquer un plantage.
+- **Refactor** : la partie « proposer + installer » de `OnCheckUpdateClick` est
+  extraite en `PromptAndInstallAsync`, partagée avec le clic sur la
+  notification — sinon un des deux chemins aurait fini par oublier
+  l'avertissement « N enregistrements en cours seront interrompus ».
+- **Tests** : `Tests/UpdateCheckerTests.cs` (10, **130 au total**), éprouvés en
+  les cassant volontairement (4 échecs). Le cas qui compte vraiment est le tri
+  lexicographique : `"1.9.0" > "1.10.0"` en comparaison de chaînes, d'où le
+  repli `Version.TryParse` d'abord.
+- **Vérification de rendu** : `DrawToBitmap` sur `SettingsForm` en clair/FR et
+  sombre/EN (`ClientSize` 330 -> 382).
+- **Renuméroté 1.20.0 -> 1.21.0 au moment de pousser** : une session voisine
+  avait publié 87.0 (minuteur d'enregistrement) en v1.20.0 pendant l'écriture
+  de celle-ci, tag compris. **Le numéro de version n'est réservé qu'au push**,
+  jamais au bump : constaté ici parce que `git push` a été refusé en
+  non-fast-forward *et* que `git push origin v1.20.0` a répondu « already
+  exists » — deux refus qu'il ne faut surtout pas contourner par un `--force`,
+  qui aurait effacé une release déjà publiée. Réflexe à garder : `git fetch`
+  **avant** de taguer, pas après. Rebase sur `origin/main` : conflits attendus
+  dans `CLAUDE.md` et `Config/Changelog.cs` (deux sessions ajoutent au même
+  endroit), aucun dans `MainForm.cs` malgré 155 lignes ajoutées de part et
+  d'autre — les deux fonctionnalités vivent dans des zones différentes du
+  fichier.
 
 **Fin de la chaîne 38.0 (2026-08-04) — l'environnement `github-pages` refusait
 un déploiement lancé depuis un tag** (réglage de dépôt uniquement, aucun

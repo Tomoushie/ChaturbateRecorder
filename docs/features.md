@@ -70,6 +70,11 @@ d'ensemble plus courte, voir la [page d'accueil](index.html).
 
 ## 🔄 Vérification des mises à jour
 
+- Recherche automatique toutes les heures, en arrière-plan : une notification
+  cliquable annonce la nouvelle version, sans jamais interrompre un
+  enregistrement en cours. Chaque version n'est signalée qu'une fois, et le
+  réglage se désactive dans les Paramètres (c'est le seul appel réseau que
+  l'application effectue d'elle-même).
 - Bouton "Rechercher une mise à jour" qui interroge l'API GitHub Releases
   (aucune authentification requise, dépôt public) et propose l'installation
   automatique si une version plus récente existe.
@@ -159,6 +164,11 @@ overview, see the [home page](index.html).
 
 ## 🔄 Update checking
 
+- Automatic hourly check in the background: a clickable notification
+  announces the new version without ever interrupting an ongoing
+  recording. Each version is announced only once, and the option can be
+  turned off in Settings (it is the only network call the application
+  makes on its own).
 - "Check for updates" button that queries the GitHub Releases API (no
   authentication needed, public repo) and offers automatic installation
   if a newer version exists.

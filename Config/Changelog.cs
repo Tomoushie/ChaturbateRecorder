@@ -163,6 +163,13 @@ namespace ChaturbateRecorderApp.Config
                 "Le temps restant s'affiche sur la ligne de l'enregistrement concerné et se met à jour en continu. Rien n'apparaît pour les enregistrements sans minuteur.",
                 "Une reconnexion automatique ne repousse pas l'échéance : une durée maximale de 2 heures désigne bien 2 heures de temps écoulé, et non 2 heures par tentative.",
             }),
+            ("1.21.0", new[]
+            {
+                "Recherche automatique des mises à jour : l'application vérifie désormais d'elle-même toutes les heures si une nouvelle version est disponible, au lieu d'attendre un clic sur \"Rechercher une mise à jour\".",
+                "Quand une version est trouvée, une notification apparaît dans la zone de notification ; cliquer dessus propose l'installation, avec le même avertissement qu'avant si des enregistrements sont en cours. Chaque version n'est annoncée qu'une fois.",
+                "Nouvelle case \"Rechercher automatiquement les mises à jour\" dans les Paramètres, cochée par défaut : la décocher désactive immédiatement le seul appel réseau que l'application effectue d'elle-même.",
+                "Une recherche automatique qui échoue (hors ligne, coupure réseau) n'affiche plus rien du tout et se contente d'une ligne de log — seul le bouton, où une réponse est attendue, signale encore les erreurs.",
+            }),
         };
 
         /// <summary>
@@ -206,6 +213,13 @@ namespace ChaturbateRecorderApp.Config
                 "Automatic stop timer: a new \"Maximum duration\" menu (advanced mode) lets you choose, when starting a recording, how long it should run — 15 minutes, 30 minutes, 1, 2, 4 or 8 hours — after which it stops on its own. The setting applies per recording, like quality or format, and stays on \"Unlimited\" by default.",
                 "The remaining time is shown on the row of the recording concerned and updates continuously. Nothing appears for recordings without a timer.",
                 "An automatic reconnection does not push the deadline back: a maximum duration of 2 hours means 2 hours of elapsed time, not 2 hours per attempt.",
+            },
+            ["1.21.0"] = new[]
+            {
+                "Automatic update check: the application now checks on its own every hour whether a new version is available, instead of waiting for a click on \"Check for updates\".",
+                "When a version is found, a notification appears in the notification area; clicking it offers to install, with the same warning as before if recordings are in progress. Each version is announced only once.",
+                "New \"Automatically check for updates\" option in Settings, enabled by default: unchecking it immediately disables the only network call the application makes on its own.",
+                "A failed automatic check (offline, network outage) no longer displays anything at all and just writes a log line — only the button, where an answer is expected, still reports errors.",
             },
         };
 

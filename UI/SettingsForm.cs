@@ -39,6 +39,7 @@ namespace ChaturbateRecorderApp.UI
         private Label proxyLabel = null!;
         private TextBox proxyTextBox = null!;
         private CheckBox autoReconnectCheckbox = null!;
+        private CheckBox autoUpdateCheckbox = null!;
         private Button closeButton = null!;
 
         public SettingsForm(UserSettings settings, AppTheme theme, AppLanguage language,
@@ -68,6 +69,7 @@ namespace ChaturbateRecorderApp.UI
             cookiesLabel.Text = L("label.cookies");
             proxyLabel.Text = L("label.proxy");
             autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
+            autoUpdateCheckbox.Text = L("checkbox.autoUpdateCheck");
             closeButton.Text = L("button.close");
 
             var themeIndex = themeCombo.SelectedIndex;
@@ -162,11 +164,26 @@ namespace ChaturbateRecorderApp.UI
             SettingsManager.Save(_settings);
         }
 
+        /// <summary>
+        /// 79.0 — la recherche horaire lit ce réglage à chaque passage, donc
+        /// la décoche prend effet sans redémarrer l'application. Le seul appel
+        /// réseau que l'app fait d'elle-même : il doit rester débrayable.
+        /// </summary>
+        private void OnAutoUpdateChanged(object? sender, EventArgs e)
+        {
+            _settings.AutoUpdateCheck = autoUpdateCheckbox.Checked;
+            SettingsManager.Save(_settings);
+        }
+
         private void InitializeComponent()
         {
             SuspendLayout();
 
-            ClientSize = new Size(480, 330);
+            // Hauteur portée de 330 à 382 par la case de recherche automatique
+            // de mise à jour (79.0) : une ligne de plus au même pas vertical
+            // (48 px de case + 12 px de gouttière) et le bouton Fermer décalé
+            // d'autant.
+            ClientSize = new Size(480, 382);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -250,7 +267,19 @@ namespace ChaturbateRecorderApp.UI
             };
             autoReconnectCheckbox.CheckedChanged += OnAutoReconnectChanged;
 
-            closeButton = new Button { Text = "Fermer", Location = new Point(368, 286), Size = new Size(100, 26) };
+            // Même gabarit que la case précédente (456x48) : le libellé français
+            // tient sur une ligne mais la fenêtre est de largeur fixe, et la
+            // traduction n'a pas à être plus courte que le contrôle.
+            autoUpdateCheckbox = new CheckBox
+            {
+                Text = "Rechercher automatiquement les mises à jour (toutes les heures)",
+                Location = new Point(12, 278),
+                Size = new Size(456, 48),
+                Checked = _settings.AutoUpdateCheck,
+            };
+            autoUpdateCheckbox.CheckedChanged += OnAutoUpdateChanged;
+
+            closeButton = new Button { Text = "Fermer", Location = new Point(368, 338), Size = new Size(100, 26) };
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[]
@@ -259,7 +288,7 @@ namespace ChaturbateRecorderApp.UI
                 saveDirLabel, saveDirTextBox, browseDirButton,
                 cookiesLabel, cookiesTextBox, browseCookiesButton,
                 proxyLabel, proxyTextBox,
-                autoReconnectCheckbox,
+                autoReconnectCheckbox, autoUpdateCheckbox,
                 closeButton,
             });
             themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
