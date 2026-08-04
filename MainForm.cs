@@ -45,6 +45,8 @@ namespace ChaturbateRecorderApp
         private ComboBox codecCombo = null!;
         private Label formatLabel = null!;
         private ComboBox formatCombo = null!;
+        private Label durationLabel = null!;
+        private ComboBox durationCombo = null!;
         private ListBox favoritesListBox = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
@@ -86,6 +88,12 @@ namespace ChaturbateRecorderApp
             public int ReconnectDelaySeconds;
             public bool HasProgressPct;
             public double LastProgressPct;
+
+            // Minuteur (87.0) : libellé du temps restant, à droite du nom, et
+            // le timer d'affichage qui le rafraîchit chaque seconde. Ce même
+            // timer déclenche l'arrêt à l'échéance — un seul objet à arrêter.
+            public Label TimerLabel = null!;
+            public System.Windows.Forms.Timer? CountdownTimer;
         }
 
         // --- État ---
@@ -294,7 +302,32 @@ namespace ChaturbateRecorderApp
             const int secondRowY = 30;
 
             var container = new Panel { Size = new Size(605, 56), Margin = new Padding(2) };
-            var nameLabel = new Label { Text = job.RoomName, Location = new Point(2, 5), AutoSize = true, Font = new Font(Font, FontStyle.Bold) };
+            // Largeur bornée (et non AutoSize) depuis l'ajout du minuteur (87.0) :
+            // le libellé du temps restant occupe la droite de cette rangée, un nom
+            // de salon inhabituellement long viendrait sinon se superposer à lui.
+            // AutoEllipsis coupe proprement avec "..." plutôt que de déborder.
+            var nameLabel = new Label
+            {
+                Text = job.RoomName,
+                Location = new Point(2, 5),
+                Size = new Size(335, 18),
+                AutoSize = false,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font(Font, FontStyle.Bold)
+            };
+            // Minuteur (87.0) : entre le nom et le bouton Ouvrir, sur la rangée du
+            // haut restée libre. Se termine à x=490, juste avant buttonX (495).
+            // Masqué tant qu'aucun minuteur n'est actif, pour ne rien changer à
+            // l'apparence des enregistrements illimités.
+            var timerLabel = new Label
+            {
+                Location = new Point(345, 5),
+                Size = new Size(145, 18),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                Visible = false
+            };
             var openButton = new Button { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
             var progressBar = new ThemedProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100, BarColor = RunningColor };
             var statusLabel = new Label { Location = new Point(358, secondRowY + 4), Size = new Size(130, 18), AutoSize = false };
@@ -318,7 +351,7 @@ namespace ChaturbateRecorderApp
                 }
             };
 
-            container.Controls.AddRange(new Control[] { nameLabel, openButton, progressBar, statusLabel, stopButton });
+            container.Controls.AddRange(new Control[] { nameLabel, timerLabel, openButton, progressBar, statusLabel, stopButton });
 
             var row = new JobRow
             {
@@ -329,6 +362,7 @@ namespace ChaturbateRecorderApp
                 StatusLabel = statusLabel,
                 StopButton = stopButton,
                 OpenButton = openButton,
+                TimerLabel = timerLabel,
             };
 
             stopButton.Click += (s, e) =>
@@ -388,6 +422,9 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private void RemoveJobRow(JobRow row)
         {
+            // Même raison pour le minuteur d'arrêt (87.0) : c'est aussi un Timer,
+            // que rien n'arrêterait si la ligne disparaissait sans passer ici.
+            StopRecordingTimer(row);
             jobsListPanel.Controls.Remove(row.Container);
             _jobRows.Remove(row);
             BeginInvoke(() => row.Container.Dispose());
@@ -438,6 +475,71 @@ namespace ChaturbateRecorderApp
             }
         }
 
+        /// <summary>
+        /// Démarre le minuteur d'une ligne (87.0), si l'utilisateur en a demandé
+        /// un. Appelé au passage en Running.
+        ///
+        /// L'échéance n'est calculée qu'au PREMIER démarrage : une reconnexion
+        /// automatique repasse par Running, mais ne doit pas repousser l'arrêt,
+        /// sinon une room instable enregistrerait indéfiniment.
+        /// </summary>
+        private void StartRecordingTimer(JobRow row)
+        {
+            if (row.Job.TimerMinutes <= 0) return;
+
+            row.Job.StopAtUtc ??= DateTime.UtcNow.AddMinutes(row.Job.TimerMinutes);
+            row.TimerLabel.Visible = true;
+            UpdateCountdown(row);
+
+            if (row.CountdownTimer != null) return;
+
+            var timer = new System.Windows.Forms.Timer { Interval = 1000 };
+            row.CountdownTimer = timer;
+            timer.Tick += (s, e) => UpdateCountdown(row);
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Rafraîchit le temps restant et déclenche l'arrêt à l'échéance.
+        /// </summary>
+        private void UpdateCountdown(JobRow row)
+        {
+            if (row.Job.StopAtUtc is not { } echeance) return;
+
+            var restant = echeance - DateTime.UtcNow;
+            if (restant > TimeSpan.Zero)
+            {
+                row.TimerLabel.Text = "⏱ " + RecordingTimer.FormatRemaining(restant);
+                return;
+            }
+
+            // Échéance atteinte : on coupe le timer AVANT d'arrêter le moteur,
+            // pour ne pas re-déclencher l'arrêt à chaque tick suivant.
+            StopRecordingTimer(row);
+            row.TimerLabel.Visible = false;
+
+            AppendJobLog(row.Job, $"Durée maximale atteinte ({row.Job.TimerMinutes} min) : arrêt de l'enregistrement.");
+
+            // Engine.Stop() marque l'arrêt comme manuel, donc l'état final sera
+            // Stopped — ce qui exclut la reconnexion automatique dans
+            // HandleJobStateChanged. Un minuteur qui relancerait aussitôt
+            // l'enregistrement n'aurait aucun sens.
+            if (row.Job.Engine.State == DownloadState.Running)
+                row.Job.Engine.Stop();
+        }
+
+        /// <summary>
+        /// Arrête et libère le minuteur d'une ligne. Sans effet s'il n'y en a
+        /// pas — appelable depuis tous les chemins de sortie sans condition.
+        /// </summary>
+        private static void StopRecordingTimer(JobRow row)
+        {
+            if (row.CountdownTimer == null) return;
+            row.CountdownTimer.Stop();
+            row.CountdownTimer.Dispose();
+            row.CountdownTimer = null;
+        }
+
         private static string FormatProgressPct(double pct) =>
             $"{pct.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
 
@@ -463,6 +565,7 @@ namespace ChaturbateRecorderApp
                     row.ProgressBar.Style = ProgressBarStyle.Marquee;
                     row.ProgressBar.MarqueeAnimationSpeed = 30;
                     PulseProgressBar(row.ProgressBar, RunningColor);
+                    StartRecordingTimer(row);
                     break;
 
                 case DownloadState.Completed:
@@ -471,6 +574,11 @@ namespace ChaturbateRecorderApp
                     row.Status = JobRowStatus.Finished;
                     row.FinishedState = state;
                     RefreshJobRowLabels(row);
+                    // Le minuteur n'a plus lieu d'etre, quelle que soit la raison de
+                    // la fin. Si l'enregistrement reprend (reconnexion automatique),
+                    // StartRecordingTimer le relancera sur l'echeance initiale.
+                    StopRecordingTimer(row);
+                    row.TimerLabel.Visible = false;
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
                     AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
                     row.ProgressBar.BarColor = state switch
@@ -1043,6 +1151,7 @@ namespace ChaturbateRecorderApp
                 CodecChoice = codecChoice,
                 ContainerExt = containerExt,
                 AutoReconnectEnabled = _settings.AutoReconnectDefault,
+                TimerMinutes = RecordingTimer.MinutesForIndex(durationCombo.SelectedIndex),
             };
 
             var row = BuildJobRow(job);
@@ -1225,6 +1334,18 @@ namespace ChaturbateRecorderApp
             formatCombo.Items.AddRange(new object[] { L("format.mp4"), L("format.mkv"), L("format.mov") });
             formatCombo.SelectedIndex = formatIndex < 0 ? 0 : formatIndex;
 
+            // L'ordre des items doit rester celui de RecordingTimer.PresetMinutes,
+            // la sélection étant convertie en minutes par son index.
+            durationLabel.Text = L("label.duration");
+            var durationIndex = durationCombo.SelectedIndex;
+            durationCombo.Items.Clear();
+            durationCombo.Items.AddRange(new object[]
+            {
+                L("duration.unlimited"), L("duration.15min"), L("duration.30min"),
+                L("duration.1h"), L("duration.2h"), L("duration.4h"), L("duration.8h")
+            });
+            durationCombo.SelectedIndex = durationIndex < 0 ? 0 : durationIndex;
+
             grpProgress.Title = L("panel.progress");
 
             grpHistory.Title = L("panel.history");
@@ -1387,7 +1508,9 @@ namespace ChaturbateRecorderApp
             // rangées descendent de 2 px chacune, la dernière finissant 6 px plus
             // bas. Garde la même gouttière de 12 px sous la barre du haut.
             const int grpRecordY = 111;
-            const int grpRecordHeightAdvanced = 172;
+            // 218 (et non 172) depuis l'ajout du minuteur (87.0) sur une deuxième
+            // rangée d'options : advancedOptionsPanel est passé de 66 à 112 px.
+            const int grpRecordHeightAdvanced = 218;
             const int grpRecordHeightSimple = 110;
             const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
 
@@ -1505,7 +1628,10 @@ namespace ChaturbateRecorderApp
             }
 
             foreach (var row in _jobRows)
+            {
+                StopRecordingTimer(row);
                 row.Job.Engine.Stop();
+            }
 
             // Retire l'icône de la zone de notification avant fermeture : sans
             // ça, Windows laisse une icône "fantôme" jusqu'au survol suivant.
@@ -1678,7 +1804,9 @@ namespace ChaturbateRecorderApp
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
             // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
             // en Mode simple (3.2), coordonnées relatives au panneau lui-même.
-            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 66) };
+            // Hauteur 112 (et non 66) depuis l ajout du minuteur (87.0) sur une
+            // deuxieme rangee ; grpRecordHeightAdvanced dans ApplyUiMode suit.
+            advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 112) };
 
             qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
             qualityCombo = new ComboBox
@@ -1725,6 +1853,24 @@ namespace ChaturbateRecorderApp
             });
             formatCombo.SelectedIndex = 0;
 
+            // Minuteur (87.0), deuxième rangée. Choix par enregistrement comme
+            // les trois précédents : la valeur est lue au démarrage et figée
+            // dans le RecordingJob, changer le menu ensuite n'affecte donc pas
+            // les enregistrements déjà lancés.
+            durationLabel = new Label { Text = "Durée maximale :", Location = new Point(12, 58), AutoSize = true };
+            durationCombo = new ComboBox
+            {
+                Location = new Point(12, 76),
+                Size = new Size(190, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            durationCombo.Items.AddRange(new object[]
+            {
+                "Illimité", "15 minutes", "30 minutes",
+                "1 heure", "2 heures", "4 heures", "8 heures"
+            });
+            durationCombo.SelectedIndex = 0;
+
             startButton.Click += OnStartClick;
             stopAllButton.Click += OnStopAllClick;
             addFavoriteButton.Click += OnAddFavoriteClick;
@@ -1735,6 +1881,7 @@ namespace ChaturbateRecorderApp
             advancedOptionsPanel.Controls.AddRange(new Control[]
             {
                 qualityLabel, qualityCombo, codecLabel, codecCombo, formatLabel, formatCombo,
+                durationLabel, durationCombo,
             });
 
             grpRecord.Controls.AddRange(new Control[]
