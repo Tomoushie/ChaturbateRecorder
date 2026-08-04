@@ -181,6 +181,10 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : lancer l'exécutable plusieurs fois ouvrait autant d'instances, empilant les icônes dans la barre des tâches. Un second lancement réaffiche désormais la fenêtre déjà ouverte — utile depuis que la fenêtre se masque dans la zone de notification au lieu de se fermer.",
                 "Correctif : le texte du bouton \"Site web\" n'était pas centré comme celui des boutons \"Sponsoriser\" et \"Faire un don\" juste au-dessus.",
             }),
+            ("1.22.2", new[]
+            {
+                "Le bouton \"Site web\" n'est plus collé à la bordure basse du panneau \"Soutenir le projet\" : le panneau a été agrandi pour lui laisser la même marge que celle du haut.",
+            }),
         };
 
         /// <summary>
@@ -242,6 +246,10 @@ namespace ChaturbateRecorderApp.Config
                 "Fix: adding an offline live triggered an error notification every 30 seconds, indefinitely, and it kept coming even after the recording had been cancelled and removed from the list. The 5-attempt reconnection limit in fact never applied, and removing a row left yt-dlp running in the background.",
                 "Fix: launching the executable several times opened as many instances, stacking icons in the taskbar. A second launch now brings the already-open window back — useful since the window hides in the notification area instead of closing.",
                 "Fix: the \"Website\" button's text was not centred like that of the \"Sponsor\" and \"Donate\" buttons just above it.",
+            },
+            ["1.22.2"] = new[]
+            {
+                "The \"Website\" button is no longer flush against the bottom border of the \"Support the project\" panel: the panel was made taller to give it the same margin as the top.",
             },
         };
 

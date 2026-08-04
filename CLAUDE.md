@@ -4,12 +4,24 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.22.1 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.22.2 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.22.2 + 99.0 (2026-08-04)** — captures d'écran publiées régénérées (README
++ les trois du site) : elles dataient d'avant la v1.19.0 et ne montraient ni
+Diagnostic, ni Sponsoriser, ni le menu « Durée maximale » (87.0), ni les boutons
+de partage (50.0). **Méthode** : injecter les données factices directement dans
+les contrôles pendant la capture (`historyListView.Items.Add`) plutôt que de
+faire lire le dossier de captures — le contenu réel de l'utilisateur ne doit
+jamais atteindre un fichier publié. Le bump 1.22.2 vient d'un défaut vu **sur la
+capture elle-même** : `grpDonate` à 136 px ne laissait que 2 px sous « Site web »
+— géométriquement correct, visuellement collé à la bordure. Porté à 144.
+Corollaire de méthode : régénérer les captures est aussi une revue d'interface,
+c'est le seul moment où on regarde l'écran entier d'un œil neuf.
 
 **v1.22.1 (2026-08-04) — lot de correctifs 95.0 / 93.0 / 94.0** :
 - **95.0, le vrai coupable** : `DownloadEngine` lève `Running` dès que le

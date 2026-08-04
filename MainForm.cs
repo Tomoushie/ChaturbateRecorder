@@ -2229,15 +2229,20 @@ namespace ChaturbateRecorderApp
             // Hauteur portée de 100 à 136 pour loger un troisième bouton : les
             // deux précédents descendaient déjà jusqu'à y=94.
             //
-            // 136 et pas moins : RoundedGroupPanel dessine son corps jusqu'à
-            // Height - 1 - ShadowSize, soit Height - 4. Le dernier bouton finit
-            // à y=130, donc 136 lui laisse les 2 px de garde qu'avait déjà le
-            // panneau d'origine (100 - 4 = 96 pour un bouton finissant à 94).
-            // À 132 il débordait sous la bordure — constaté à la capture.
+            // RoundedGroupPanel dessine son corps jusqu'à Height - 1 - ShadowSize,
+            // soit Height - 4, et le dernier bouton ("Site web") finit à y=130.
+            //
+            // 144 et non 136 : à 136 la garde n'était que de 2 px, ce qui est
+            // géométriquement correct (rien ne débordait) mais donne un bouton
+            // visuellement collé à la bordure — flagrant sur les captures
+            // publiées (99.0), où c'est le premier détail qui saute aux yeux.
+            // 144 porte la garde à 10 px, cohérente avec les 34 px qui séparent
+            // le haut du panneau du premier bouton. Ne pas descendre en dessous
+            // de 134 : à 132 le bouton passait réellement sous la bordure.
             //
             // La position de grpLogs est recalculée à partir de
             // grpDonate.Bottom dans ApplyUiMode, elle suit automatiquement.
-            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 136) };
+            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 144) };
             sponsorButton = new Button { Text = "Sponsoriser (GitHub)", Location = new Point(12, 34), Size = new Size(220, 32) };
             donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 70), Size = new Size(220, 32) };
             websiteButton = new Button { Text = "Site web", Location = new Point(12, 106), Size = new Size(220, 24) };
