@@ -74,7 +74,7 @@ namespace ChaturbateRecorderApp
             public RecordingJob Job = null!;
             public Panel Container = null!;
             public Label NameLabel = null!;
-            public ProgressBar ProgressBar = null!;
+            public ThemedProgressBar ProgressBar = null!;
             public Label StatusLabel = null!;
             public Button StopButton = null!;
             public Button OpenButton = null!;
@@ -296,7 +296,7 @@ namespace ChaturbateRecorderApp
             var container = new Panel { Size = new Size(605, 56), Margin = new Padding(2) };
             var nameLabel = new Label { Text = job.RoomName, Location = new Point(2, 5), AutoSize = true, Font = new Font(Font, FontStyle.Bold) };
             var openButton = new Button { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
-            var progressBar = new ProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100 };
+            var progressBar = new ThemedProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100, BarColor = RunningColor };
             var statusLabel = new Label { Location = new Point(358, secondRowY + 4), Size = new Size(130, 18), AutoSize = false };
             var stopButton = new Button { Location = new Point(buttonX, secondRowY), Size = new Size(buttonWidth, buttonHeight) };
 
@@ -349,8 +349,7 @@ namespace ChaturbateRecorderApp
                 }
                 else
                 {
-                    jobsListPanel.Controls.Remove(row.Container);
-                    _jobRows.Remove(row);
+                    RemoveJobRow(row);
                 }
             };
 
@@ -366,12 +365,32 @@ namespace ChaturbateRecorderApp
             // texte noir) au lieu du bleu d'accent, et une ligne créée en thème
             // sombre reste claire jusqu'au prochain changement de thème (seul
             // AnimateThemeTransition repasse récursivement sur tout le
-            // formulaire). N'écrase aucune couleur d'état : ThemeManager n'a pas
-            // de cas ProgressBar (les couleurs de PulseProgressBar/RunningColor
-            // passent par PBM_SETBARCOLOR côté natif) et les icônes sont déjà
-            // rendues en IconColor, fixe dans les deux thèmes.
+            // formulaire). N'écrase aucune couleur d'état : le cas
+            // ThemedProgressBar de ThemeManager ne touche que la piste et la
+            // bordure, jamais BarColor (posée juste au-dessus à RunningColor,
+            // puis pilotée par HandleJobStateChanged/PulseProgressBar), et les
+            // icônes sont déjà rendues en IconColor, fixe dans les deux thèmes.
             ThemeManager.Apply(container, _currentTheme);
             return row;
+        }
+
+        /// <summary>
+        /// Retire une ligne de la liste et libère ses contrôles. Le Dispose
+        /// compte depuis que la barre de progression est dessinée par
+        /// l'application : en mode indéterminé, ThemedProgressBar fait tourner
+        /// un Timer, que seul son Dispose arrête. Un simple Controls.Remove
+        /// laisserait la ligne (et le RecordingJob accroché à ses gestionnaires)
+        /// vivante indéfiniment, sur une application faite pour tourner longtemps.
+        ///
+        /// Le Dispose est différé : l'un des appelants est le gestionnaire Click
+        /// du bouton "Retirer", qui appartient justement à la ligne détruite —
+        /// il doit avoir fini de s'exécuter avant que son bouton disparaisse.
+        /// </summary>
+        private void RemoveJobRow(JobRow row)
+        {
+            jobsListPanel.Controls.Remove(row.Container);
+            _jobRows.Remove(row);
+            BeginInvoke(() => row.Container.Dispose());
         }
 
         /// <summary>
@@ -454,12 +473,12 @@ namespace ChaturbateRecorderApp
                     RefreshJobRowLabels(row);
                     row.ProgressBar.Style = ProgressBarStyle.Blocks;
                     AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
-                    row.ProgressBar.SetBarColor(state switch
+                    row.ProgressBar.BarColor = state switch
                     {
                         DownloadState.Completed => CompletedColor,
                         DownloadState.Failed => FailedColor,
                         _ => StoppedColor,
-                    });
+                    };
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
                     RefreshHistoryAsync();
 
@@ -536,7 +555,7 @@ namespace ChaturbateRecorderApp
         /// brièvement entre une teinte éclaircie et la couleur définitive
         /// avant de s'y stabiliser, pour signaler visuellement le démarrage.
         /// </summary>
-        private void PulseProgressBar(ProgressBar bar, Color settleColor)
+        private void PulseProgressBar(ThemedProgressBar bar, Color settleColor)
         {
             var brighter = Color.FromArgb(255,
                 Math.Min(255, settleColor.R + 70),
@@ -549,13 +568,13 @@ namespace ChaturbateRecorderApp
             {
                 if (bar.IsDisposed) { timer.Stop(); timer.Dispose(); return; }
 
-                bar.SetBarColor(ticks % 2 == 0 ? brighter : settleColor);
+                bar.BarColor = ticks % 2 == 0 ? brighter : settleColor;
                 ticks++;
                 if (ticks >= 6)
                 {
                     timer.Stop();
                     timer.Dispose();
-                    bar.SetBarColor(settleColor);
+                    bar.BarColor = settleColor;
                 }
             };
             timer.Start();
@@ -567,7 +586,7 @@ namespace ChaturbateRecorderApp
         /// reste en Marquee pendant l'enregistrement, donc c'est ici que le
         /// passage en mode "Blocks" devient visible pour la première fois).
         /// </summary>
-        private void AnimateProgressBarFill(ProgressBar bar, int target)
+        private void AnimateProgressBarFill(ThemedProgressBar bar, int target)
         {
             var timer = new System.Windows.Forms.Timer { Interval = 12 };
             timer.Tick += (s, e) =>
@@ -1056,8 +1075,7 @@ namespace ChaturbateRecorderApp
             {
                 MessageBox.Show(Localization.Format("error.cannotStartDownload", ex.Message),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                jobsListPanel.Controls.Remove(row.Container);
-                _jobRows.Remove(row);
+                RemoveJobRow(row);
             }
         }
 

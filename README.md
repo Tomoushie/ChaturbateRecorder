@@ -261,7 +261,7 @@ ChaturbateRecorderApp/
 │   ├── Localization.cs              (traductions FR/EN de l'UI principale)
 │   ├── RoundedGroupPanel.cs          (panneaux à bordure arrondie)
 │   ├── SettingsForm.cs               (fenêtre Paramètres séparée)
-│   ├── ProgressBarColorExtensions.cs (couleur dynamique de la ProgressBar)
+│   ├── ThemedProgressBar.cs          (barre de progression dessinée à la main)
 │   └── TutorialForm.cs              (guide de démarrage)
 ├── Assets/
 │   ├── donate_qr.png

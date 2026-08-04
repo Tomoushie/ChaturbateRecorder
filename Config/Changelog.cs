@@ -152,6 +152,11 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : le même défaut de hauteur touchait les boutons de la barre du haut (\"Paramètres\", \"Mode simple\", \"Guide de démarrage\", \"Rechercher une mise à jour\", \"Signaler un bug\", \"Diagnostic\"), dont le bas des lettres à jambage était lui aussi coupé. Ces boutons ont été rehaussés et les trois rangées repositionnées.",
                 "Correctif : les lignes de la zone \"Enregistrements en cours\" ne prenaient pas le thème à leur création — leurs boutons gardaient l'apparence Windows par défaut au lieu de la couleur d'accent, et une ligne ajoutée en thème sombre restait claire jusqu'au changement de thème suivant.",
             }),
+            ("1.19.1", new[]
+            {
+                "Correctif : la couleur de la barre de progression selon l'état (bleu en cours, vert terminé, rouge erreur, gris arrêté), annoncée en 1.5.0, ne s'est en réalité jamais affichée — Windows impose sa propre couleur aux barres de progression dès que les styles visuels sont actifs, et les quatre états apparaissaient donc tous en vert. La barre est désormais dessinée par l'application : les quatre états se distinguent enfin, et l'effet de pulsation au démarrage d'un enregistrement devient visible lui aussi.",
+                "La piste de la barre de progression suit désormais le thème clair ou sombre, au lieu de rester blanche sur fond sombre comme le fait une barre Windows classique.",
+            }),
         };
 
         /// <summary>
@@ -184,6 +189,11 @@ namespace ChaturbateRecorderApp.Config
                 "Fix: in English, the \"Remove\" button of a finished recording was truncated to \"Remov\" after a theme change, for lack of width. Both buttons on the row have been widened.",
                 "Fix: the same height defect affected the buttons of the top bar (\"Settings\", \"Simple mode\", \"Getting started guide\", \"Check for updates\", \"Report a bug\", \"Diagnostics\"), where the bottom of descending letters was cut off too. Those buttons have been made taller and the three rows repositioned.",
                 "Fix: rows in the \"Active recordings\" area did not pick up the theme when created — their buttons kept the default Windows look instead of the accent colour, and a row added while the dark theme was active stayed light until the next theme change.",
+            },
+            ["1.19.1"] = new[]
+            {
+                "Fix: the progress bar's state colour (blue while recording, green when finished, red on error, grey when stopped), announced back in 1.5.0, was in fact never displayed — Windows forces its own colour on progress bars as soon as visual styles are enabled, so all four states showed up green. The bar is now drawn by the application itself: the four states are finally distinguishable, and the pulse effect when a recording starts becomes visible too.",
+                "The progress bar's track now follows the light or dark theme, instead of staying white on a dark background as a standard Windows bar does.",
             },
         };
 
