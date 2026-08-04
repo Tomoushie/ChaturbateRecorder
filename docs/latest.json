@@ -1,19 +1,19 @@
 {
-  "version": "1.21.0",
-  "tag": "v1.21.0",
-  "publishedAt": "2026-08-04T17:59:20Z",
-  "releaseNotesUrl": "https://github.com/Tomoushie/ChaturbateRecorder/releases/tag/v1.21.0",
+  "version": "1.22.0",
+  "tag": "v1.22.0",
+  "publishedAt": "2026-08-04T18:18:25Z",
+  "releaseNotesUrl": "https://github.com/Tomoushie/ChaturbateRecorder/releases/tag/v1.22.0",
   "assets": [
     {
-      "name": "ChaturbateRecorder-v1.21.0-portable.zip",
-      "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v1.21.0/ChaturbateRecorder-v1.21.0-portable.zip",
-      "sha256": "404DA58F2B11A146924CEEDE40F8DE8924C5BE2E2644F5157FD9164E0D20DE80",
+      "name": "ChaturbateRecorder-v1.22.0-portable.zip",
+      "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v1.22.0/ChaturbateRecorder-v1.22.0-portable.zip",
+      "sha256": "4DD7C6A95B46D4B4EB1697DFA4EBA41684469A1053270F9270267029F807AB79",
       "variant": "portable"
     },
     {
-      "name": "ChaturbateRecorder-v1.21.0-standard.zip",
-      "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v1.21.0/ChaturbateRecorder-v1.21.0-standard.zip",
-      "sha256": "1ACE68C471C13AAD8DE4742D6CA42301A397EACBAEEA64022E914E7D516341B0",
+      "name": "ChaturbateRecorder-v1.22.0-standard.zip",
+      "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v1.22.0/ChaturbateRecorder-v1.22.0-standard.zip",
+      "sha256": "77E2FFC37327AB4C6513A913E35492F134AB92587AE20C73ED92D61AD227768B",
       "variant": "standard"
     }
   ]
