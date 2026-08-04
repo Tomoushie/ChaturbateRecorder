@@ -145,6 +145,30 @@ namespace ChaturbateRecorderApp.UI
                 return;
             }
 
+            // Controle du format AVANT d'enregistrer le reglage. yt-dlp delegue
+            // la lecture a http.cookiejar de Python, bien plus strict que le
+            // format ne le laisse croire : un fichier refuse fait echouer tous
+            // les enregistrements, et rend la surveillance definitivement muette
+            // — sans que rien ne designe les cookies. Constate le 2026-08-05 sur
+            // un fichier reel, ou un simple diese manquant invalidait 5 cookies
+            // sur 6, dont celui de session.
+            var check = CookieFileValidator.Validate(File.ReadAllLines(dialog.FileName));
+            if (!check.IsValid)
+            {
+                var detail = check.Problem switch
+                {
+                    CookieFileProblem.MissingNetscapeHeader => Localization.Get("cookies.problem.header"),
+                    CookieFileProblem.Empty => Localization.Get("cookies.problem.empty"),
+                    CookieFileProblem.HttpOnlyPrefixMissingHash => Localization.Format("cookies.problem.httpOnly", check.Line),
+                    CookieFileProblem.TooFewFields => Localization.Format("cookies.problem.fields", check.Line),
+                    _ => Localization.Format("cookies.problem.domain", check.Line),
+                };
+                MessageBox.Show(this,
+                    Localization.Get("cookies.invalid.intro") + "\n\n" + detail,
+                    Localization.Get("cookies.invalid.title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             AppConfig.CookiesFilePath = dialog.FileName;
             cookiesTextBox.Text = AppConfig.CookiesFilePath;
 

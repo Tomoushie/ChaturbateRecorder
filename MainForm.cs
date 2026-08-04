@@ -1502,9 +1502,21 @@ namespace ChaturbateRecorderApp
         private void OnAddFavoriteClick(object? sender, EventArgs e)
         {
             var url = urlTextBox.Text.Trim();
+
+            // Deux causes, deux messages. « URL invalide ou déjà présente »
+            // obligeait l'utilisateur à deviner laquelle des deux : signalé en
+            // vrai après un clic sur un favori déjà enregistré, où le message
+            // laissait croire à une URL malformée.
+            if (_favorites.Favorites.Any(f => string.Equals(f, url, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(this, Localization.Format("info.favoriteAlreadyPresent", url),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             if (!_favorites.AddFavorite(url))
             {
-                MessageBox.Show(Localization.Get("info.invalidOrDuplicateFavorite"),
+                MessageBox.Show(this, Localization.Get("info.favoriteInvalidUrl"),
                     Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }

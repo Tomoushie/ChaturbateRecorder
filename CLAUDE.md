@@ -11,6 +11,34 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**v1.26.1 (2026-08-05) — le cookies.txt qui faisait tout echouer en silence** :
+- **Symptome rapporte** : « enregistrer un salon hors ligne affiche echec ».
+  Le vrai defaut etait tout autre, visible seulement dans les logs de la
+  capture : `ERROR: invalid Netscape format cookies file`. **Tous** les
+  enregistrements echouaient, en ligne comme hors ligne.
+- **Cause exacte, apres trois hypotheses ecartees** : BOM (non), CRLF (non —
+  une copie convertie en LF echouait pareil), colonnes (non — 7 partout). Les
+  lignes commencaient par `HttpOnly_` **sans le diese**. Python ne reconnait
+  alors pas le prefixe, ne saute pas la ligne comme commentaire, et bute sur
+  l'assertion domaine/indicateur de `http.cookiejar`. **5 cookies sur 6
+  invalides, dont `sessionid`.**
+- **Deux comportements de yt-dlp a connaitre** : il **ignore silencieusement**
+  un fichier de cookies **absent**, mais echoue durement sur un fichier
+  **malforme**. Les deux pannes les plus probables sont donc celles qui se
+  voient le moins.
+- **Consequence sur 88.0, la plus vicieuse** : `RoomStatusChecker` passe le
+  fichier a yt-dlp. Un fichier refuse produit une erreur qui n'est pas « Room
+  is currently offline » -> etat `Unknown` -> **la surveillance ne declenche
+  jamais rien**. Le garde-fou fonctionne, mais l'utilisateur aurait conclu que
+  la fonctionnalite ne marche pas.
+- **Methode qui a tranche** : comparer trois executions — fichier original,
+  copie convertie en LF, et **chemin inexistant comme temoin**. C'est le temoin
+  qui a revele l'ignorance silencieuse, et la copie LF qui a elimine CRLF.
+  Sans le temoin, on aurait conclu a tort.
+- `Services/CookieFileValidator.cs` + 11 tests (**180 au total**), eprouves en
+  les cassant volontairement (3 echecs). Branche sur la selection du fichier
+  dans `SettingsForm`.
+
 **v1.26.0 (2026-08-05) — 98.0 note de legalite (app + site + README + wiki)** :
 - **Texte redige par le mainteneur**, qui a corrige mes deux versions
   successives. Trois corrections factuelles apportees en retour : l'art. 550ter

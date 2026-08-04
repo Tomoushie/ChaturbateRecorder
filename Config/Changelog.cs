@@ -221,6 +221,12 @@ namespace ChaturbateRecorderApp.Config
                 "Nouveau bouton \"Légalité\", visible en mode simple comme en mode avancé : il affiche une note sur le cadre légal belge — ce que le logiciel fait et ne fait pas, l'exception de copie privée, et l'interdiction pénale de diffuser un enregistrement sans consentement.",
                 "La même note est publiée sur le site, dans les deux README et dans le wiki, pour qu'elle soit trouvable avant même d'installer l'application.",
             }),
+            ("1.26.1", new[]
+            {
+                "Le fichier cookies est désormais contrôlé au moment où tu le choisis. Un fichier que yt-dlp refuserait est signalé tout de suite, avec la ligne fautive et ce qu'il faut corriger, au lieu de faire échouer silencieusement tous les enregistrements.",
+                "Ce contrôle vient d'un cas réel : un simple dièse manquant devant \"HttpOnly_\" invalidait 5 cookies sur 6, dont celui de session. Tous les enregistrements échouaient, et la surveillance automatique restait muette, sans que rien ne désigne les cookies.",
+                "Correctif : ajouter un favori déjà présent affichait \"URL invalide ou déjà présente\", laissant deviner laquelle des deux causes s'appliquait. Les deux cas ont maintenant leur propre message.",
+            }),
         };
 
         /// <summary>
@@ -322,6 +328,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "New \"Legality\" button, visible in both simple and advanced mode: it shows a note on the Belgian legal framework — what the software does and does not do, the private-copy exception, and the criminal prohibition on distributing a recording without consent.",
                 "The same note is published on the website, in both READMEs and in the wiki, so that it can be found before even installing the application.",
+            },
+            ["1.26.1"] = new[]
+            {
+                "The cookies file is now checked when you select it. A file that yt-dlp would reject is reported straight away, with the offending line and what to fix, instead of silently making every recording fail.",
+                "This check comes from a real case: a single missing hash before \"HttpOnly_\" invalidated 5 cookies out of 6, including the session one. Every recording failed, and automatic monitoring stayed silent, with nothing pointing at the cookies.",
+                "Fix: adding a favorite that was already present showed \"invalid URL or already present\", leaving you to guess which of the two applied. Both cases now have their own message.",
             },
         };
 

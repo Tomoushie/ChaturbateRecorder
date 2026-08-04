@@ -226,6 +226,34 @@ namespace ChaturbateRecorderApp.UI
             ["tray.updateAvailable"] = (
                 "Chaturbate Recorder — mise à jour v{0} disponible",
                 "Chaturbate Recorder — update v{0} available"),
+            // --- Favoris : deux causes distinctes, deux messages ---
+            ["info.favoriteAlreadyPresent"] = (
+                "{0} est deja dans tes favoris.",
+                "{0} is already in your favorites."),
+            ["info.favoriteInvalidUrl"] = (
+                "Cette URL n'est pas une adresse de salon valide.",
+                "This URL is not a valid room address."),
+
+            // --- Controle du fichier cookies (constate le 2026-08-05) ---
+            ["cookies.invalid.title"] = ("Fichier cookies refuse", "Cookies file rejected"),
+            ["cookies.invalid.intro"] = (
+                "Ce fichier serait refuse par yt-dlp, et TOUS tes enregistrements echoueraient — y compris la surveillance automatique, qui resterait muette sans jamais signaler la cause.",
+                "This file would be rejected by yt-dlp, and ALL your recordings would fail — including automatic monitoring, which would stay silent without ever reporting the cause."),
+            ["cookies.problem.header"] = (
+                "La premiere ligne « # Netscape HTTP Cookie File » est absente. Un export JSON ne convient pas : il faut le format Netscape.",
+                "The first line \"# Netscape HTTP Cookie File\" is missing. A JSON export will not do: the Netscape format is required."),
+            ["cookies.problem.empty"] = (
+                "Le fichier ne contient aucun cookie exploitable.",
+                "The file contains no usable cookie."),
+            ["cookies.problem.httpOnly"] = (
+                "Ligne {0} : elle commence par « HttpOnly_ » au lieu de « #HttpOnly_ ». Le diese manquant suffit a faire rejeter le fichier entier. Reexporte les cookies, ou ajoute le diese en debut de chaque ligne concernee.",
+                "Line {0}: it starts with \"HttpOnly_\" instead of \"#HttpOnly_\". The missing hash alone gets the whole file rejected. Export the cookies again, or add the hash at the start of each affected line."),
+            ["cookies.problem.fields"] = (
+                "Ligne {0} : moins de 7 colonnes separees par des tabulations.",
+                "Line {0}: fewer than 7 tab-separated columns."),
+            ["cookies.problem.domain"] = (
+                "Ligne {0} : le domaine et l'indicateur de sous-domaines se contredisent. Un domaine commencant par un point doit aller avec TRUE, sans point avec FALSE.",
+                "Line {0}: the domain and the subdomain flag contradict each other. A domain starting with a dot must go with TRUE, without a dot with FALSE."),
             // --- 98.0 : note de legalite, affichee par le bouton du meme nom ---
             ["button.legal"] = ("Légalité", "Legality"),
             ["window.legal"] = ("Légalité (Belgique)", "Legality (Belgium)"),
