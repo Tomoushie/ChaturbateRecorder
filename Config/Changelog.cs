@@ -144,6 +144,14 @@ namespace ChaturbateRecorderApp.Config
                 "Le dialogue \"Nouveautés\" annonce désormais toutes les versions franchies depuis la dernière utilisation, regroupées par version, au lieu de la seule version installée. Passer directement de la 1.14.0 à la 1.18.0 ne fait donc plus disparaître les nouveautés intermédiaires.",
                 "\"Nouveautés\" s'affiche maintenant dans une fenêtre redimensionnable qui défile, au lieu d'une boîte de dialogue système qui tronquait le texte au-delà de la hauteur de l'écran. Son ascenseur suit le thème clair ou sombre, ce que ne fait pas un ascenseur Windows classique.",
             }),
+            ("1.19.0", new[]
+            {
+                "Nouveau bouton \"Sponsoriser (GitHub)\" dans le panneau \"Soutenir le projet\" : ouvre la page GitHub Sponsors du projet, en complément du don PayPal déjà proposé.",
+                "Correctif : sur chaque ligne de la zone \"Enregistrements en cours\", le bas des lettres des boutons \"Ouvrir\" et \"Stop\" était coupé — les boutons étaient trop courts d'environ 6 pixels pour la police, jambages compris. Défaut présent depuis l'origine.",
+                "Correctif : en anglais, le bouton \"Remove\" d'un enregistrement terminé s'affichait tronqué en \"Remov\" après un changement de thème, faute de largeur suffisante. Les deux boutons de la ligne ont été élargis.",
+                "Correctif : le même défaut de hauteur touchait les boutons de la barre du haut (\"Paramètres\", \"Mode simple\", \"Guide de démarrage\", \"Rechercher une mise à jour\", \"Signaler un bug\", \"Diagnostic\"), dont le bas des lettres à jambage était lui aussi coupé. Ces boutons ont été rehaussés et les trois rangées repositionnées.",
+                "Correctif : les lignes de la zone \"Enregistrements en cours\" ne prenaient pas le thème à leur création — leurs boutons gardaient l'apparence Windows par défaut au lieu de la couleur d'accent, et une ligne ajoutée en thème sombre restait claire jusqu'au changement de thème suivant.",
+            }),
         };
 
         /// <summary>
@@ -168,6 +176,14 @@ namespace ChaturbateRecorderApp.Config
             {
                 "The \"What's new\" dialog now announces every version crossed since the application was last used, grouped by version, instead of the installed version only. Going straight from 1.14.0 to 1.18.0 therefore no longer hides the intermediate changes.",
                 "\"What's new\" is now shown in a resizable, scrolling window, instead of a system dialog box that truncated any text taller than the screen. Its scroll bar follows the light or dark theme, which a standard Windows scroll bar does not.",
+            },
+            ["1.19.0"] = new[]
+            {
+                "New \"Sponsor (GitHub)\" button in the \"Support the project\" panel: it opens the project's GitHub Sponsors page, alongside the PayPal donation already offered.",
+                "Fix: on every row of the \"Active recordings\" area, the bottom of the letters on the \"Open\" and \"Stop\" buttons was cut off — the buttons were about 6 pixels too short for the font, descenders included. This defect had been there from the start.",
+                "Fix: in English, the \"Remove\" button of a finished recording was truncated to \"Remov\" after a theme change, for lack of width. Both buttons on the row have been widened.",
+                "Fix: the same height defect affected the buttons of the top bar (\"Settings\", \"Simple mode\", \"Getting started guide\", \"Check for updates\", \"Report a bug\", \"Diagnostics\"), where the bottom of descending letters was cut off too. Those buttons have been made taller and the three rows repositioned.",
+                "Fix: rows in the \"Active recordings\" area did not pick up the theme when created — their buttons kept the default Windows look instead of the accent colour, and a row added while the dark theme was active stayed light until the next theme change.",
             },
         };
 
