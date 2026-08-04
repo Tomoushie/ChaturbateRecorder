@@ -410,4 +410,13 @@ restent documentées comme méthode de secours/référence :
 
 **Tests** — `Tests/ChaturbateRecorderApp.Tests.csproj` (xUnit, `net10.0-windows` car référence le projet principal WinForms). `Properties/AssemblyInfo.cs` expose `InternalsVisibleTo` pour tester des méthodes `internal` (ex: `CertificateValidator.VerifySubjectAlternativeName`). Un vrai bug a été trouvé et corrigé via ces tests : le SAN TLS dépendait du texte localisé par l'OS (`Format()`), remplacé par un décodage ASN.1 direct.
 
-**Style de commit utilisateur** — messages de commit en français dans le titre court, corps détaillé technique (avec le "pourquoi"), toujours signés `Co-Authored-By: Claude Sonnet 5`.
+**Style de commit utilisateur** — messages de commit en français dans le titre
+court, corps détaillé technique (avec le "pourquoi"), toujours signés
+`Co-Authored-By: Claude <modèle> <noreply@anthropic.com>`.
+
+Le modèle nommé est **celui qui a réellement écrit le commit**, pas une valeur
+à recopier : l'historique porte déjà `Claude Sonnet 5` et `Claude Opus 5` selon
+l'époque. Cette note disait `Claude Sonnet 5` sans adresse e-mail alors que
+l'adresse était présente dans tous les commits et que plusieurs étaient déjà
+signés Opus 5 — d'où cette formulation générique, qui ne se périmera pas au
+prochain changement de modèle.
