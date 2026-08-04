@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace ChaturbateRecorderApp.Config
@@ -170,6 +170,11 @@ namespace ChaturbateRecorderApp.Config
                 "Nouvelle case \"Rechercher automatiquement les mises à jour\" dans les Paramètres, cochée par défaut : la décocher désactive immédiatement le seul appel réseau que l'application effectue d'elle-même.",
                 "Une recherche automatique qui échoue (hors ligne, coupure réseau) n'affiche plus rien du tout et se contente d'une ligne de log — seul le bouton, où une réponse est attendue, signale encore les erreurs.",
             }),
+            ("1.22.0", new[]
+            {
+                "Trois nouveaux boutons dans le panneau \"Soutenir le projet\" : X et Reddit ouvrent un message de partage du projet pré-rempli, GitHub ouvre le dépôt.",
+                "Rien n'est publié depuis l'application : elle ouvre simplement la page de publication du réseau concerné dans le navigateur, où le message reste modifiable avant envoi.",
+            }),
         };
 
         /// <summary>
@@ -220,6 +225,11 @@ namespace ChaturbateRecorderApp.Config
                 "When a version is found, a notification appears in the notification area; clicking it offers to install, with the same warning as before if recordings are in progress. Each version is announced only once.",
                 "New \"Automatically check for updates\" option in Settings, enabled by default: unchecking it immediately disables the only network call the application makes on its own.",
                 "A failed automatic check (offline, network outage) no longer displays anything at all and just writes a log line — only the button, where an answer is expected, still reports errors.",
+            },
+            ["1.22.0"] = new[]
+            {
+                "Three new buttons in the \"Support the project\" panel: X and Reddit open a pre-filled share message for the project, GitHub opens the repository.",
+                "Nothing is posted from the application: it simply opens the relevant network's submission page in the browser, where the message stays editable before sending.",
             },
         };
 

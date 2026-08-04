@@ -53,6 +53,10 @@ namespace ChaturbateRecorderApp
         private Button sponsorButton = null!;
         private Button donateButton = null!;
         private Button websiteButton = null!;
+        // 50.0 : réseaux sociaux (partage X/Reddit + dépôt GitHub).
+        private Button shareXButton = null!;
+        private Button shareRedditButton = null!;
+        private Button githubButton = null!;
         private PictureBox qrPictureBox = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
@@ -1264,6 +1268,24 @@ namespace ChaturbateRecorderApp
             }
         }
 
+        /// <summary>
+        /// Ouvre une URL dans le navigateur par défaut (50.0). Même repli que
+        /// OnWebsiteClick : un navigateur absent ou une association de
+        /// protocole cassée ne doit pas remonter en exception non gérée.
+        /// </summary>
+        private void OpenExternal(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Localization.Format("error.cannotOpenWebsite", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void OnWebsiteClick(object? sender, EventArgs e)
         {
             try
@@ -2138,11 +2160,34 @@ namespace ChaturbateRecorderApp
                 Size = new Size(300, 40)
             };
 
+            // 50.0 — réseaux sociaux. Rangée logée sous le texte du QR code
+            // (x >= 340, y 96..122), la colonne de gauche et le QR occupant
+            // déjà tout le reste du panneau : aucune hauteur ajoutée, donc
+            // grpLogs et le calcul de ApplyUiMode ne bougent pas.
+            // X et Reddit sont des liens de PARTAGE, pas des comptes : le
+            // projet n'en a pas, et un bouton menant à un compte inexistant
+            // vaudrait moins que rien. Le jour où un compte existe, il suffit
+            // de remplacer l'URL ici.
+            shareXButton = new Button { Text = "X", Location = new Point(340, 96), Size = new Size(100, 26) };
+            shareRedditButton = new Button { Text = "Reddit", Location = new Point(448, 96), Size = new Size(100, 26) };
+            githubButton = new Button { Text = "GitHub", Location = new Point(556, 96), Size = new Size(100, 26) };
+
+            const string repoUrl = "https://github.com/Tomoushie/ChaturbateRecorder";
+            var shareText = Uri.EscapeDataString("Chaturbate Recorder — enregistreur de lives open source pour Windows");
+            var shareUrl = Uri.EscapeDataString(repoUrl);
+            shareXButton.Click += (s, e) => OpenExternal($"https://x.com/intent/post?url={shareUrl}&text={shareText}");
+            shareRedditButton.Click += (s, e) => OpenExternal($"https://www.reddit.com/submit?url={shareUrl}&title={shareText}");
+            githubButton.Click += (s, e) => OpenExternal(repoUrl);
+
             sponsorButton.Click += OnSponsorClick;
             donateButton.Click += OnDonateClick;
             websiteButton.Click += OnWebsiteClick;
 
-            grpDonate.Controls.AddRange(new Control[] { sponsorButton, donateButton, websiteButton, qrPictureBox, donateLabel });
+            grpDonate.Controls.AddRange(new Control[]
+            {
+                sponsorButton, donateButton, websiteButton, qrPictureBox, donateLabel,
+                shareXButton, shareRedditButton, githubButton,
+            });
 
             // --- Panel : Logs ---
             grpLogs = new RoundedGroupPanel { Title = "Logs", Location = new Point(12, 714), Size = new Size(660, 220) };

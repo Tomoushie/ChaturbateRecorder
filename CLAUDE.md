@@ -4,12 +4,29 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.21.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.22.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.22.0 (2026-08-04) — 50.0 « boutons de réseaux sociaux »** :
+- **X et Reddit sont des liens de PARTAGE, pas des comptes** : le projet n'a ni
+  compte X ni subreddit, et un bouton menant à un compte inexistant vaudrait
+  moins que rien. `x.com/intent/post` et `reddit.com/submit` fonctionnent sans
+  qu'on possède quoi que ce soit, et rien n'est publié depuis l'app — le
+  navigateur s'ouvre sur un message pré-rempli, modifiable. Le jour où un compte
+  existe, seule l'URL change dans `InitializeComponent`.
+- **Aucune hauteur ajoutée** : la rangée se loge dans l'espace libre sous le
+  texte du QR code (x 340..656, y 96..122) de `grpDonate`, dont la colonne de
+  gauche et le QR occupaient déjà le reste. `grpLogs` est positionné à partir de
+  `grpDonate.Bottom` dans `ApplyUiMode` : ne pas toucher à la hauteur évite de
+  recalculer toute la suite du formulaire.
+- **Pas d'entrée dans `Localization`** : les trois libellés sont des noms
+  propres (X, Reddit, GitHub), identiques en FR et EN. Les ajouter au
+  dictionnaire aurait créé deux traductions identiques à maintenir.
+- **Vérification de rendu** : `DrawToBitmap` sur `grpDonate`.
 
 **v1.21.0 (2026-08-04) — 79.0 « recherche automatique des mises à jour »** :
 - **Le constat de départ** : `Services/UpdateChecker.cs` existait depuis la
