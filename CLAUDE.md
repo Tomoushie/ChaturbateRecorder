@@ -4,12 +4,47 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.19.1 (app), CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.20.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**87.0 traité (2026-08-04) — minuteur d'arrêt par enregistrement (v1.20.0)** :
+- **Portée choisie par l'utilisateur** : un minuteur **par enregistrement**, pas
+  un réglage global — cohérent avec qualité/codec/format, déjà des choix par
+  enregistrement. Menu "Durée maximale" sur une deuxième rangée de
+  `advancedOptionsPanel` (66 -> 112 px, `grpRecordHeightAdvanced` 172 -> 218).
+- **Deux décisions de comportement, non évidentes** :
+  - L'échéance est fixée au **premier** démarrage (`RecordingJob.StopAtUtc`,
+    posé par `??=`) et **non repoussée par une reconnexion automatique** :
+    « arrêter après 2 h » désigne 2 h de temps écoulé, pas 2 h par tentative,
+    sinon une room instable enregistrerait indéfiniment.
+  - L'arrêt passe par `Engine.Stop()`, qui marque l'arrêt comme **manuel** :
+    l'état final est donc `Stopped`, ce qui **exclut** la reconnexion
+    automatique dans `HandleJobStateChanged`. Un minuteur qui relancerait
+    aussitôt l'enregistrement n'aurait aucun sens.
+- **Logique pure isolée dans `Services/RecordingTimer.cs`** (table des durées +
+  mise en forme du temps restant) pour être testable sans interface : 30 tests.
+  Le garde-fou qui compte : il doit y avoir **exactement un libellé par durée**,
+  la sélection étant convertie **par son index** — un libellé ajouté sans preset
+  correspondant décalerait silencieusement toutes les durées.
+- **Piège de rédaction rencontré** : deux tests initiaux échouaient parce qu'ils
+  croyaient un commentaire trop affirmatif (« arrondi au supérieur »). En
+  réalité `Math.Ceiling` ne porte que sur les **secondes** ; minutes et heures
+  sont tronquées, comme dans tout décompte. C'est le commentaire qui a été
+  corrigé, pas le code — mais l'épisode montre qu'un commentaire faux se
+  propage dans les tests écrits ensuite.
+- **Effet de bord assumé** : `nameLabel` d'une ligne de job passe d'`AutoSize` à
+  une largeur bornée (335 px) avec `AutoEllipsis`, le libellé du minuteur
+  occupant désormais la droite de la même rangée.
+- **Fusion avec v1.19.0/v1.19.1** (livrées par une session voisine pendant le
+  développement) : trois conflits dans `MainForm.cs`, résolus en gardant leur
+  mise en page et en y réinsérant le minuteur. `RemoveJobRow`, introduit par
+  v1.19.1 pour libérer le `Timer` de `ThemedProgressBar`, se charge désormais
+  **aussi** d'arrêter le minuteur — même raisonnement, un `Timer` de plus que
+  rien n'arrêterait si la ligne disparaissait sans passer par là.
 
 **v1.19.1 (2026-08-04) — 3.4 « couleurs dynamiques de la barre de progression »
 était inerte depuis son écriture** :

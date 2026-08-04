@@ -157,6 +157,12 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : la couleur de la barre de progression selon l'état (bleu en cours, vert terminé, rouge erreur, gris arrêté), annoncée en 1.5.0, ne s'est en réalité jamais affichée — Windows impose sa propre couleur aux barres de progression dès que les styles visuels sont actifs, et les quatre états apparaissaient donc tous en vert. La barre est désormais dessinée par l'application : les quatre états se distinguent enfin, et l'effet de pulsation au démarrage d'un enregistrement devient visible lui aussi.",
                 "La piste de la barre de progression suit désormais le thème clair ou sombre, au lieu de rester blanche sur fond sombre comme le fait une barre Windows classique.",
             }),
+            ("1.20.0", new[]
+            {
+                "Minuteur d'arrêt automatique : un nouveau menu \"Durée maximale\" (mode avancé) permet de choisir au démarrage combien de temps un enregistrement doit durer — 15 minutes, 30 minutes, 1, 2, 4 ou 8 heures — au terme desquelles il s'arrête tout seul. Le réglage vaut par enregistrement, comme la qualité ou le format, et reste sur \"Illimité\" par défaut.",
+                "Le temps restant s'affiche sur la ligne de l'enregistrement concerné et se met à jour en continu. Rien n'apparaît pour les enregistrements sans minuteur.",
+                "Une reconnexion automatique ne repousse pas l'échéance : une durée maximale de 2 heures désigne bien 2 heures de temps écoulé, et non 2 heures par tentative.",
+            }),
         };
 
         /// <summary>
@@ -194,6 +200,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Fix: the progress bar's state colour (blue while recording, green when finished, red on error, grey when stopped), announced back in 1.5.0, was in fact never displayed — Windows forces its own colour on progress bars as soon as visual styles are enabled, so all four states showed up green. The bar is now drawn by the application itself: the four states are finally distinguishable, and the pulse effect when a recording starts becomes visible too.",
                 "The progress bar's track now follows the light or dark theme, instead of staying white on a dark background as a standard Windows bar does.",
+            },
+            ["1.20.0"] = new[]
+            {
+                "Automatic stop timer: a new \"Maximum duration\" menu (advanced mode) lets you choose, when starting a recording, how long it should run — 15 minutes, 30 minutes, 1, 2, 4 or 8 hours — after which it stops on its own. The setting applies per recording, like quality or format, and stays on \"Unlimited\" by default.",
+                "The remaining time is shown on the row of the recording concerned and updates continuously. Nothing appears for recordings without a timer.",
+                "An automatic reconnection does not push the deadline back: a maximum duration of 2 hours means 2 hours of elapsed time, not 2 hours per attempt.",
             },
         };
 
