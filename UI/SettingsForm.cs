@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -40,6 +40,8 @@ namespace ChaturbateRecorderApp.UI
         private TextBox proxyTextBox = null!;
         private CheckBox autoReconnectCheckbox = null!;
         private CheckBox autoUpdateCheckbox = null!;
+        private Label watchIntervalLabel = null!;
+        private ComboBox watchIntervalCombo = null!;
         private Button closeButton = null!;
 
         public SettingsForm(UserSettings settings, AppTheme theme, AppLanguage language,
@@ -70,6 +72,7 @@ namespace ChaturbateRecorderApp.UI
             proxyLabel.Text = L("label.proxy");
             autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
             autoUpdateCheckbox.Text = L("checkbox.autoUpdateCheck");
+            watchIntervalLabel.Text = L("label.watchInterval");
             closeButton.Text = L("button.close");
 
             var themeIndex = themeCombo.SelectedIndex;
@@ -165,6 +168,23 @@ namespace ChaturbateRecorderApp.UI
         }
 
         /// <summary>
+        /// 88.0 — le nouvel intervalle ne prend effet qu'au prochain demarrage
+        /// de l'application : le Timer de surveillance vit dans MainForm et
+        /// n'est pas rappele ici. C'est assume, le reglage n'a rien d'urgent.
+        /// </summary>
+        private void OnWatchIntervalChanged(object? sender, EventArgs e)
+        {
+            _settings.WatchIntervalSeconds = watchIntervalCombo.SelectedIndex switch
+            {
+                0 => 60,
+                1 => 120,
+                2 => 300,
+                _ => 600,
+            };
+            SettingsManager.Save(_settings);
+        }
+
+        /// <summary>
         /// 79.0 — la recherche horaire lit ce réglage à chaque passage, donc
         /// la décoche prend effet sans redémarrer l'application. Le seul appel
         /// réseau que l'app fait d'elle-même : il doit rester débrayable.
@@ -183,7 +203,7 @@ namespace ChaturbateRecorderApp.UI
             // de mise à jour (79.0) : une ligne de plus au même pas vertical
             // (48 px de case + 12 px de gouttière) et le bouton Fermer décalé
             // d'autant.
-            ClientSize = new Size(480, 382);
+            ClientSize = new Size(480, 430);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -279,7 +299,27 @@ namespace ChaturbateRecorderApp.UI
             };
             autoUpdateCheckbox.CheckedChanged += OnAutoUpdateChanged;
 
-            closeButton = new Button { Text = "Fermer", Location = new Point(368, 338), Size = new Size(100, 26) };
+            // 88.0 : rythme de la surveillance. Les valeurs sont en secondes,
+            // plancher a 60 — descendre plus bas multiplierait les requetes vers
+            // le site sans rien apporter, un live ne demarre pas a la seconde.
+            watchIntervalLabel = new Label { Text = "Verifier les salons surveilles toutes les :", Location = new Point(12, 336), AutoSize = true };
+            watchIntervalCombo = new ComboBox
+            {
+                Location = new Point(330, 332),
+                Size = new Size(138, 24),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+            };
+            watchIntervalCombo.Items.AddRange(new object[] { "1 minute", "2 minutes", "5 minutes", "10 minutes" });
+            watchIntervalCombo.SelectedIndex = _settings.WatchIntervalSeconds switch
+            {
+                <= 60 => 0,
+                <= 120 => 1,
+                <= 300 => 2,
+                _ => 3,
+            };
+            watchIntervalCombo.SelectedIndexChanged += OnWatchIntervalChanged;
+
+            closeButton = new Button { Text = "Fermer", Location = new Point(368, 386), Size = new Size(100, 26) };
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[]
@@ -289,6 +329,7 @@ namespace ChaturbateRecorderApp.UI
                 cookiesLabel, cookiesTextBox, browseCookiesButton,
                 proxyLabel, proxyTextBox,
                 autoReconnectCheckbox, autoUpdateCheckbox,
+                watchIntervalLabel, watchIntervalCombo,
                 closeButton,
             });
             themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });

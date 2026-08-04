@@ -48,6 +48,11 @@ namespace ChaturbateRecorderApp
         private Label durationLabel = null!;
         private ComboBox durationCombo = null!;
         private ListBox favoritesListBox = null!;
+        // 88.0 : surveillance automatique.
+        private RoundedGroupPanel grpWatch = null!;
+        private ListView watchListView = null!;
+        private Button addWatchButton = null!;
+        private Button removeWatchButton = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
         private Button sponsorButton = null!;
@@ -102,6 +107,11 @@ namespace ChaturbateRecorderApp
 
         // --- État ---
         private readonly FavoritesManager _favorites = new();
+        private readonly WatchListManager _watchList = new();
+        private System.Windows.Forms.Timer? _watchTimer;
+        // Empêche deux passages de se chevaucher : un contrôle prend quelques
+        // secondes par salon, une liste fournie peut dépasser l'intervalle.
+        private bool _watchTickRunning;
         private readonly List<JobRow> _jobRows = new();
         private bool _advancedMode = true;
         private AppTheme _currentTheme = AppTheme.Light;
@@ -173,6 +183,10 @@ namespace ChaturbateRecorderApp
             foreach (var fav in _favorites.Favorites)
                 favoritesListBox.Items.Add(fav);
 
+            _watchList.Load();
+            foreach (var room in _watchList.Rooms)
+                AddWatchRow(room);
+
             LoadQrImage();
             ThemeManager.Apply(this, _currentTheme);
             ApplyIcons();
@@ -190,6 +204,7 @@ namespace ChaturbateRecorderApp
 
             StartAutoUpdateChecks();
             ListenForSecondInstance();
+            StartWatchLoop();
         }
 
         /// <summary>
@@ -1131,14 +1146,208 @@ namespace ChaturbateRecorderApp
             return true;
         }
 
-        private void OnStartClick(object? sender, EventArgs e)
+        // ==================================================================
+        // Surveillance automatique (88.0 / 4.3)
+        // ==================================================================
+
+        /// <summary>
+        /// Ajoute une ligne a la liste surveillee. Le nom du salon est extrait
+        /// de l'URL pour l'affichage ; l'URL complete reste dans le Tag, c'est
+        /// elle qui sert a interroger et a enregistrer.
+        /// </summary>
+        private void AddWatchRow(string url)
         {
-            var urlInput = urlTextBox.Text.Trim();
+            var item = new ListViewItem(RoomNameFromUrl(url)) { Tag = url, Name = "watch.state.pending" };
+            item.SubItems.Add(Localization.Get("watch.state.pending"));
+            watchListView.Items.Add(item);
+        }
+
+        private static string RoomNameFromUrl(string url)
+        {
+            try
+            {
+                var name = new Uri(url).AbsolutePath.Trim('/')
+                    .Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                return string.IsNullOrWhiteSpace(name) ? url : name;
+            }
+            catch { return url; }
+        }
+
+        private void OnAddWatchClick(object? sender, EventArgs e)
+        {
+            var url = urlTextBox.Text.Trim();
+
+            // Meme controle que pour un enregistrement : une URL refusee par le
+            // sandbox ne doit pas entrer dans une liste qui la rappellera toutes
+            // les deux minutes.
+            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist))
+            {
+                MessageBox.Show(this, Localization.Get("error.urlRejected"),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!_watchList.Add(url))
+            {
+                MessageBox.Show(this, Localization.Format("watch.alreadyWatched", RoomNameFromUrl(url)),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            _watchList.Save();
+            AddWatchRow(url);
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance activee pour {RoomNameFromUrl(url)}.");
+        }
+
+        private void OnRemoveWatchClick(object? sender, EventArgs e)
+        {
+            if (watchListView.SelectedItems.Count == 0) return;
+
+            var item = watchListView.SelectedItems[0];
+            var url = item.Tag as string ?? "";
+            _watchList.Remove(url);
+            _watchList.Save();
+            watchListView.Items.Remove(item);
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance desactivee pour {RoomNameFromUrl(url)}.");
+        }
+
+        /// <summary>
+        /// Retraduit la colonne d'etat sans relancer de controle. La cle de
+        /// l'etat courant vit dans ListViewItem.Name, pas dans le texte affiche
+        /// : sinon changer de langue en cours de session perdrait l'etat.
+        /// </summary>
+        private void RefreshWatchStates()
+        {
+            foreach (ListViewItem item in watchListView.Items)
+            {
+                var key = string.IsNullOrEmpty(item.Name) ? "watch.state.pending" : item.Name;
+                item.SubItems[1].Text = Localization.Get(key);
+            }
+        }
+
+        private bool IsRecording(string url)
+        {
+            var room = RoomNameFromUrl(url);
+            return _jobRows.Any(r => r.Job.RoomName == room && r.Job.Engine.State == DownloadState.Running);
+        }
+
+        private void SetWatchState(ListViewItem item, string key)
+        {
+            item.Name = key;
+            item.SubItems[1].Text = Localization.Get(key);
+        }
+
+        private void StartWatchLoop()
+        {
+            _watchTimer = new System.Windows.Forms.Timer
+            {
+                Interval = Math.Max(60, _settings.WatchIntervalSeconds) * 1000,
+            };
+            _watchTimer.Tick += async (s, e) => await RunWatchPassAsync();
+            _watchTimer.Start();
+
+            // Premier passage rapproche : sans lui, un salon deja en ligne au
+            // demarrage attendrait l'intervalle complet avant d'etre vu.
+            var first = new System.Windows.Forms.Timer { Interval = 10_000 };
+            first.Tick += async (s, e) =>
+            {
+                first.Stop();
+                first.Dispose();
+                await RunWatchPassAsync();
+            };
+            first.Start();
+        }
+
+        /// <summary>
+        /// Un passage sur toute la liste. Les salons sont controles l'un APRES
+        /// l'autre, jamais en parallele : dix processus yt-dlp simultanes vers
+        /// le meme site est exactement ce qui se fait remarquer, et rien
+        /// n'exige que le passage soit rapide.
+        /// </summary>
+        private async Task RunWatchPassAsync()
+        {
+            if (_watchTickRunning || watchListView.Items.Count == 0) return;
+            _watchTickRunning = true;
+            try
+            {
+                foreach (var item in watchListView.Items.Cast<ListViewItem>().ToList())
+                {
+                    if (IsDisposed || _watchTimer == null) return;
+                    if (item.Tag is not string url) continue;
+
+                    // Deja en cours d'enregistrement : rien a controler, et
+                    // surtout rien a redemarrer.
+                    if (IsRecording(url))
+                    {
+                        SetWatchState(item, "watch.state.recording");
+                        continue;
+                    }
+
+                    var status = await RoomStatusChecker.CheckAsync(
+                        AppConfig.YtDlpPath, url, AppConfig.CookiesFilePath, AppConfig.ProxyUrl);
+
+                    // L'appel dure plusieurs secondes : la fenetre a pu etre
+                    // fermee entre-temps.
+                    if (IsDisposed || _watchTimer == null) return;
+
+                    var key = status switch
+                    {
+                        RoomStatus.Online => "watch.state.online",
+                        RoomStatus.Offline => "watch.state.offline",
+                        _ => "watch.state.unknown",
+                    };
+                    SetWatchState(item, key);
+
+                    // SEUL Online declenche. Unknown (reseau coupe, salon banni)
+                    // ne doit jamais lancer un enregistrement dans le vide.
+                    if (status != RoomStatus.Online) continue;
+
+                    AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(url)} est en ligne, demarrage.");
+                    ShowNotification(Localization.Get("watch.started.title"),
+                        Localization.Format("watch.started.body", RoomNameFromUrl(url)));
+                    StartRecording(url, interactive: false);
+                    SetWatchState(item, "watch.state.recording");
+                }
+            }
+            finally
+            {
+                _watchTickRunning = false;
+            }
+        }
+
+        /// <summary>
+        /// Refus de démarrage : dialogue quand l'utilisateur attend une réponse,
+        /// ligne de log quand c'est la surveillance qui a demandé (88.0).
+        /// </summary>
+        private void RefuseStart(bool interactive, string message, string title)
+        {
+            if (interactive)
+                MessageBox.Show(this, message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+                AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : démarrage refusé — {message}");
+        }
+
+        private void OnStartClick(object? sender, EventArgs e)
+            => StartRecording(urlTextBox.Text.Trim(), interactive: true);
+
+        /// <summary>
+        /// Démarre un enregistrement. `interactive` distingue le clic sur
+        /// « Démarrer » de la surveillance automatique (88.0) : en mode non
+        /// interactif, un refus s'écrit dans les logs au lieu d'ouvrir une
+        /// boîte de dialogue — personne n'est devant l'écran pour la fermer, et
+        /// une modale bloquerait la boucle de surveillance.
+        ///
+        /// **Exception assumée** : la vérification des binaires
+        /// (VerifyOrTrustBinary) garde son dialogue dans les deux modes. Elle ne
+        /// se déclenche que si le hash de yt-dlp/ffmpeg est inconnu ou a changé
+        /// — un cas qui DOIT interrompre l'utilisateur, surveillance ou pas.
+        /// </summary>
+        private void StartRecording(string urlInput, bool interactive)
+        {
 
             if (!UrlValidator.IsSafeUrl(urlInput, AppConfig.Whitelist, AppConfig.Blacklist))
             {
-                MessageBox.Show(Localization.Get("error.urlRejected"),
-                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                RefuseStart(interactive, Localization.Get("error.urlRejected"), Localization.Get("dialog.error"));
                 return;
             }
 
@@ -1159,8 +1368,7 @@ namespace ChaturbateRecorderApp
                 var ffOk = ytOk && BinaryVerifier.VerifyCaPinning(AppConfig.FFmpegPath, AppConfig.TrustedCaThumbprint, AppConfig.TrustedCaIssuer);
                 if (!ffOk)
                 {
-                    MessageBox.Show(Localization.Get("error.caPinningFailed"),
-                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    RefuseStart(interactive, Localization.Get("error.caPinningFailed"), Localization.Get("dialog.error"));
                     return;
                 }
                 Logger.Log("CA pinning activé et validé pour yt-dlp.exe et ffmpeg.exe.");
@@ -1174,8 +1382,7 @@ namespace ChaturbateRecorderApp
             // contre un remplacement du dossier par un lien symbolique entre-temps).
             if (!PathValidator.IsValidPath(AppConfig.CaptureDir))
             {
-                MessageBox.Show(Localization.Format("error.invalidOutputDir", AppConfig.CaptureDir),
-                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                RefuseStart(interactive, Localization.Format("error.invalidOutputDir", AppConfig.CaptureDir), Localization.Get("dialog.error"));
                 return;
             }
 
@@ -1185,8 +1392,7 @@ namespace ChaturbateRecorderApp
             {
                 if (!CertificateValidator.VerifyRemoteCertificate(uri.Host, 443, AppConfig.ServerExpectedThumbprint, AppConfig.ServerExpectedIssuer))
                 {
-                    MessageBox.Show(Localization.Format("error.tlsVerificationFailed", uri.Host),
-                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    RefuseStart(interactive, Localization.Format("error.tlsVerificationFailed", uri.Host), Localization.Get("dialog.error"));
                     return;
                 }
                 Logger.Log($"TLS server pinning activé et validé pour {uri.Host}.");
@@ -1201,8 +1407,11 @@ namespace ChaturbateRecorderApp
 
             if (_jobRows.Any(r => r.Job.RoomName == roomName && r.Job.Engine.State == DownloadState.Running))
             {
-                MessageBox.Show(Localization.Format("info.alreadyRecording", roomName),
-                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // En surveillance, un enregistrement déjà en cours est le cas
+                // NORMAL à chaque passage : silencieux, pas même une ligne de log.
+                if (interactive)
+                    MessageBox.Show(Localization.Format("info.alreadyRecording", roomName),
+                        Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1211,8 +1420,7 @@ namespace ChaturbateRecorderApp
             // valide invalide.
             if (!PathValidator.IsValidPath(Path.Combine(AppConfig.LogDir, $"{roomName}-test.log")))
             {
-                MessageBox.Show(Localization.Get("error.invalidLogPath"),
-                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                RefuseStart(interactive, Localization.Get("error.invalidLogPath"), Localization.Get("dialog.error"));
                 return;
             }
 
@@ -1470,6 +1678,12 @@ namespace ChaturbateRecorderApp
             loadFavoriteButton.Text = L("button.load");
             removeFavoriteButton.Text = L("button.removeFavorite");
 
+            grpWatch.Title = L("panel.watch");
+            addWatchButton.Text = L("button.watchAdd");
+            removeWatchButton.Text = L("button.watchRemove");
+            watchListView.Columns[0].Text = L("column.room");
+            watchListView.Columns[1].Text = L("column.watchState");
+            RefreshWatchStates();
             grpDonate.Title = L("panel.donate");
             sponsorButton.Text = L("button.sponsor");
             donateButton.Text = L("button.donate");
@@ -1647,6 +1861,7 @@ namespace ChaturbateRecorderApp
             diagnosticButton.Visible = advanced;
             grpHistory.Visible = advanced;
             grpFavorites.Visible = advanced;
+            grpWatch.Visible = advanced;
             grpDonate.Visible = advanced;
             grpLogs.Visible = advanced;
 
@@ -1661,7 +1876,8 @@ namespace ChaturbateRecorderApp
             {
                 grpHistory.Location = new Point(12, progressY + grpProgress.Height + sectionGap);
                 grpFavorites.Location = new Point(12, grpHistory.Bottom + sectionGap);
-                grpDonate.Location = new Point(12, grpFavorites.Bottom + sectionGap);
+                grpWatch.Location = new Point(12, grpFavorites.Bottom + sectionGap);
+                grpDonate.Location = new Point(12, grpWatch.Bottom + sectionGap);
                 grpLogs.Location = new Point(12, grpDonate.Bottom + sectionGap);
                 naturalHeight = grpLogs.Bottom + sectionGap;
             }
@@ -1879,6 +2095,10 @@ namespace ChaturbateRecorderApp
             _autoUpdateTimer?.Stop();
             _autoUpdateTimer?.Dispose();
             _autoUpdateTimer = null;
+
+            _watchTimer?.Stop();
+            _watchTimer?.Dispose();
+            _watchTimer = null;
 
             // 93.0 : débloque le thread de surveillance (il teste _isReallyClosing
             // au réveil et sort) avant de libérer le handle.
@@ -2221,6 +2441,31 @@ namespace ChaturbateRecorderApp
             favoritesListBox.DoubleClick += OnLoadFavoriteClick;
 
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
+
+            // --- Panel : Surveillance (88.0) ---
+            grpWatch = new RoundedGroupPanel { Title = "Surveillance", Location = new Point(12, 606), Size = new Size(660, 130) };
+            watchListView = new ListView
+            {
+                Location = new Point(12, 22),
+                Size = new Size(460, 98),
+                View = View.Details,
+                FullRowSelect = true,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+            };
+            watchListView.Columns.Add("Salon", 300);
+            watchListView.Columns.Add("État", 140);
+
+            addWatchButton = new Button { Text = "+ Surveiller", Location = new Point(482, 22), Size = new Size(160, 26) };
+            addWatchButton.Click += OnAddWatchClick;
+            removeWatchButton = new Button { Text = "Ne plus surveiller", Location = new Point(482, 54), Size = new Size(160, 26) };
+            removeWatchButton.Click += OnRemoveWatchClick;
+
+            grpWatch.Controls.AddRange(new Control[] { watchListView, addWatchButton, removeWatchButton });
+            // Ancrage APRÈS AddRange — piège documenté en bas de CLAUDE.md, et
+            // déjà payé une fois en v1.23.1 sur le bouton d'import.
+            watchListView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            addWatchButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            removeWatchButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             favoritesListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             loadFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -2300,7 +2545,7 @@ namespace ChaturbateRecorderApp
             grpLogs.Controls.Add(logListBox);
             logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
-            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpDonate, grpLogs });
+            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpWatch, grpDonate, grpLogs });
             Controls.Add(contentPanel);
 
             // Ancrage des panneaux eux-mêmes, posé après leur ajout à
@@ -2309,6 +2554,7 @@ namespace ChaturbateRecorderApp
             grpProgress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpHistory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpFavorites.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpWatch.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpDonate.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpLogs.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 

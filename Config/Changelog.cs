@@ -209,6 +209,13 @@ namespace ChaturbateRecorderApp.Config
                 "Le bouton \"Importer favoris\" est retiré. La seule façon de le faire fonctionner aurait été d'embarquer un moteur de navigateur pour contourner la protection anti-robots de Chaturbate — une dépendance supplémentaire imposée à tous, pour contourner délibérément une protection du site. Ce n'est pas la direction voulue pour ce projet.",
                 "Les favoris s'ajoutent avec le bouton \"+ Favori\", comme avant.",
             }),
+            ("1.25.0", new[]
+            {
+                "Nouveau panneau \"Surveillance\" : ajoute un salon, et l'enregistrement démarre tout seul dès qu'il passe en ligne. Une notification prévient à chaque démarrage.",
+                "Les salons surveillés sont contrôlés toutes les 2 minutes par défaut, réglable dans les Paramètres (1, 2, 5 ou 10 minutes). Ils sont vérifiés l'un après l'autre, jamais tous en même temps.",
+                "Un salon dont l'état ne peut pas être déterminé (réseau coupé, salon banni) est affiché comme indéterminé et ne déclenche jamais d'enregistrement.",
+                "La liste surveillée est volontairement distincte des favoris : un favori est un raccourci de saisie, un salon surveillé engage l'application à interroger le site en boucle.",
+            }),
         };
 
         /// <summary>
@@ -298,6 +305,13 @@ namespace ChaturbateRecorderApp.Config
             {
                 "The \"Import favorites\" button has been removed. The only way to make it work would have been to embed a browser engine to get around Chaturbate's anti-bot protection — an extra dependency imposed on everyone, in order to deliberately circumvent a site protection. That is not the direction intended for this project.",
                 "Favorites are added with the \"+ Favorite\" button, as before.",
+            },
+            ["1.25.0"] = new[]
+            {
+                "New \"Monitoring\" panel: add a room, and recording starts on its own as soon as it goes online. A notification warns you on every start.",
+                "Monitored rooms are checked every 2 minutes by default, adjustable in Settings (1, 2, 5 or 10 minutes). They are checked one after another, never all at once.",
+                "A room whose state cannot be determined (network down, banned room) is shown as unknown and never triggers a recording.",
+                "The monitored list is deliberately separate from favorites: a favorite is an input shortcut, a monitored room commits the application to polling the site in a loop.",
             },
         };
 

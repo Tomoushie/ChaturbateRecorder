@@ -11,6 +11,34 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**v1.25.0 (2026-08-05) — 88.0 / 4.3 « Surveillance »** :
+- **Faisabilite mesuree AVANT d'ecrire**, lecon de l'episode 92.0 : hors ligne
+  -> `rc=1` + « Room is currently offline » ; en ligne -> `rc=0`, stderr vide.
+  Releve sur trois salons reels. Un salon **inexistant** rend le meme message
+  qu'un salon hors ligne : une faute de frappe se presente donc comme une
+  absence, et sera attendue indefiniment.
+- **yt-dlp plutot qu'une requete HTTP** : il atteint l'API JSON de Chaturbate
+  sans etre bloque, la ou `HttpClient` se fait refuser en 403. Deja embarque,
+  deja utilise pour enregistrer : zero dependance nouvelle.
+- **Trois etats, pas deux.** `Unknown` (reseau coupe, salon banni, yt-dlp
+  absent) ne declenche jamais rien. Sans lui, une coupure reseau lancerait des
+  enregistrements dans le vide.
+- **Controles en serie, jamais en parallele**, et 120 s par defaut : dix salons
+  verifies chaque minute feraient 14 400 requetes par jour vers le site.
+- **`StartRecording(url, interactive)`** : `OnStartClick` n'est plus qu'un
+  appel. En mode non interactif les refus vont dans les logs — une modale
+  bloquerait la boucle et personne n'est devant l'ecran. **Exception assumee** :
+  `VerifyOrTrustBinary` garde son dialogue dans les deux modes, un hash de
+  yt-dlp qui change DOIT interrompre.
+- **PIEGE DE CAPTURE, le plus instructif de la session** : `grpWatch` avait ete
+  oublie dans le `contentPanel.Controls.AddRange` — le panneau n'existait pas
+  dans l'application. **La capture l'a pourtant rendu correctement**, parce que
+  `DrawToBitmap` fonctionne sur un controle orphelin. Ce qui a trahi le defaut
+  n'est pas la mise en page mais **les couleurs** : boutons au rendu Windows par
+  defaut au lieu du bleu d'accent, signe que `ThemeManager.Apply(this)` ne
+  l'avait jamais atteint. **A retenir : capturer le `contentPanel` entier, pas
+  le panneau seul** — un panneau isole se dessine meme s'il n'est nulle part.
+
 **v1.24.0 (2026-08-05) — l'import des favoris est RETIRÉ. Ne pas le re-proposer** :
 - **Décision de l'utilisateur, motivée, à respecter** : la seule voie technique
   restante était WebView2 (moteur Chromium embarqué, donc empreinte TLS que

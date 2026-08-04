@@ -226,6 +226,27 @@ namespace ChaturbateRecorderApp.UI
             ["tray.updateAvailable"] = (
                 "Chaturbate Recorder — mise à jour v{0} disponible",
                 "Chaturbate Recorder — update v{0} available"),
+            // --- 88.0 : surveillance automatique ---
+            ["panel.watch"] = ("Surveillance", "Monitoring"),
+            ["column.room"] = ("Salon", "Room"),
+            ["column.watchState"] = ("État", "State"),
+            ["button.watchAdd"] = ("+ Surveiller", "+ Monitor"),
+            ["button.watchRemove"] = ("Ne plus surveiller", "Stop monitoring"),
+            ["watch.state.pending"] = ("En attente...", "Pending..."),
+            ["watch.state.online"] = ("En ligne", "Online"),
+            ["watch.state.offline"] = ("Hors ligne", "Offline"),
+            ["watch.state.unknown"] = ("Indéterminé", "Unknown"),
+            ["watch.state.recording"] = ("Enregistrement...", "Recording..."),
+            ["watch.alreadyWatched"] = (
+                "{0} est déjà surveillé.",
+                "{0} is already monitored."),
+            ["watch.started.title"] = ("Surveillance", "Monitoring"),
+            ["watch.started.body"] = (
+                "{0} est en ligne : l'enregistrement démarre.",
+                "{0} is online: recording is starting."),
+            ["label.watchInterval"] = (
+                "Vérifier les salons surveillés toutes les :",
+                "Check monitored rooms every:"),
             ["checkbox.autoUpdateCheck"] = (
                 "Rechercher automatiquement les mises à jour (toutes les heures)",
                 "Automatically check for updates (every hour)"),

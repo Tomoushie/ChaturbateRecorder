@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.Json;
 using ChaturbateRecorderApp.Config;
@@ -30,6 +30,11 @@ namespace ChaturbateRecorderApp.Services
         // Dernière version pour laquelle une notification a été affichée, pour
         // ne pas re-notifier la même à chaque passage horaire (79.0).
         public string? LastNotifiedUpdateVersion { get; set; }
+        // Intervalle entre deux passages de surveillance (88.0). 120 s par
+        // defaut : chaque controle lance un processus yt-dlp, et dix salons
+        // verifies toutes les minutes feraient 14 400 requetes par jour vers
+        // le site. Plancher a 60 s, applique aussi a la lecture.
+        public int WatchIntervalSeconds { get; set; } = 120;
     }
 
     /// <summary>
