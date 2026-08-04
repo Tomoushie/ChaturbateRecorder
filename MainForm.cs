@@ -129,6 +129,8 @@ namespace ChaturbateRecorderApp
         // notification pour qu'un toast de fin d'enregistrement n'hérite pas
         // de l'action d'un toast de mise à jour affiché avant lui.
         private Action? _balloonClickAction;
+        // 93.0 : évènement nommé signalé par une seconde instance.
+        private EventWaitHandle? _secondInstanceEvent;
 
         private readonly UserSettings _settings;
 
@@ -187,6 +189,43 @@ namespace ChaturbateRecorderApp
             Shown += (s, e) => AnimateOpacity(1.0, 250);
 
             StartAutoUpdateChecks();
+            ListenForSecondInstance();
+        }
+
+        /// <summary>
+        /// 93.0 — surveille l'évènement nommé que signale une seconde instance
+        /// pour révéler cette fenêtre-ci. Thread d'arrière-plan (IsBackground)
+        /// plutôt qu'un Timer : il attend sans consommer, et n'empêche pas
+        /// l'application de se terminer. ShowMainWindow touchant à l'interface,
+        /// il repasse par SafeInvoke.
+        /// </summary>
+        private void ListenForSecondInstance()
+        {
+            EventWaitHandle showEvent;
+            try
+            {
+                showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, Program.ShowWindowEventName);
+            }
+            catch (Exception ex)
+            {
+                // Sans cet évènement l'application reste parfaitement utilisable :
+                // seul le réveil par second lancement est perdu, le mutex ayant
+                // déjà empêché la seconde instance de s'ouvrir.
+                Logger.Log($"Surveillance du second lancement indisponible : {ex.Message}", LogLevel.WARN);
+                return;
+            }
+
+            _secondInstanceEvent = showEvent;
+            var thread = new Thread(() =>
+            {
+                while (showEvent.WaitOne())
+                {
+                    if (_isReallyClosing) return;
+                    SafeInvoke(ShowMainWindow);
+                }
+            })
+            { IsBackground = true, Name = "SecondInstanceWatcher" };
+            thread.Start();
         }
 
         private static string CurrentVersion =>
@@ -444,6 +483,22 @@ namespace ChaturbateRecorderApp
             // Même raison pour le minuteur d'arrêt (87.0) : c'est aussi un Timer,
             // que rien n'arrêterait si la ligne disparaissait sans passer ici.
             StopRecordingTimer(row);
+
+            // 95.0 — même raison, pour les deux choses que le retrait laissait
+            // vivantes : le minuteur de reconnexion en attente, et le moteur
+            // lui-même. Sans ça, retirer une ligne pendant une tentative de
+            // reconnexion laissait yt-dlp tourner et relancer le cycle
+            // Running/Failed dans le vide. AutoReconnectEnabled est coupé avant
+            // Stop() pour que l'état final ne reprogramme rien.
+            if (row.PendingReconnectTimer != null)
+            {
+                row.PendingReconnectTimer.Stop();
+                row.PendingReconnectTimer.Dispose();
+                row.PendingReconnectTimer = null;
+            }
+            row.Job.AutoReconnectEnabled = false;
+            row.Job.Engine.Stop();
+
             jobsListPanel.Controls.Remove(row.Container);
             _jobRows.Remove(row);
             BeginInvoke(() => row.Container.Dispose());
@@ -569,14 +624,32 @@ namespace ChaturbateRecorderApp
             row.HasProgressPct = true;
             row.LastProgressPct = pct;
             row.StatusLabel.Text = FormatProgressPct(pct);
+            // 95.0 : c'est ICI que le compteur de reconnexions se remet à zéro.
+            // Recevoir une progression est la seule preuve que le flux existe
+            // vraiment ; l'état Running ne prouve que le démarrage du processus.
+            row.Job.ReconnectAttempt = 0;
         }
 
         private void HandleJobStateChanged(JobRow row, DownloadState state)
         {
+            // 95.0 : une ligne retirée n'a plus rien à afficher ni à notifier.
+            // Le moteur peut encore lever un changement d'état après le retrait
+            // (processus yt-dlp en cours de fin), ce qui produisait une
+            // notification d'erreur pour un enregistrement disparu de l'écran.
+            if (!_jobRows.Contains(row)) return;
+
             switch (state)
             {
                 case DownloadState.Running:
-                    row.Job.ReconnectAttempt = 0;
+                    // 95.0 — le compteur de tentatives n'est PLUS remis à zéro ici.
+                    // DownloadEngine lève Running dès que le PROCESSUS yt-dlp a
+                    // démarré, pas quand le flux coule : une room hors ligne
+                    // enchaîne donc Running -> Failed en boucle, et remettre le
+                    // compteur à zéro à chaque passage rendait le plafond
+                    // AutoReconnectMaxAttempts inatteignable — d'où une
+                    // notification d'erreur toutes les 30 s, indéfiniment.
+                    // La remise à zéro vit désormais dans UpdateJobProgress :
+                    // seule une progression réelle prouve que le flux existe.
                     row.Status = JobRowStatus.Running;
                     row.HasProgressPct = false;
                     RefreshJobRowLabels(row);
@@ -1517,6 +1590,22 @@ namespace ChaturbateRecorderApp
             SetIcon(sponsorButton, "heart");
             SetIcon(websiteButton, "globe");
 
+            // 94.0 — "Site web" paraissait désaligné par rapport à "Faire un don
+            // (PayPal)" (seul bouton du panneau sans icône, donc centré par
+            // défaut). Cause : avec un TextImageRelation autre qu'Overlay,
+            // WinForms découpe le bouton en deux zones et n'aligne le texte que
+            // dans SA zone — proportionnelle à sa largeur préférée. Sur un
+            // libellé long ("Sponsoriser (GitHub)") la zone remplit le bouton et
+            // le rendu paraît centré ; sur un libellé court elle est étroite et
+            // collée à l'icône. Passer TextAlign de MiddleRight à MiddleCenter
+            // ne change donc RIEN — vérifié par capture avant/après.
+            // Overlay place image et texte indépendamment sur tout le bouton :
+            // icône à gauche, texte réellement centré. Réservé à ce bouton, où
+            // les 220 px de large excluent tout chevauchement — les boutons de
+            // la barre du haut (130 px, "Guide de démarrage") s'y exposeraient.
+            websiteButton.TextImageRelation = TextImageRelation.Overlay;
+            websiteButton.TextAlign = ContentAlignment.MiddleCenter;
+
             foreach (var row in _jobRows)
             {
                 row.StopButton.Image = IconManager.Render("stop", 14, color);
@@ -1790,6 +1879,12 @@ namespace ChaturbateRecorderApp
             _autoUpdateTimer?.Stop();
             _autoUpdateTimer?.Dispose();
             _autoUpdateTimer = null;
+
+            // 93.0 : débloque le thread de surveillance (il teste _isReallyClosing
+            // au réveil et sort) avant de libérer le handle.
+            _secondInstanceEvent?.Set();
+            _secondInstanceEvent?.Dispose();
+            _secondInstanceEvent = null;
 
             // Retire l'icône de la zone de notification avant fermeture : sans
             // ça, Windows laisse une icône "fantôme" jusqu'au survol suivant.

@@ -4,12 +4,45 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.22.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.22.1 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.22.1 (2026-08-04) — lot de correctifs 95.0 / 93.0 / 94.0** :
+- **95.0, le vrai coupable** : `DownloadEngine` lève `Running` dès que le
+  **processus** yt-dlp a démarré, pas quand le flux coule. Une room hors ligne
+  enchaîne donc `Running` -> `Failed` en boucle, et `HandleJobStateChanged`
+  remettait `ReconnectAttempt = 0` à chaque `Running` : le plafond
+  `AutoReconnectMaxAttempts` (5) était **inatteignable**, d'où une notification
+  d'erreur toutes les 30 s pour toujours. La remise à zéro vit désormais dans
+  `UpdateJobProgress` — recevoir une progression est la seule preuve que le flux
+  existe. Leçon générale : un état « démarré » ne vaut pas un état « qui
+  fonctionne », et tout compteur de retry remis à zéro sur le premier ne
+  plafonne rien.
+- **95.0, second défaut** : `RemoveJobRow` ne coupait ni le minuteur de
+  reconnexion en attente ni le moteur, et `HandleJobStateChanged` ne vérifiait
+  pas que la ligne existait encore — d'où des notifications pour un
+  enregistrement disparu de l'écran. Les deux sont corrigés.
+- **93.0** : `Mutex` nommé en portée `Local\` (pas `Global\` : deux sessions
+  Windows doivent rester indépendantes). Un simple refus de démarrer ne
+  suffisait pas — depuis 19.0 la fenêtre se masque dans la zone de notification,
+  donc relancer l'exe est le geste de quelqu'un qui la cherche. La seconde
+  instance signale un `EventWaitHandle` nommé que la première surveille sur un
+  thread d'arrière-plan (`MainForm.ListenForSecondInstance`), puis se termine.
+- **94.0 — piège WinForms à retenir** : avec un `TextImageRelation` autre
+  qu'`Overlay`, WinForms découpe le bouton en deux zones et n'aligne le texte
+  que **dans sa zone**, proportionnelle à sa largeur préférée. Sur un libellé
+  long la zone remplit le bouton et le rendu paraît centré ; sur un libellé
+  court elle est étroite et collée à l'icône. **Passer `TextAlign` de
+  `MiddleRight` à `MiddleCenter` ne change donc strictement rien** — constaté
+  par capture avant/après, la première tentative a été jetée. Correction réelle :
+  `TextImageRelation.Overlay` sur ce seul bouton, qui place image et texte
+  indépendamment. Réservé à `websiteButton` (220 px) ; les boutons de la barre
+  du haut (130 px) risqueraient le chevauchement texte/icône.
+- **Vérification de rendu** : `DrawToBitmap` sur `grpDonate`, avant et après.
 
 **v1.22.0 (2026-08-04) — 50.0 « boutons de réseaux sociaux »** :
 - **X et Reddit sont des liens de PARTAGE, pas des comptes** : le projet n'a ni

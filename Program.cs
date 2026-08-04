@@ -10,6 +10,10 @@ namespace ChaturbateRecorderApp
 {
     internal static class Program
     {
+        /// <summary>Noms partagés entre les deux instances (93.0).</summary>
+        internal const string SingleInstanceMutexName = @"Local\ChaturbateRecorder.SingleInstance";
+        internal const string ShowWindowEventName = @"Local\ChaturbateRecorder.ShowWindow";
+
         [STAThread]
         private static void Main()
         {
@@ -31,6 +35,39 @@ namespace ChaturbateRecorderApp
                     Localization.Get("error.unauthorizedLocation"),
                     Localization.Get("error.unauthorizedLocation.title"),
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 93.0 — instance unique. Lancer l'exe plusieurs fois empilait
+            // autant d'icônes dans la barre des tâches et dans la zone de
+            // notification, chaque instance croyant gérer seule les mêmes
+            // dossiers et le même settings.json.
+            //
+            // Portée "Local\" (session Windows courante) et non "Global\" :
+            // deux utilisateurs connectés simultanément sur la même machine
+            // doivent pouvoir utiliser l'application chacun de leur côté.
+            //
+            // Un simple refus de démarrer ne suffirait pas : depuis 19.0 la
+            // fenêtre se masque dans la zone de notification au lieu de fermer,
+            // donc l'utilisateur qui relance l'exe cherche justement à la
+            // retrouver. La seconde instance signale l'évènement nommé que la
+            // première surveille (voir MainForm.ListenForSecondInstance), puis
+            // se termine sans rien afficher.
+            using var singleInstance = new Mutex(true, SingleInstanceMutexName, out var isFirstInstance);
+            if (!isFirstInstance)
+            {
+                try
+                {
+                    if (EventWaitHandle.TryOpenExisting(ShowWindowEventName, out var showEvent))
+                    {
+                        showEvent.Set();
+                        showEvent.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Instance déjà lancée, réveil impossible : {ex.Message}", LogLevel.WARN);
+                }
                 return;
             }
 

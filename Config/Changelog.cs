@@ -175,6 +175,12 @@ namespace ChaturbateRecorderApp.Config
                 "Trois nouveaux boutons dans le panneau \"Soutenir le projet\" : X et Reddit ouvrent un message de partage du projet pré-rempli, GitHub ouvre le dépôt.",
                 "Rien n'est publié depuis l'application : elle ouvre simplement la page de publication du réseau concerné dans le navigateur, où le message reste modifiable avant envoi.",
             }),
+            ("1.22.1", new[]
+            {
+                "Correctif : ajouter un live hors ligne déclenchait une notification d'erreur toutes les 30 secondes, indéfiniment, et elle continuait même après avoir annulé et retiré l'enregistrement de la liste. La limite de 5 tentatives de reconnexion ne s'appliquait en réalité jamais, et retirer une ligne laissait yt-dlp tourner en arrière-plan.",
+                "Correctif : lancer l'exécutable plusieurs fois ouvrait autant d'instances, empilant les icônes dans la barre des tâches. Un second lancement réaffiche désormais la fenêtre déjà ouverte — utile depuis que la fenêtre se masque dans la zone de notification au lieu de se fermer.",
+                "Correctif : le texte du bouton \"Site web\" n'était pas centré comme celui des boutons \"Sponsoriser\" et \"Faire un don\" juste au-dessus.",
+            }),
         };
 
         /// <summary>
@@ -230,6 +236,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Three new buttons in the \"Support the project\" panel: X and Reddit open a pre-filled share message for the project, GitHub opens the repository.",
                 "Nothing is posted from the application: it simply opens the relevant network's submission page in the browser, where the message stays editable before sending.",
+            },
+            ["1.22.1"] = new[]
+            {
+                "Fix: adding an offline live triggered an error notification every 30 seconds, indefinitely, and it kept coming even after the recording had been cancelled and removed from the list. The 5-attempt reconnection limit in fact never applied, and removing a row left yt-dlp running in the background.",
+                "Fix: launching the executable several times opened as many instances, stacking icons in the taskbar. A second launch now brings the already-open window back — useful since the window hides in the notification area instead of closing.",
+                "Fix: the \"Website\" button's text was not centred like that of the \"Sponsor\" and \"Donate\" buttons just above it.",
             },
         };
 
