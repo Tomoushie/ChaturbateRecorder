@@ -191,6 +191,10 @@ namespace ChaturbateRecorderApp.Config
                 "L'import réutilise le fichier cookies que tu as déjà configuré dans les Paramètres : tes favoris sont privés, seule une session connectée peut les lire, et c'est ce fichier qui la porte.",
                 "Chaque cause d'échec a son propre message : aucun fichier cookies, mauvais format, session expirée, site injoignable, ou page reçue sans salon reconnu. Aucun échec n'est silencieux.",
             }),
+            ("1.23.1", new[]
+            {
+                "Correctif : le bouton \"Importer favoris\", ajouté la version précédente, ne réagissait pas au clic dès que la fenêtre était élargie — il restait à sa position d'origine pendant que la liste des favoris s'étendait par-dessus, et les clics partaient dans la liste. L'import ne se lançait jamais, sans le moindre message.",
+            }),
         };
 
         /// <summary>
@@ -262,6 +266,10 @@ namespace ChaturbateRecorderApp.Config
                 "New \"Import favorites\" button: fetches the models you follow on your Chaturbate account and adds them to the application's favorites list. Existing favorites are kept, duplicates skipped.",
                 "The import reuses the cookies file you already configured in Settings: your favorites are private, only a signed-in session can read them, and that file carries it.",
                 "Every failure cause has its own message: no cookies file, wrong format, expired session, site unreachable, or page received with no recognisable room. No failure is silent.",
+            },
+            ["1.23.1"] = new[]
+            {
+                "Fix: the \"Import favorites\" button added in the previous version did not respond to clicks as soon as the window was widened — it stayed at its original position while the favorites list expanded over it, and clicks went to the list. The import never ran, without any message.",
             },
         };
 

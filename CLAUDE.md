@@ -1,15 +1,41 @@
-# Chaturbate Recorder — contexte projet
+﻿# Chaturbate Recorder — contexte projet
 
 App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.23.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.23.1 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.23.1 (2026-08-05) — le bouton d'import ne repondait pas au clic** :
+- **Le piège `Anchor` de la fin de ce fichier a encore frappé**, une version
+  après avoir été écrit. `importFavoritesButton` n'avait tout simplement pas
+  d'`Anchor` : sur une fenêtre élargie, `favoritesListBox` (`Left|Right`)
+  s'étendait par-dessus lui pendant que ses deux voisins (`Top|Right`) suivaient
+  le bord. **Aggravant** : ajouté en dernier dans `AddRange`, il était aussi au
+  fond de l'ordre de plan — les clics partaient donc dans la liste. Symptôme vu
+  par l'utilisateur : « rien ne se passe, aucun message ». Corrigé par `Anchor`
+  posé APRÈS `AddRange`, plus un `BringToFront()`.
+- **Leçon de vérification** : la capture d'écran de contrôle avait été prise à la
+  largeur de conception (700 px), où le défaut est invisible. Pour tout contrôle
+  ajouté à un panneau ancré, **capturer aussi une fenêtre élargie** — c'est le
+  seul moment où un `Anchor` manquant se voit.
+- **Piège d'outillage découvert, à retenir absolument** : depuis 93.0, le mutex
+  d'instance unique fait **sortir immédiatement** tout lancement supplémentaire.
+  Un processus resté vivant d'une capture précédente rend donc toutes les
+  suivantes silencieusement inopérantes — l'exe rend 0, aucun fichier n'est
+  écrit, et rien n'indique pourquoi. Avant toute session de capture :
+  `taskkill //F //IM ChaturbateRecorder.exe`.
+- **Second piège d'outillage** : les fichiers sources sont passés en CRLF, donc
+  un motif de patch écrit en LF ne correspond plus à rien. Le script Python de
+  capture doit normaliser (`s.replace('
+','
+')`) et réécrire dans la fin de
+  ligne d'origine, sinon il ne patche rien **sans erreur visible**.
 
 **v1.23.0 (2026-08-05) — 92.0 reformulé : import des favoris du compte** :
 - **L'item d'origine reposait sur une prémisse fausse** et a failli produire un

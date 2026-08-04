@@ -2279,6 +2279,18 @@ namespace ChaturbateRecorderApp
             importFavoritesButton.Click += OnImportFavoritesClick;
 
             grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton, importFavoritesButton });
+
+            // Ancrage APRÈS AddRange (piège documenté en bas de CLAUDE.md).
+            // Oublié à la création du bouton en v1.23.0, avec deux conséquences
+            // qui se cumulaient sur une fenêtre élargie : le bouton restait à sa
+            // position absolue pendant que la liste (Left|Right) s'élargissait
+            // par-dessus, et comme il est ajouté EN DERNIER il se retrouvait
+            // aussi au fond de l'ordre de plan — donc les clics partaient dans
+            // la liste. L'import ne se lançait jamais, sans le moindre message.
+            importFavoritesButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            // Ceinture et bretelles : même correctement ancré, le bouton reste
+            // le dernier ajouté, donc derrière la liste en cas de recouvrement.
+            importFavoritesButton.BringToFront();
             favoritesListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             loadFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
