@@ -11,6 +11,51 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**Fin de la chaîne 38.0 (2026-08-04) — l'environnement `github-pages` refusait
+un déploiement lancé depuis un tag** (réglage de dépôt uniquement, aucun
+changement de workflow, pas de bump) :
+- **Symptôme** : à la release v1.20.0, `Publish Release` s'est terminé en
+  **échec** alors que la release et ses deux ZIP étaient corrects et que
+  `releases/latest` pointait bien sur v1.20.0. Seul le job imbriqué
+  `update-latest-json / deploy-pages / deploy` échouait, avec pour toute
+  explication « The deployment was rejected or didn't satisfy other protection
+  rules ». Le site est donc resté sur 1.19.1 et il a fallu relancer
+  `pages-build.yml` à la main.
+- **Cause** : l'environnement `github-pages` n'autorisait que des **branches**
+  (`main`, `gh-pages`). Or `publish-release.yml` s'exécute sur un push de tag,
+  et un workflow appelé par `workflow_call` **hérite de la référence de
+  l'appelant** : la référence du déploiement était donc `v1.20.0`, rejetée par
+  la règle. C'est le dernier maillon de la chaîne 38.0 — le déclenchement avait
+  été réparé, la régénération de `latest.json` fonctionne (le fichier était
+  correct dans le dépôt), c'est la **publication** qui était bloquée.
+- **Correctif — réglage de dépôt, invisible dans le code** : ajout d'une
+  politique de déploiement de **type `tag`, motif `v*`** dans Settings >
+  Environments > github-pages. Les politiques personnalisées étaient déjà
+  activées et `main`/`gh-pages` déjà listées : la règle a été **ajoutée**, rien
+  n'a été restructuré, donc aucun risque de bloquer `main` au passage.
+  API : `POST /repos/{owner}/{repo}/environments/github-pages/deployment-branch-policies`
+  avec `{"name":"v*","type":"tag"}`.
+- **Pourquoi c'est sans danger** : `pages-build.yml` fait `actions/checkout`
+  avec `ref: main` explicite. Le contenu déployé vient donc **toujours** de
+  `main` quelle que soit la référence déclenchante — seule la métadonnée du
+  déploiement porte le tag. Autoriser les tags n'autorise pas à publier le
+  contenu d'un tag.
+- **Piège de vérification, à retenir** : tester avec un tag de pré-version
+  (`vX.Y.Z-test`) **ne vérifie rien ici**. `deploy-pages` est conditionné à
+  `if: needs.update-latest-json.outputs.changed == 'true'`, or une pré-version
+  est exclue de `/releases/latest` et ne modifie donc pas `latest.json` : le job
+  serait *sauté*, pas exécuté. La bonne vérification est un
+  `workflow_dispatch` de `pages-build.yml` avec `ref` **valant un tag**
+  (`{"ref":"v1.20.0"}`) : c'est le seul moyen de reproduire exactement la
+  condition rejetée. Fait, et le déploiement passe désormais (`ref: v1.20.0`
+  dans l'historique des déploiements).
+- **À surveiller à la prochaine release** : `Publish Release` doit se terminer
+  **vert** de bout en bout. S'il repasse au rouge, regarder d'abord la
+  conclusion de chaque job — la release peut être parfaite alors qu'un job
+  postérieur échoue, et l'inverse est vrai aussi (un run vert dont l'étape
+  utile a été *sautée* n'a rien publié). La couleur du run ne dit rien : vérifier
+  l'artefact final, ici `https://tomoushie.github.io/ChaturbateRecorder/latest.json`.
+
 **87.0 traité (2026-08-04) — minuteur d'arrêt par enregistrement (v1.20.0)** :
 - **Portée choisie par l'utilisateur** : un minuteur **par enregistrement**, pas
   un réglage global — cohérent avec qualité/codec/format, déjà des choix par
