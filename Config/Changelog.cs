@@ -187,7 +187,7 @@ namespace ChaturbateRecorderApp.Config
             }),
             ("1.23.0", new[]
             {
-                "Nouveau bouton \"Importer favoris\" : récupère les modèles suivis sur ton compte Chaturbate et les ajoute à la liste des favoris de l'application. Les favoris déjà présents sont conservés, les doublons ignorés.",
+                "Nouveau bouton \"Importer favoris\", destiné à récupérer les modèles suivis sur ton compte Chaturbate. ATTENTION : la fonctionnalité ne fonctionne pas en l'état — Chaturbate refuse les requêtes qui ne viennent pas d'un vrai navigateur, et le bouton se solde par un message d'erreur. Elle est conservée en vue d'une correction ; en attendant, ajoute tes favoris avec \"+ Favori\".",
                 "L'import réutilise le fichier cookies que tu as déjà configuré dans les Paramètres : tes favoris sont privés, seule une session connectée peut les lire, et c'est ce fichier qui la porte.",
                 "Chaque cause d'échec a son propre message : aucun fichier cookies, mauvais format, session expirée, site injoignable, ou page reçue sans salon reconnu. Aucun échec n'est silencieux.",
             }),
@@ -199,6 +199,10 @@ namespace ChaturbateRecorderApp.Config
             {
                 "L'import des favoris envoie désormais le même jeu d'en-têtes qu'un vrai navigateur, plutôt que le seul identifiant de navigateur.",
                 "Un refus 403 de Chaturbate a maintenant son propre message : il signale la protection anti-robots du site, et non un problème de compte ou de cookies — deux situations qu'il ne faut pas confondre, puisque la première ne se corrige pas côté utilisateur.",
+            }),
+            ("1.23.3", new[]
+            {
+                "Correction de l'annonce de la 1.23.0, qui présentait l'import des favoris comme fonctionnel : il ne l'est pas. Deux essais sur un vrai compte, avec des cookies valides, se sont soldés par un refus du site. L'entrée correspondante a été rectifiée plutôt que laissée telle quelle.",
             }),
         };
 
@@ -268,7 +272,7 @@ namespace ChaturbateRecorderApp.Config
             },
             ["1.23.0"] = new[]
             {
-                "New \"Import favorites\" button: fetches the models you follow on your Chaturbate account and adds them to the application's favorites list. Existing favorites are kept, duplicates skipped.",
+                "New \"Import favorites\" button, meant to fetch the models you follow on your Chaturbate account. WARNING: the feature does not work as it stands — Chaturbate refuses requests that do not come from a real browser, and the button ends in an error message. It is kept pending a fix; meanwhile, add your favorites with \"+ Favorite\".",
                 "The import reuses the cookies file you already configured in Settings: your favorites are private, only a signed-in session can read them, and that file carries it.",
                 "Every failure cause has its own message: no cookies file, wrong format, expired session, site unreachable, or page received with no recognisable room. No failure is silent.",
             },
@@ -280,6 +284,10 @@ namespace ChaturbateRecorderApp.Config
             {
                 "The favorites import now sends the same full set of headers as a real browser, instead of the user-agent alone.",
                 "A 403 refusal from Chaturbate now has its own message: it reports the site's anti-bot protection rather than an account or cookie problem — two situations that must not be confused, since the former cannot be fixed on the user's side.",
+            },
+            ["1.23.3"] = new[]
+            {
+                "Correction of the 1.23.0 announcement, which presented the favorites import as working: it is not. Two attempts on a real account, with valid cookies, were refused by the site. The corresponding entry has been rectified rather than left as it was.",
             },
         };
 
