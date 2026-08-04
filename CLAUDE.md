@@ -83,6 +83,42 @@ constructeur, une ligne créée après coup gardait le rendu système clair. Por
 aussi GitHub Sponsors (80.0, #34), mergé sans bump — d'où une version mineure
 plutôt qu'un patch.
 
+**Suite de 38.0 (2026-08-04) — le site ne publiait jamais le `latest.json`
+régénéré** (CI uniquement, pas de bump) :
+- **Symptôme** : le 2026-08-04, `docs/latest.json` était correct dans le dépôt
+  (1.19.1) mais `https://tomoushie.github.io/.../latest.json` annonçait encore
+  **1.18.0**. `Pages Build` n'avait plus tourné depuis le 2026-08-03 : le site
+  a raté v1.19.0 **et** v1.19.1.
+- **Cause — le même piège que 38.0, un cran plus bas** : `pages-build.yml` se
+  déclenchait sur `push` avec `paths: docs/**`, or le **seul** producteur de
+  `docs/latest.json` est le job `update-latest-json`, qui pousse avec le
+  `GITHUB_TOKEN` — lequel ne déclenche aucun workflow. Le commit qui satisfait
+  le filtre de chemin est donc exactement celui qui ne déclenche rien. 38.0
+  avait réparé la **régénération** du fichier ; rien n'en assurait la
+  **publication**. Morale : après avoir corrigé un maillon cassé par cette
+  protection anti-boucle, vérifier tout le reste de la chaîne — chaque étape
+  déclenchée par un commit du bot a le même défaut.
+- **Correctif** : `pages-build.yml` accepte `workflow_call`, et
+  `update-checker.yml` l'appelle en job `deploy-pages` (`needs:
+  update-latest-json`), conditionné à un changement réel via une sortie
+  `changed` — le cron quotidien ne redéploie donc pas le site pour rien.
+- **Deux pièges dans le correctif lui-même** :
+  - `actions/checkout` **doit** préciser `ref: main` dans le workflow appelé.
+    Le SHA d'un run est celui de l'évènement **déclencheur** (le tag de la
+    release), pas celui du commit que `update-latest-json` vient de pousser :
+    sans ce `ref`, on déploie le `latest.json` d'AVANT sa mise à jour, soit
+    précisément le bug qu'on corrige.
+  - Les permissions d'un appel imbriqué **ne peuvent que se restreindre**, donc
+    `pages: write` et `id-token: write` ont dû être ajoutés au job appelant
+    dans `publish-release.yml`, qui ne déploie pourtant rien lui-même. Sans ça
+    le déploiement échoue en fin de release automatisée alors qu'il passe très
+    bien en exécution manuelle.
+- **Remise en état immédiate** : `workflow_dispatch` sur `Pages Build` (le
+  workflow le prévoit) — site revenu à 1.19.1, vérifié en ligne.
+- **Non affecté** : le vérificateur de mise à jour de l'app lit
+  `api.github.com/.../releases/latest` (`Services/UpdateChecker.cs`), pas le
+  site — les utilisateurs voyaient donc la bonne version malgré la page figée.
+
 **Package de sécurité renommé `SentinelGuard` et destiné à nuget.org
 (2026-08-03)** — remplace/complète 30.0 (`ChaturbateRecorder.Security` sur
 GitHub Packages) :

@@ -32,6 +32,8 @@ concurrency:
 jobs:
   update-latest-json:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,6 +81,7 @@ jobs:
             > docs/latest.json
 
       - name: Commit si changement
+        id: commit
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -87,6 +90,27 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "chore: mise à jour de latest.json (${{ steps.release.outputs.tag }})"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Aucun changement."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
+  # Redéploie le site après la mise à jour de docs/latest.json. Sans cet appel,
+  # le fichier est bien régénéré dans le dépôt mais jamais publié : le push
+  # ci-dessus est fait avec le GITHUB_TOKEN, qui ne déclenche aucun workflow,
+  # donc le "paths: docs/**" de Pages Build ne part jamais (voir l'en-tête de
+  # pages-build.yml). Même correctif que 38.0, un cran plus bas : 38.0 a réparé
+  # la régénération du fichier, ceci répare sa publication.
+  #
+  # Conditionné au changement réel : ce workflow tourne aussi par cron
+  # quotidien, et redéployer le site tous les jours pour un fichier identique
+  # ne sert à rien.
+  deploy-pages:
+    needs: update-latest-json
+    if: needs.update-latest-json.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages-build.yml

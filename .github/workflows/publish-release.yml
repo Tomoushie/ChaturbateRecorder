@@ -87,8 +87,17 @@ jobs:
   # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun
   # workflow (protection anti-boucle de GitHub), donc docs/latest.json restait
   # sur la version précédente jusqu'au cron quotidien de Update Checker.
+  #
+  # Les droits Pages/id-token sont accordés ici bien que ce workflow ne déploie
+  # rien lui-même : "Update Checker" enchaîne sur "Pages Build" pour publier le
+  # docs/latest.json qu'il vient d'écrire, et les permissions d'un appel
+  # imbriqué ne peuvent QUE se restreindre le long de la chaîne, jamais
+  # s'élargir. Sans ces deux lignes, le déploiement échouerait à la fin d'une
+  # release automatisée alors qu'il passerait en exécution manuelle.
   update-latest-json:
     needs: publish
     permissions:
       contents: write
+      pages: write
+      id-token: write
     uses: ./.github/workflows/update-checker.yml
