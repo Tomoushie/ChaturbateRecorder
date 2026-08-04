@@ -4,12 +4,48 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.22.2 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.23.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.23.0 (2026-08-05) — 92.0 reformulé : import des favoris du compte** :
+- **L'item d'origine reposait sur une prémisse fausse** et a failli produire un
+  correctif inutile. Sa note décrivait un `LoadCookies` bogué (`parts.Length != 7`,
+  `if (expiration <= 0) skip`) — ce code **n'existait pas** : l'app passait
+  seulement le CHEMIN du cookies.txt à yt-dlp via `--cookies` sans jamais
+  l'ouvrir. Le vrai constat de l'utilisateur (« j'importe, mes favoris
+  n'apparaissent pas ») n'était pas un bug : l'import authentifie yt-dlp, il n'a
+  jamais alimenté les favoris. **Réflexe** : vérifier dans le code que le
+  symptôme décrit correspond à un chemin qui existe, avant de réparer.
+- **Pas d'identifiant public possible** — question posée par l'utilisateur : les
+  favoris Chaturbate sont privés, aucun identifiant seul ne peut y donner accès
+  (sinon n'importe qui lirait les favoris de n'importe qui). L'identifiant dit
+  « quel compte », les cookies disent « et j'ai le droit ». Les cookies portent
+  déjà les deux, il n'existe pas de mécanisme plus simple.
+- **Ironie utile** : le `LoadCookies` inexistant est devenu nécessaire. D'où
+  `Services/CookieFileReader.cs`, et les deux pièges que la note d'origine
+  citait sont réels — mais dans l'autre sens : `#HttpOnly_` en tête de ligne
+  n'est PAS un commentaire (sauter tout `#` fait perdre les cookies de session,
+  presque tous HttpOnly), et une expiration à `0` signifie « cookie de session »,
+  pas « invalide ». Les deux ont leur test.
+- **Fragilité assumée, conçue comme telle** : aucune API publique documentée,
+  donc `ExtractRoomNames` lit le HTML. Elle cassera à la prochaine refonte du
+  site sans que la CI le voie. D'où : sept statuts d'échec distincts, chacun avec
+  son message, et **jamais d'échec silencieux**. Le piège qui compte :
+  une session expirée renvoie la page de connexion avec un **code 200** —
+  sans `LooksLikeLoginPage`, l'app annoncerait « aucun favori » à quelqu'un qui
+  doit se reconnecter.
+- **Non vérifié en conditions réelles** : la requête au vrai site n'a pas été
+  exécutée. L'URL (`/followed-cams/`) et la structure des liens sont écrites
+  d'après la forme attendue du site, pas constatées. À valider par l'utilisateur.
+- **Tests** : `Tests/FavoritesImportTests.cs` (13, **173 au total**), éprouvés en
+  les cassant volontairement (5 échecs).
+- **Capture = revue d'interface, encore** : le libellé « Importer mes favoris »
+  était tronqué à « Importer mes » dans 160 px. Raccourci en « Importer favoris »,
+  au gabarit de « Supprimer favori » qui tient déjà.
 
 **v1.22.2 + 99.0 (2026-08-04)** — captures d'écran publiées régénérées (README
 + les trois du site) : elles dataient d'avant la v1.19.0 et ne montraient ni

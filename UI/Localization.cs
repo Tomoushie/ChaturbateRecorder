@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ChaturbateRecorderApp.UI
 {
@@ -226,6 +226,29 @@ namespace ChaturbateRecorderApp.UI
             ["tray.updateAvailable"] = (
                 "Chaturbate Recorder — mise à jour v{0} disponible",
                 "Chaturbate Recorder — update v{0} available"),
+            // --- 92.0 : import des favoris depuis le compte Chaturbate ---
+            ["button.importFavorites"] = ("Importer favoris", "Import favorites"),
+            ["import.done"] = (
+                "{0} favori(s) ajouté(s) sur {1} trouvé(s) sur ton compte.\n\nLes doublons ont été ignorés.",
+                "{0} favorite(s) added out of {1} found on your account.\n\nDuplicates were skipped."),
+            ["import.noCookies"] = (
+                "Aucun fichier cookies n'est configuré.\n\nTes favoris Chaturbate sont privés : seule une session connectée peut les lire. Exporte un cookies.txt depuis ton navigateur (extension au format Netscape), puis indique-le dans Paramètres > Cookies.",
+                "No cookies file is configured.\n\nYour Chaturbate favorites are private: only a signed-in session can read them. Export a cookies.txt from your browser (Netscape-format extension), then set it in Settings > Cookies."),
+            ["import.cookiesUnreadable"] = (
+                "Le fichier cookies n'a pas pu être lu : {0}",
+                "The cookies file could not be read: {0}"),
+            ["import.cookiesBadFormat"] = (
+                "Le fichier cookies ne contient aucune ligne exploitable.\n\nIl doit être au format Netscape (une ligne par cookie, colonnes séparées par des tabulations). Les exports JSON ne conviennent pas.",
+                "The cookies file contains no usable line.\n\nIt must be in Netscape format (one line per cookie, tab-separated columns). JSON exports will not work."),
+            ["import.notAuthenticated"] = (
+                "Chaturbate a répondu par la page de connexion : ta session a expiré.\n\nReconnecte-toi dans ton navigateur, réexporte le cookies.txt, puis réessaie.",
+                "Chaturbate returned the sign-in page: your session has expired.\n\nSign in again in your browser, export cookies.txt again, then retry."),
+            ["import.networkError"] = (
+                "Impossible de contacter Chaturbate : {0}",
+                "Could not reach Chaturbate: {0}"),
+            ["import.nothingRecognised"] = (
+                "La page des favoris a bien été reçue, mais aucun salon n'y a été reconnu.\n\nSoit ton compte n'a aucun favori, soit le site a changé de structure et l'import doit être mis à jour — dans ce dernier cas, un ticket GitHub aidera à le corriger.",
+                "The favorites page was received, but no room was recognised in it.\n\nEither your account has no favorites, or the site's structure changed and the import needs updating — in the latter case, a GitHub issue will help get it fixed."),
             ["checkbox.autoUpdateCheck"] = (
                 "Rechercher automatiquement les mises à jour (toutes les heures)",
                 "Automatically check for updates (every hour)"),

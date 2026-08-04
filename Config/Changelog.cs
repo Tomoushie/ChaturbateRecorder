@@ -185,6 +185,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Le bouton \"Site web\" n'est plus collé à la bordure basse du panneau \"Soutenir le projet\" : le panneau a été agrandi pour lui laisser la même marge que celle du haut.",
             }),
+            ("1.23.0", new[]
+            {
+                "Nouveau bouton \"Importer favoris\" : récupère les modèles suivis sur ton compte Chaturbate et les ajoute à la liste des favoris de l'application. Les favoris déjà présents sont conservés, les doublons ignorés.",
+                "L'import réutilise le fichier cookies que tu as déjà configuré dans les Paramètres : tes favoris sont privés, seule une session connectée peut les lire, et c'est ce fichier qui la porte.",
+                "Chaque cause d'échec a son propre message : aucun fichier cookies, mauvais format, session expirée, site injoignable, ou page reçue sans salon reconnu. Aucun échec n'est silencieux.",
+            }),
         };
 
         /// <summary>
@@ -250,6 +256,12 @@ namespace ChaturbateRecorderApp.Config
             ["1.22.2"] = new[]
             {
                 "The \"Website\" button is no longer flush against the bottom border of the \"Support the project\" panel: the panel was made taller to give it the same margin as the top.",
+            },
+            ["1.23.0"] = new[]
+            {
+                "New \"Import favorites\" button: fetches the models you follow on your Chaturbate account and adds them to the application's favorites list. Existing favorites are kept, duplicates skipped.",
+                "The import reuses the cookies file you already configured in Settings: your favorites are private, only a signed-in session can read them, and that file carries it.",
+                "Every failure cause has its own message: no cookies file, wrong format, expired session, site unreachable, or page received with no recognisable room. No failure is silent.",
             },
         };
 

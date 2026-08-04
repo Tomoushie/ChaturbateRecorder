@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -48,6 +48,7 @@ namespace ChaturbateRecorderApp
         private Label durationLabel = null!;
         private ComboBox durationCombo = null!;
         private ListBox favoritesListBox = null!;
+        private Button importFavoritesButton = null!;
         private Button loadFavoriteButton = null!;
         private Button removeFavoriteButton = null!;
         private Button sponsorButton = null!;
@@ -1342,6 +1343,57 @@ namespace ChaturbateRecorderApp
         }
 
         /// <summary>
+        /// Import des favoris depuis le compte Chaturbate (92.0). Chaque cause
+        /// d'échec a son propre message : « aucun favori » et « ta session a
+        /// expiré » sont deux situations que l'utilisateur ne peut pas
+        /// distinguer seul, et les confondre l'enverrait chercher le problème
+        /// au mauvais endroit. Les favoris déjà présents ne sont jamais
+        /// supprimés — l'import ajoute, il ne remplace pas.
+        /// </summary>
+        private async void OnImportFavoritesClick(object? sender, EventArgs e)
+        {
+            importFavoritesButton.Enabled = false;
+            try
+            {
+                var result = await FavoritesImporter.ImportAsync(AppConfig.CookiesFilePath);
+
+                if (result.Status != FavoritesImportStatus.Success)
+                {
+                    var key = result.Status switch
+                    {
+                        FavoritesImportStatus.NoCookiesConfigured => "import.noCookies",
+                        FavoritesImportStatus.CookieFileUnreadable => "import.cookiesUnreadable",
+                        FavoritesImportStatus.CookieFileNotNetscape => "import.cookiesBadFormat",
+                        FavoritesImportStatus.NotAuthenticated => "import.notAuthenticated",
+                        FavoritesImportStatus.NetworkError => "import.networkError",
+                        _ => "import.nothingRecognised",
+                    };
+                    AppendLog($"[{DateTime.Now:HH:mm:ss}] Import des favoris échoué : {result.Status} {result.Detail}");
+                    MessageBox.Show(this, Localization.Format(key, result.Detail ?? ""),
+                        Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var added = 0;
+                foreach (var url in result.Urls)
+                {
+                    if (!_favorites.AddFavorite(url)) continue;
+                    favoritesListBox.Items.Add(url);
+                    added++;
+                }
+                _favorites.Save();
+
+                AppendLog($"[{DateTime.Now:HH:mm:ss}] Import des favoris : {added} ajouté(s) sur {result.Urls.Count} trouvé(s).");
+                MessageBox.Show(this, Localization.Format("import.done", added, result.Urls.Count),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                importFavoritesButton.Enabled = true;
+            }
+        }
+
+        /// <summary>
         /// Ouvre une URL dans le navigateur par défaut (50.0). Même repli que
         /// OnWebsiteClick : un navigateur absent ou une association de
         /// protocole cassée ne doit pas remonter en exception non gérée.
@@ -1469,6 +1521,7 @@ namespace ChaturbateRecorderApp
             grpFavorites.Title = L("panel.favorites");
             loadFavoriteButton.Text = L("button.load");
             removeFavoriteButton.Text = L("button.removeFavorite");
+            importFavoritesButton.Text = L("button.importFavorites");
 
             grpDonate.Title = L("panel.donate");
             sponsorButton.Text = L("button.sponsor");
@@ -2220,7 +2273,12 @@ namespace ChaturbateRecorderApp
             removeFavoriteButton.Click += OnRemoveFavoriteClick;
             favoritesListBox.DoubleClick += OnLoadFavoriteClick;
 
-            grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
+            // 92.0 : troisième bouton, à y=86 (fin à 112, sous les 126 du corps
+            // du panneau de 130 px de haut — la même garde que les deux autres).
+            importFavoritesButton = new Button { Text = "Importer favoris", Location = new Point(482, 86), Size = new Size(160, 26) };
+            importFavoritesButton.Click += OnImportFavoritesClick;
+
+            grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton, importFavoritesButton });
             favoritesListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             loadFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
