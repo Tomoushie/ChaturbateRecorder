@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="Assets/logo.png" width="88" height="88" alt="Logo Chaturbate Recorder">
 
   # Chaturbate Recorder
@@ -310,6 +310,16 @@ code est payant et délivré à une entité vérifiée. Sans lui :
 
 C'est la seule fonctionnalité de la roadmap bloquée par de l'argent plutôt que
 par du travail. Le reste avance sans.
+
+## ⚖️ Légalité (Belgique)
+
+Chaturbate Recorder enregistre uniquement des flux publiquement accessibles, tels que l'utilisateur peut déjà les visionner dans son navigateur. Le logiciel ne contourne aucune mesure technique de protection, n'accède à aucun système ou contenu privé et n'exploite aucune faille : les infractions d'accès non autorisé à un système informatique (art. 550bis du Code pénal) et de sabotage informatique (art. 550ter) ne sont donc pas en cause.
+
+L'enregistrement d'un flux public peut relever de l'exception de copie privée prévue par le droit d'auteur belge (art. XI.190 du Code de droit économique, anciennement art. 22, §1er, 5° de la loi du 30 juin 1994), tant que l'usage reste strictement personnel et non commercial. En revanche, diffuser, partager, transmettre ou rendre accessible un enregistrement à caractère sexuel d'une personne sans son consentement constitue une infraction pénale en Belgique (art. 417/5 du Code pénal), indépendamment de la manière dont l'enregistrement a été obtenu.
+
+L'utilisateur est seul responsable de l'usage qu'il fait des enregistrements. Il lui appartient de vérifier les conditions d'utilisation de la plateforme — qui peuvent interdire l'enregistrement **indépendamment de la loi**, une violation contractuelle exposant à la fermeture du compte et non à des poursuites pénales —, le droit à l'image et la protection des données des personnes filmées, ainsi que le droit d'auteur applicable et la législation de son pays de résidence.
+
+*Ce texte est informatif et ne constitue pas un avis juridique.*
 
 ## Licence
 

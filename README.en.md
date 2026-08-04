@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="Assets/logo.png" width="88" height="88" alt="Chaturbate Recorder logo">
 
   # Chaturbate Recorder
@@ -308,6 +308,16 @@ certificate is paid for and issued to a verified entity. Without it:
 
 It is the only roadmap item held up by money rather than effort. Everything
 else moves forward regardless.
+
+## ⚖️ Legality (Belgium)
+
+Chaturbate Recorder only records publicly accessible streams, the ones the user can already watch in their browser. The software circumvents no technical protection measure, accesses no private system or content, and exploits no vulnerability: the offences of unauthorised access to a computer system (art. 550bis of the Belgian Criminal Code) and of computer sabotage (art. 550ter) are therefore not engaged.
+
+Recording a public stream may fall under the private-copy exception of Belgian copyright law (art. XI.190 of the Code of Economic Law, formerly art. 22, §1, 5° of the Act of 30 June 1994), as long as the use remains strictly personal and non-commercial. Conversely, distributing, sharing, transmitting or making available a sexual recording of a person without their consent is a criminal offence in Belgium (art. 417/5 of the Criminal Code), regardless of how the recording was obtained.
+
+The user alone is responsible for what they do with the recordings. It is up to them to check the platform's terms of service — which may prohibit recording **independently of the law**, a breach of contract exposing them to account termination rather than criminal prosecution —, the image rights and data protection of the people filmed, as well as the applicable copyright and the legislation of their country of residence.
+
+*This text is informative and does not constitute legal advice.*
 
 ## License
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -146,6 +146,7 @@
     <a id="navScreenshots" href="screenshots.html"></a>
     <a id="navSentinelGuard" href="sentinelguard.html"></a>
     <a id="navRoadmap" href="roadmap.html"></a>
+    <a id="navLegal" href="legalite.html"></a>
   </div>
 </header>
 
@@ -216,6 +217,8 @@
       navScreenshots: "Captures d'écran",
       navSentinelGuard: "SentinelGuard (NuGet)",
       navRoadmap: "Roadmap",
+      navLegal: "Legality",
+      navLegal: "Légalité",
       featuresTitle: "Fonctionnalités",
       feat1Title: "Multi-stream",
       feat1Desc: "Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.",
@@ -280,6 +283,7 @@
     document.getElementById("navScreenshots").textContent = s.navScreenshots;
     document.getElementById("navSentinelGuard").textContent = s.navSentinelGuard;
     document.getElementById("navRoadmap").textContent = s.navRoadmap;
+    document.getElementById("navLegal").textContent = s.navLegal;
     document.getElementById("featuresTitle").textContent = s.featuresTitle;
     for (var i = 1; i <= 6; i++) {
       document.getElementById("feat" + i + "Title").textContent = s["feat" + i + "Title"];
