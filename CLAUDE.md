@@ -11,6 +11,29 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**v1.24.0 (2026-08-05) — l'import des favoris est RETIRÉ. Ne pas le re-proposer** :
+- **Décision de l'utilisateur, motivée, à respecter** : la seule voie technique
+  restante était WebView2 (moteur Chromium embarqué, donc empreinte TLS que
+  Cloudflare ne distingue pas d'un vrai navigateur). Refusée pour trois raisons
+  cumulées : contourner délibérément une protection du site met en cause
+  l'éthique du projet, expose à un risque juridique, et impose une dépendance
+  supplémentaire à tous les utilisateurs pour une fonctionnalité de confort.
+- **Ce qui reste acquis** malgré la suppression du code : les favoris Chaturbate
+  sont **privés**, aucun identifiant public ne peut y donner accès, et le 403 de
+  Cloudflare ne se corrige pas côté client — un jeu d'en-têtes complet de Chrome
+  a été essayé et refusé deux fois sur un vrai compte. Ne pas refaire ces essais.
+- **Séquence complète, pour mémoire** : 1.23.0 ajout, 1.23.1 bouton non
+  cliquable (`Anchor` manquant), 1.23.2 en-têtes complets + statut 403 dédié,
+  1.23.3 correction de l'annonce trompeuse, 1.24.0 retrait. **Leçon** : quatre
+  versions pour une fonctionnalité dont la faisabilité n'avait jamais été
+  vérifiée contre le vrai site. Pour toute fonctionnalité reposant sur un
+  service tiers non documenté, **tester le contact réel AVANT** d'écrire l'UI,
+  les traductions et les tests.
+- **`Services/CookieFileReader.cs` supprimé avec le reste** : plus aucun
+  consommateur, l'app se contente à nouveau de passer le CHEMIN du cookies.txt à
+  yt-dlp. Le savoir acquis reste ici : `#HttpOnly_` en tête de ligne n'est PAS un
+  commentaire, et une expiration à `0` signifie « cookie de session ».
+
 **v1.23.2 (2026-08-05) — 403 de la protection anti-robots** :
 - **Premier contact réel avec le site** : l'import a échoué en **403 Forbidden**
   avec des cookies valides et une session fraîche. Ce n'est ni le compte ni les

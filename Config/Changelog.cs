@@ -204,6 +204,11 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Correction de l'annonce de la 1.23.0, qui présentait l'import des favoris comme fonctionnel : il ne l'est pas. Deux essais sur un vrai compte, avec des cookies valides, se sont soldés par un refus du site. L'entrée correspondante a été rectifiée plutôt que laissée telle quelle.",
             }),
+            ("1.24.0", new[]
+            {
+                "Le bouton \"Importer favoris\" est retiré. La seule façon de le faire fonctionner aurait été d'embarquer un moteur de navigateur pour contourner la protection anti-robots de Chaturbate — une dépendance supplémentaire imposée à tous, pour contourner délibérément une protection du site. Ce n'est pas la direction voulue pour ce projet.",
+                "Les favoris s'ajoutent avec le bouton \"+ Favori\", comme avant.",
+            }),
         };
 
         /// <summary>
@@ -288,6 +293,11 @@ namespace ChaturbateRecorderApp.Config
             ["1.23.3"] = new[]
             {
                 "Correction of the 1.23.0 announcement, which presented the favorites import as working: it is not. Two attempts on a real account, with valid cookies, were refused by the site. The corresponding entry has been rectified rather than left as it was.",
+            },
+            ["1.24.0"] = new[]
+            {
+                "The \"Import favorites\" button has been removed. The only way to make it work would have been to embed a browser engine to get around Chaturbate's anti-bot protection — an extra dependency imposed on everyone, in order to deliberately circumvent a site protection. That is not the direction intended for this project.",
+                "Favorites are added with the \"+ Favorite\" button, as before.",
             },
         };
 
