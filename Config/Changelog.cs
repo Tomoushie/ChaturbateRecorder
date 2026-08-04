@@ -195,6 +195,11 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Correctif : le bouton \"Importer favoris\", ajouté la version précédente, ne réagissait pas au clic dès que la fenêtre était élargie — il restait à sa position d'origine pendant que la liste des favoris s'étendait par-dessus, et les clics partaient dans la liste. L'import ne se lançait jamais, sans le moindre message.",
             }),
+            ("1.23.2", new[]
+            {
+                "L'import des favoris envoie désormais le même jeu d'en-têtes qu'un vrai navigateur, plutôt que le seul identifiant de navigateur.",
+                "Un refus 403 de Chaturbate a maintenant son propre message : il signale la protection anti-robots du site, et non un problème de compte ou de cookies — deux situations qu'il ne faut pas confondre, puisque la première ne se corrige pas côté utilisateur.",
+            }),
         };
 
         /// <summary>
@@ -270,6 +275,11 @@ namespace ChaturbateRecorderApp.Config
             ["1.23.1"] = new[]
             {
                 "Fix: the \"Import favorites\" button added in the previous version did not respond to clicks as soon as the window was widened — it stayed at its original position while the favorites list expanded over it, and clicks went to the list. The import never ran, without any message.",
+            },
+            ["1.23.2"] = new[]
+            {
+                "The favorites import now sends the same full set of headers as a real browser, instead of the user-agent alone.",
+                "A 403 refusal from Chaturbate now has its own message: it reports the site's anti-bot protection rather than an account or cookie problem — two situations that must not be confused, since the former cannot be fixed on the user's side.",
             },
         };
 

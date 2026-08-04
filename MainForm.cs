@@ -1366,6 +1366,7 @@ namespace ChaturbateRecorderApp
                         FavoritesImportStatus.CookieFileNotNetscape => "import.cookiesBadFormat",
                         FavoritesImportStatus.NotAuthenticated => "import.notAuthenticated",
                         FavoritesImportStatus.NetworkError => "import.networkError",
+                        FavoritesImportStatus.BlockedByBotProtection => "import.botBlocked",
                         _ => "import.nothingRecognised",
                     };
                     AppendLog($"[{DateTime.Now:HH:mm:ss}] Import des favoris échoué : {result.Status} {result.Detail}");

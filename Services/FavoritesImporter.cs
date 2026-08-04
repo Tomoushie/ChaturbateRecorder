@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,6 +20,8 @@ namespace ChaturbateRecorderApp.Services
         NetworkError,
         /// <summary>Page reçue, authentifiée, mais aucun salon reconnu : le site a probablement changé.</summary>
         NothingRecognised,
+        /// <summary>403 : la protection anti-bot du site refuse le client, indépendamment du compte.</summary>
+        BlockedByBotProtection,
     }
 
     public sealed class FavoritesImportResult
@@ -28,6 +30,13 @@ namespace ChaturbateRecorderApp.Services
         public IReadOnlyList<string> Urls { get; init; } = Array.Empty<string>();
         public string? Detail { get; init; }
     }
+
+    /// <summary>
+    /// 403 renvoyé par la protection anti-bot. Distinct d'une erreur réseau :
+    /// les cookies sont bons, le compte a le droit, c'est le CLIENT qui est
+    /// refusé — donc rien que l'utilisateur puisse corriger de son côté.
+    /// </summary>
+    internal sealed class BotProtectionException : Exception { }
 
     /// <summary>
     /// Import des favoris depuis le compte Chaturbate de l'utilisateur (92.0,
@@ -87,6 +96,10 @@ namespace ChaturbateRecorderApp.Services
             {
                 html = await FetchAsync(cookies);
             }
+            catch (BotProtectionException)
+            {
+                return new FavoritesImportResult { Status = FavoritesImportStatus.BlockedByBotProtection };
+            }
             catch (Exception ex)
             {
                 return new FavoritesImportResult
@@ -135,14 +148,45 @@ namespace ChaturbateRecorderApp.Services
                 }
             }
 
-            using var handler = new HttpClientHandler { CookieContainer = jar, UseCookies = true };
+            using var handler = new HttpClientHandler
+            {
+                CookieContainer = jar,
+                UseCookies = true,
+                // Un navigateur annonce toujours gzip/br ; ne pas décompresser
+                // rend la réponse illisible et fait partie des signaux qui
+                // trahissent un client non-navigateur.
+                AutomaticDecompression = DecompressionMethods.All,
+            };
             using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
-            // Sans User-Agent de navigateur, la réponse peut différer de celle
-            // que voit l'utilisateur dans son navigateur avec les mêmes cookies.
-            http.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+
+            // Jeu d'en-têtes complet d'un Chrome réel. Le seul User-Agent ne
+            // suffit pas : la protection anti-bot de Chaturbate compare
+            // l'ensemble des en-têtes, et une requête qui annonce Chrome sans
+            // les Sec-Fetch-* ni Accept-Language se distingue immédiatement.
+            var h = http.DefaultRequestHeaders;
+            h.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            h.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+            h.AcceptLanguage.ParseAdd("fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7");
+            h.Add("Upgrade-Insecure-Requests", "1");
+            h.Add("Sec-Fetch-Dest", "document");
+            h.Add("Sec-Fetch-Mode", "navigate");
+            h.Add("Sec-Fetch-Site", "same-origin");
+            h.Add("Sec-Fetch-User", "?1");
+            h.Add("sec-ch-ua", "\"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\", \"Google Chrome\";v=\"131\"");
+            h.Add("sec-ch-ua-mobile", "?0");
+            h.Add("sec-ch-ua-platform", "\"Windows\"");
+            // On arrive normalement depuis le site, pas de nulle part.
+            h.Referrer = new Uri("https://chaturbate.com/");
 
             var response = await http.GetAsync(FavoritesUrl);
+
+            // 403 avec des cookies valides ne veut pas dire « pas le droit » :
+            // c'est la protection anti-bot qui refuse le client, pas le compte
+            // qui manque d'autorisation. Distingué des autres erreurs réseau
+            // parce que la conduite à tenir n'a rien à voir.
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+                throw new BotProtectionException();
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
         }

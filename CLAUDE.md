@@ -4,12 +4,32 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.23.1 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-04 — version courante : v1.23.2 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.23.2 (2026-08-05) — 403 de la protection anti-robots** :
+- **Premier contact réel avec le site** : l'import a échoué en **403 Forbidden**
+  avec des cookies valides et une session fraîche. Ce n'est ni le compte ni les
+  cookies — c'est le CLIENT qui est refusé. Ce que ça valide au passage : la
+  conception « chaque échec a son message » a fonctionné, l'utilisateur a
+  rapporté une cause exploitable du premier coup au lieu d'un « ça ne marche
+  pas ».
+- **Tentative** : jeu d'en-têtes complet d'un Chrome réel (`Accept`,
+  `Accept-Language`, `Sec-Fetch-*`, `sec-ch-ua`, `Referer`,
+  `AutomaticDecompression`). Le seul `User-Agent` ne suffit jamais face à une
+  protection qui compare l'ensemble des en-têtes.
+- **Pronostic à ne pas enjoliver** : si le 403 persiste, la cause est
+  l'empreinte TLS (JA3), que `HttpClient` ne peut pas déguiser en Chrome — et
+  aucun réglage d'en-tête n'y changera rien. Dans ce cas la fonctionnalité
+  **n'est pas réalisable** telle quelle, et il faudra le dire plutôt que
+  d'empiler les essais : chaque itération coûte un test manuel à l'utilisateur.
+- **Statut `BlockedByBotProtection` distinct de `NetworkError`** : la conduite à
+  tenir n'a rien à voir. Le message dirige vers l'ajout manuel plutôt que de
+  laisser croire à un réglage à corriger.
 
 **v1.23.1 (2026-08-05) — le bouton d'import ne repondait pas au clic** :
 - **Le piège `Anchor` de la fin de ce fichier a encore frappé**, une version

@@ -246,6 +246,9 @@ namespace ChaturbateRecorderApp.UI
             ["import.networkError"] = (
                 "Impossible de contacter Chaturbate : {0}",
                 "Could not reach Chaturbate: {0}"),
+            ["import.botBlocked"] = (
+                "Chaturbate a refusé la requête (403).\n\nCe n'est pas un problème de compte ni de cookies : c'est la protection anti-robots du site qui refuse toute requête ne venant pas d'un vrai navigateur. Elle ne se contourne pas depuis l'application.\n\nTes favoris restent accessibles dans ton navigateur ; ajoute-les à la main avec le bouton \"+ Favori\".",
+                "Chaturbate refused the request (403).\n\nThis is not an account or cookie problem: it is the site's anti-bot protection refusing any request that does not come from a real browser. It cannot be worked around from the application.\n\nYour favorites remain available in your browser; add them by hand with the \"+ Favorite\" button."),
             ["import.nothingRecognised"] = (
                 "La page des favoris a bien été reçue, mais aucun salon n'y a été reconnu.\n\nSoit ton compte n'a aucun favori, soit le site a changé de structure et l'import doit être mis à jour — dans ce dernier cas, un ticket GitHub aidera à le corriger.",
                 "The favorites page was received, but no room was recognised in it.\n\nEither your account has no favorites, or the site's structure changed and the import needs updating — in the latter case, a GitHub issue will help get it fixed."),
