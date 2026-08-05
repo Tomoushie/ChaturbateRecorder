@@ -118,6 +118,42 @@ logged, nothing is thrown behind your back — you decide what to do with it.
 Targets `net8.0-windows` and `net10.0-windows`, dual-licensed MIT or
 Apache-2.0. Details and examples: [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
+**What the package does not contain yet**: `Logger` and `DownloadEngine`, which
+would make it a real "Core SDK" rather than a set of validators. They currently
+live in the application and depend on its context; extracting them means making
+them standalone first, which has not been done.
+
+## 🔒 Security — what is in place, and what is not
+
+This list is deliberately verifiable: every line matches code present in the
+repository, and the second half states what is **missing**.
+
+**In place:**
+
+| Protection | Against what |
+|---|---|
+| SHA-256 hash of `yt-dlp.exe` and `ffmpeg.exe` | Third-party binary replaced or tampered with |
+| Certificate pinning + SAN validation | TLS interception, malicious proxy |
+| Path sandbox | UNC, extended paths, ADS streams, symlinks, reserved names |
+| URL sandbox | Non-HTTPS schemes, domains outside the allowlist |
+| ACL validation | World-writable folders, where a binary could be swapped |
+| Working directory validation | Running from a network share or a temporary folder |
+| Cookies file check | Malformed file that would silently break every capture |
+| Anti-freeze watchdog | yt-dlp/ffmpeg stuck with no end |
+| Deterministic file names | Thumbnail or re-encode attached to the wrong recording |
+| CodeQL + dependency audit in CI | Known vulnerabilities and risky code |
+| CycloneDX SBOM attached to every release | Unverifiable dependency chain |
+
+**Not in place, and why:**
+
+- **Authenticode signature of the executable** — blocked on obtaining a code
+  signing certificate, which costs money. No software workaround exists.
+- **Integrity check of the `Tools` folder** — planned, not written yet.
+- **Sandboxing yt-dlp** — considered, not started.
+
+The application collects nothing, has no account, and the only network call it
+makes on its own is the update check, which can be turned off in Settings.
+
 ## For developers
 
 ### Prerequisites (developers)

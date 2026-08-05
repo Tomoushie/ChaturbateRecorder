@@ -120,6 +120,44 @@ journalisé, rien n'est levé dans ton dos — tu décides quoi en faire.
 Cible `net8.0-windows` et `net10.0-windows`, sous double licence MIT ou
 Apache-2.0. Détails et exemples : [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
+**Ce que le package ne contient pas encore** : `Logger` et `DownloadEngine`,
+qui en feraient un véritable « Core SDK » plutôt qu'un ensemble de validateurs.
+Ils vivent aujourd'hui dans l'application et dépendent de son contexte ; les
+extraire demande de les rendre indépendants, ce qui n'est pas fait.
+
+## 🔒 Sécurité — ce qui est en place, et ce qui ne l'est pas
+
+Cette liste est volontairement vérifiable : chaque ligne correspond à du code
+présent dans le dépôt, et la seconde moitié dit ce qui **manque**.
+
+**En place :**
+
+| Protection | Contre quoi |
+|---|---|
+| Hash SHA-256 de `yt-dlp.exe` et `ffmpeg.exe` | Binaire tiers remplacé ou altéré |
+| Pinning de certificat + validation du SAN | Interception TLS, proxy malveillant |
+| Sandbox de chemins | UNC, chemins étendus, flux ADS, symlinks, noms réservés |
+| Sandbox d'URL | Schémas non-HTTPS, domaines hors liste blanche |
+| Validation des ACL | Dossiers inscriptibles par tous, où un binaire peut être remplacé |
+| Validation du dossier d'exécution | Lancement depuis un partage réseau ou un dossier temporaire |
+| Contrôle du fichier cookies | Fichier malformé qui ferait échouer les captures sans le dire |
+| Watchdog anti-freeze | yt-dlp/ffmpeg bloqués sans fin |
+| Noms de fichiers déterministes | Miniature ou réencodage associés au mauvais enregistrement |
+| CodeQL + audit des dépendances en CI | Vulnérabilités connues et code à risque |
+| SBOM CycloneDX attaché à chaque release | Chaîne de dépendances non vérifiable |
+
+**Pas en place, et pourquoi :**
+
+- **Signature Authenticode de l'exécutable** — bloquée sur l'obtention d'un
+  certificat de signature de code, qui est payant. Rien ne le contourne côté
+  logiciel.
+- **Vérification d'intégrité du dossier `Tools`** — prévue, pas encore écrite.
+- **Isolation de yt-dlp en bac à sable** — envisagée, pas commencée.
+
+L'application ne collecte rien, n'a pas de compte, et le seul appel réseau
+qu'elle effectue d'elle-même est la recherche de mise à jour, désactivable dans
+les Paramètres.
+
 ## Pour les développeurs
 
 ### Prérequis (développeurs)
