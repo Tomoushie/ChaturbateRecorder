@@ -62,8 +62,8 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool install --global CycloneDX
-          $cdx = "$env:USERPROFILE\.dotnet	ools\dotnet-CycloneDX.exe"
-          & $cdx ChaturbateRecorderApp.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
+          $env:PATH += ";" + (Join-Path $env:USERPROFILE ".dotnet" "tools")
+          dotnet CycloneDX ChaturbateRecorderApp.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
 
       - name: Publier la release GitHub
         uses: softprops/action-gh-release@v3

@@ -22,9 +22,21 @@ d'entree de changelog, meme regle que 34.0/38.0) :
 - **Piege de syntaxe** : l'option `-j` n'existe PAS en v6 — c'est le nom de
   fichier qui choisit le format (`bom.json` -> JSON). Trouve en une minute en
   local, aurait coute un run rouge en CI.
-- **Chemin explicite de l'executable** (`$env:USERPROFILE\.dotnet	ools\...`)
-  plutot que le PATH : `dotnet tool install --global` n'ajoute le dossier qu'a
-  la session suivante, pas a l'etape en cours.
+- **CORRIGE le 2026-08-08 — le job `sbom` a echoue au premier passage**, pour
+  deux raisons cumulees, et la lecon depasse ce workflow :
+  - **le chemin ecrit en toutes lettres a ete corrompu** : `	ools\` est devenu
+    une **TABULATION** dans le YAML (`.dotnet<TAB>ools\`), parce que le fichier a
+    ete ecrit par un script Python. C'est la **troisieme** fois de la session que
+    `	` se transforme en tabulation en passant par un script (voir aussi
+    v1.23.1 et v1.26.0). **Regle** : toute chaine contenant un antislash suivi
+    d'une lettre s'ecrit avec l'outil d'edition direct, jamais par script.
+  - **installation et utilisation etaient dans deux etapes differentes** :
+    `dotnet tool install --global` complete le PATH du **processus courant**, et
+    chaque etape repart d'un processus neuf.
+  - **Correctif** : une seule etape, et le dossier construit par `Join-Path`
+    plutot qu'ecrit en dur — aucun antislash litteral, donc le piege ne peut
+    plus se poser. Commande verifiee en local sur les DEUX projets avant
+    re-poussage.
 - **A savoir pour la prochaine release** : le tag v1.26.1, pousse avant ce
   commit, produira une release SANS SBOM — un workflow s'execute depuis l'arbre
   du tag. Le premier SBOM attache sera celui de la version suivante.

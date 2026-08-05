@@ -81,18 +81,22 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Installer CycloneDX
-        run: dotnet tool install --global CycloneDX
-
-      # Chemin explicite de l'executable plutot que de compter sur le PATH :
-      # "dotnet tool install --global" ajoute le dossier au PATH de la session
-      # suivante, pas de l'etape en cours.
+      # Installation ET utilisation dans la MEME etape : "dotnet tool install
+      # --global" complete le PATH du processus courant, et une etape suivante
+      # repart d'un processus neuf qui ne le voit plus.
+      #
+      # Le dossier des outils est construit par Join-Path, jamais ecrit en
+      # toutes lettres : une premiere version codait "\.dotnet\tools\" en dur et
+      # le "\t" de "tools" s'est retrouve transforme en TABULATION dans le YAML,
+      # d'ou un chemin "C:\Users\runneradmin\.dotnet<TAB>ools\" introuvable et un
+      # run rouge. Aucun antislash litteral ici = ce piege ne peut plus se poser.
       - name: Generer les SBOM
         shell: pwsh
         run: |
-          $cdx = "$env:USERPROFILE\.dotnet	ools\dotnet-CycloneDX.exe"
-          & $cdx ChaturbateRecorderApp.csproj -o sbom -fn chaturbate-recorder-sbom.json -t
-          & $cdx SentinelGuard/SentinelGuard.csproj -o sbom -fn sentinelguard-sbom.json -t
+          dotnet tool install --global CycloneDX
+          $env:PATH += ";" + (Join-Path $env:USERPROFILE ".dotnet" "tools")
+          dotnet CycloneDX ChaturbateRecorderApp.csproj -o sbom -fn chaturbate-recorder-sbom.json -t
+          dotnet CycloneDX SentinelGuard/SentinelGuard.csproj -o sbom -fn sentinelguard-sbom.json -t
 
       - uses: actions/upload-artifact@v7
         with:
