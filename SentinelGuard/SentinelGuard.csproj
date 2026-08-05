@@ -40,6 +40,11 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/Tomoushie/ChaturbateRecorder</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Logo Binary Forge. Sans icône, nuget.org affiche un placeholder gris :
+         c'est la première chose que voit quelqu'un qui parcourt des résultats
+         de recherche, donc de la conversion pure. Le fichier est empaqueté à la
+         racine du package par le <None> plus bas. -->
+    <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright (c) Tomoushie</Copyright>
 
     <!--
@@ -65,6 +70,7 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
