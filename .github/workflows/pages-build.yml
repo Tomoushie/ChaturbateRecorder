@@ -11,6 +11,12 @@ name: Pages Build
 # "Update Checker" invoque directement après avoir poussé le fichier.
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: "Commit exact à déployer. Vide = pointe de main."
+        type: string
+        required: false
+        default: ""
   push:
     branches: [main]
     paths:
@@ -41,9 +47,24 @@ jobs:
       # version de docs/latest.json d'AVANT sa mise à jour — soit exactement le
       # bug que cet appel est censé corriger. Pages ne publie que main, donc ce
       # ref est aussi le bon pour les déclenchements push et workflow_dispatch.
+      #
+      # Quand l'appelant fournit un SHA (Update Checker le fait depuis le
+      # 2026-08-08), on récupère CE commit precis plutôt que la pointe de main.
+      # Motif : à la v1.21.0, ce job a réussi tout en publiant le latest.json
+      # d'avant sa régénération, bien qu'il démarre après le push. Suivre une
+      # branche mouvante laisse une fenêtre ; un SHA figé n'en laisse aucune.
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ inputs.ref != '' && inputs.ref || 'main' }}
+
+      # Trace de diagnostic : sans elle, « le site a servi du contenu périmé »
+      # reste une impression. Avec elle, on sait quel commit a été déployé et
+      # quelle version il contenait — de quoi étayer un signalement si le
+      # défaut se reproduit malgré le SHA figé.
+      - name: Tracer le commit déployé
+        run: |
+          echo "commit déployé : $(git rev-parse HEAD)"
+          echo "version dans docs/latest.json : $(jq -r '.version' docs/latest.json)"
 
       - uses: actions/configure-pages@v6
 

@@ -11,6 +11,29 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**2026-08-08 — le deploiement Pages ne suit plus la pointe de main** (CI
+uniquement, pas de bump) :
+- **Suite de l'anomalie du 2026-08-04** : a la v1.21.0, le job de deploiement
+  s'est termine en SUCCES en publiant le `latest.json` d'AVANT sa regeneration,
+  alors qu'il demarrait 10 s apres le push du bot. Intermittent — les releases
+  suivantes ont publie correctement, donc irreproductible a volonte.
+- **Choix : supprimer la course plutot que de demontrer sa cause.**
+  `update-checker.yml` expose desormais le SHA exact du commit qu'il vient de
+  pousser (`git rev-parse HEAD` apres le push) et le transmet a
+  `pages-build.yml` via un input `ref`. Le deploiement recupere CE commit, pas
+  « la pointe de main ». **Ca fonctionne meme si l'hypothese de propagation est
+  fausse** : un SHA fige ne laisse aucune fenetre, quelle que soit la cause.
+- **Repli conserve** : `inputs.ref` vide (declenchement par `push` ou
+  `workflow_dispatch`) retombe sur `main`. En GitHub Actions, `inputs.ref` vaut
+  null hors `workflow_call` et se compare comme une chaine vide.
+- **Trace de diagnostic ajoutee** : le job journalise le commit deploye et la
+  version contenue dans `docs/latest.json`. Sans elle, « le site a servi du
+  contenu perime » reste une impression ; avec elle, un signalement a GitHub
+  serait etayable si le defaut se reproduisait **malgre** le SHA fige.
+- **Ne pas signaler a GitHub en l'etat** : rien ne prouve un defaut de leur
+  cote, et un rapport sur un incident unique sans logs serait clos comme
+  invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
+
 **86.0 traite (2026-08-05) — SBOM CycloneDX** (CI uniquement, pas de bump ni
 d'entree de changelog, meme regle que 34.0/38.0) :
 - **Job `sbom` dans `security-scan.yml`** (artefact, 90 jours) **et SBOM attache
