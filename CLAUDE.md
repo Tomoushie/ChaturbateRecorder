@@ -11,6 +11,24 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**86.0 traite (2026-08-05) — SBOM CycloneDX** (CI uniquement, pas de bump ni
+d'entree de changelog, meme regle que 34.0/38.0) :
+- **Job `sbom` dans `security-scan.yml`** (artefact, 90 jours) **et SBOM attache
+  a chaque release** dans `publish-release.yml`. C'est sur la release qu'il a de
+  la valeur : une liste de dependances verifiable, rattachee a un binaire precis.
+- **Outil verifie en local AVANT d'ecrire le workflow** : `CycloneDX` 6.2.0
+  produit du CycloneDX **1.7**. Prefere a un scan de repertoire parce qu'il lit
+  le graphe NuGet reel apres restore, transitives comprises.
+- **Piege de syntaxe** : l'option `-j` n'existe PAS en v6 — c'est le nom de
+  fichier qui choisit le format (`bom.json` -> JSON). Trouve en une minute en
+  local, aurait coute un run rouge en CI.
+- **Chemin explicite de l'executable** (`$env:USERPROFILE\.dotnet	ools\...`)
+  plutot que le PATH : `dotnet tool install --global` n'ajoute le dossier qu'a
+  la session suivante, pas a l'etape en cours.
+- **A savoir pour la prochaine release** : le tag v1.26.1, pousse avant ce
+  commit, produira une release SANS SBOM — un workflow s'execute depuis l'arbre
+  du tag. Le premier SBOM attache sera celui de la version suivante.
+
 **v1.26.1 (2026-08-05) — le cookies.txt qui faisait tout echouer en silence** :
 - **Symptome rapporte** : « enregistrer un salon hors ligne affiche echec ».
   Le vrai defaut etait tout autre, visible seulement dans les logs de la

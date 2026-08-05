@@ -1,4 +1,4 @@
-name: Security Scan
+﻿name: Security Scan
 
 on:
   push:
@@ -58,3 +58,44 @@ jobs:
         run: |
           dotnet list ChaturbateRecorderApp.csproj package --outdated
           dotnet list SentinelGuard/SentinelGuard.csproj package --outdated
+
+  # 86.0 — SBOM (Software Bill of Materials) au format CycloneDX.
+  #
+  # Pourquoi CycloneDX et pas un scanner de repertoire : l'outil officiel .NET
+  # lit le graphe de dependances NuGet REEL apres restore, transitives
+  # comprises, la ou un scan de fichiers devine a partir des .csproj. Verifie en
+  # local avant d'ecrire ce job : CycloneDX 6.2.0 produit du CycloneDX 1.7.
+  #
+  # Piege de syntaxe rencontre : l'option "-j" n'existe pas en v6, c'est le nom
+  # de fichier qui choisit le format (bom.json -> JSON, bom.xml -> XML).
+  #
+  # Runner Windows comme les autres jobs : UseWindowsForms impose
+  # EnableWindowsTargeting hors Windows, et on evite le probleme en restant sur
+  # la meme plateforme que le build reel.
+  sbom:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Installer CycloneDX
+        run: dotnet tool install --global CycloneDX
+
+      # Chemin explicite de l'executable plutot que de compter sur le PATH :
+      # "dotnet tool install --global" ajoute le dossier au PATH de la session
+      # suivante, pas de l'etape en cours.
+      - name: Generer les SBOM
+        shell: pwsh
+        run: |
+          $cdx = "$env:USERPROFILE\.dotnet	ools\dotnet-CycloneDX.exe"
+          & $cdx ChaturbateRecorderApp.csproj -o sbom -fn chaturbate-recorder-sbom.json -t
+          & $cdx SentinelGuard/SentinelGuard.csproj -o sbom -fn sentinelguard-sbom.json -t
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom
+          path: sbom/*.json
+          retention-days: 90

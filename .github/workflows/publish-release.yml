@@ -1,4 +1,4 @@
-name: Publish Release
+﻿name: Publish Release
 
 on:
   push:
@@ -56,6 +56,15 @@ jobs:
           Compress-Archive -Path publish/standard/* -DestinationPath "ChaturbateRecorder-v$v-standard.zip"
           Compress-Archive -Path publish/portable/* -DestinationPath "ChaturbateRecorder-v$v-portable.zip"
 
+      # 86.0 — le SBOM accompagne chaque release : c'est la que la liste des
+      # dependances a une valeur verifiable, attachee a un binaire precis.
+      - name: Generer le SBOM de la release
+        shell: pwsh
+        run: |
+          dotnet tool install --global CycloneDX
+          $cdx = "$env:USERPROFILE\.dotnet	ools\dotnet-CycloneDX.exe"
+          & $cdx ChaturbateRecorderApp.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
+
       - name: Publier la release GitHub
         uses: softprops/action-gh-release@v3
         with:
@@ -82,6 +91,7 @@ jobs:
           files: |
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-standard.zip
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-portable.zip
+            ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json
 
   # Appel direct plutôt que de compter sur l'évènement "release: published" :
   # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun
