@@ -56,6 +56,37 @@ jobs:
           Compress-Archive -Path publish/standard/* -DestinationPath "ChaturbateRecorder-v$v-standard.zip"
           Compress-Archive -Path publish/portable/* -DestinationPath "ChaturbateRecorder-v$v-portable.zip"
 
+      # 23.0 — installateur. Il n'embarque AUCUNE charge utile (~2 Mo) : il
+      # telecharge le ZIP portable de CETTE release au moment de l'installation.
+      # C'est pourquoi son hash est calcule ici et fige dans le binaire compile —
+      # l'installateur verifie ainsi ce qu'il telecharge, sans dependre d'un
+      # fichier de sommes publie ailleurs.
+      #
+      # Le ZIP n'existe pas encore sur la release a cet instant, et ce n'est pas
+      # un probleme : le telechargement a lieu chez l'utilisateur, apres
+      # publication.
+      - name: Compiler l'installateur
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "Inno Setup absent de l'image du runner : installation."
+            choco install innosetup -y --no-progress | Out-Null
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup introuvable apres tentative d'installation." }
+
+          $v = "${{ steps.version.outputs.version }}"
+          $zip = "ChaturbateRecorder-v$v-portable.zip"
+          $sha = (Get-FileHash $zip -Algorithm SHA256).Hash
+          Write-Host "SHA256 du ZIP portable fige dans l'installateur : $sha"
+
+          & $iscc "/DAppVersion=$v" "/DAppZipSha256=$sha" "installer\ChaturbateRecorder.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Compilation de l'installateur echouee." }
+
+          Get-ChildItem "installer\*-setup.exe" | ForEach-Object {
+            "{0} : {1:N2} Mo" -f $_.Name, ($_.Length / 1MB)
+          }
+
       # 86.0 — le SBOM accompagne chaque release : c'est la que la liste des
       # dependances a une valeur verifiable, attachee a un binaire precis.
       - name: Generer le SBOM de la release
@@ -92,6 +123,7 @@ jobs:
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-standard.zip
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-portable.zip
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json
+            installer/ChaturbateRecorder-v${{ steps.version.outputs.version }}-setup.exe
 
   # Appel direct plutôt que de compter sur l'évènement "release: published" :
   # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun

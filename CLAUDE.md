@@ -34,6 +34,45 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**23.0 traite (2026-08-08) — installateur** (CI + nouveau dossier `installer/`,
+pas de bump : rien ne change dans l'application elle-meme) :
+- **Motif** : plusieurs testeurs reels (proches du mainteneur) ont abandonne a
+  l'installation. Ce n'est pas « copier deux fichiers » qui rebute, c'est devoir
+  aller les chercher, choisir la bonne variante et savoir ou les poser.
+- **Quatre decisions, toutes verifiees avant d'ecrire** :
+  - **aucune charge utile embarquee** : le setup fait **1,95 Mo** et telecharge
+    tout. Embarquer le build autonome donnait 34 Mo pour rien — une connexion
+    etait de toute facon requise pour yt-dlp et ffmpeg ;
+  - **la variante autonome est telechargee dans les DEUX modes**, donc **.NET
+    n'est jamais un prerequis**. Le mainteneur avait demande que l'installateur
+    installe .NET ; ne pas en avoir besoin est strictement superieur (pas d'UAC,
+    pas de 55 Mo, aucune modification hors du dossier choisi) ;
+  - **deux modes proposes des le premier ecran**, comme 7-Zip. En portable,
+    `Uninstallable=IsInstallMode` supprime desinstalleur et entree de registre ;
+  - **installation par utilisateur** dans `%LOCALAPPDATA%\Programs` : verifie
+    AVANT d'ecrire que `WorkingDirectoryValidator` ne refuse pas cet
+    emplacement, et l'application y ecrit ses JSON sans elevation.
+- **`trusted-binaries.json` ecrit par l'installateur** : sans lui, un
+  avertissement de securite s'afficherait au premier enregistrement, l'app
+  comparant a un hash fige forcement perime face a un yt-dlp « derniere
+  version ». L'installateur verifie contre les sommes publiees par les auteurs,
+  puis inscrit le hash comme approuve — la propriete de securite est preservee.
+- **PIEGE TROUVE PAR LE TEST, invisible a la compilation** : la logique de
+  telechargement etait dans `NextButtonClick`, **jamais appele en execution
+  silencieuse** (les pages ne s'affichent pas). Un `/VERYSILENT` se serait
+  termine en « succes » sur un dossier vide. Deplacee dans `PrepareToInstall`,
+  qui s'execute dans les deux modes. **Compiler ne prouve rien : il faut
+  installer pour de vrai.**
+- **Piege licence evite par construction** : un publish local embarque
+  `ffmpeg.exe` (231 Mo) car le csproj copie `Tools\` quand il existe. Un
+  `Source: "*"` dans le `[Files]` aurait redistribue ffmpeg sous GPL. Les
+  fichiers sont donc listes explicitement, jamais par joker.
+- **Verifie de bout en bout le 2026-08-08**, pas seulement compile :
+  telechargements, verifications, extraction, ecriture du fichier de confiance
+  et **demarrage de l'application installee**.
+- **Reste non signe** : SmartScreen affichera « Editeur inconnu », meme blocage
+  que 1.1 (certificat payant).
+
 **v1.27.0 (2026-08-08) — l'application ne demarrait pas ailleurs que chez le
 mainteneur** :
 - **Signale par un utilisateur** qui avait pourtant installe les dependances et

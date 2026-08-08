@@ -82,11 +82,32 @@ automatisés).
 
 ## Installation (utilisateurs)
 
-1. Télécharge le ZIP de la [dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) :
-   - **Standard** (~550 Ko) — nécessite le [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
-   - **Portable** (~46 Mo) — autonome, aucune installation requise.
+### Avec l'installateur (recommandé)
+
+Télécharge **`ChaturbateRecorder-vX.Y.Z-setup.exe`** depuis la
+[dernière release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest)
+et lance-le. Il fait 2 Mo et s'occupe de tout :
+
+- il propose **installation classique ou version portable**, au choix, dès le premier écran ;
+- il télécharge l'application, **yt-dlp et ffmpeg**, et les vérifie contre les sommes de contrôle publiées par leurs auteurs ;
+- il n'exige **aucun runtime .NET** : la variante installée l'embarque ;
+- il s'installe **pour ton compte utilisateur uniquement**, donc sans demande d'élévation.
+
+Une connexion est nécessaire pendant l'installation (~150 Mo téléchargés).
+L'installateur n'étant pas signé, Windows affichera « Éditeur inconnu » :
+c'est attendu, faute d'un certificat de signature de code (voir la section
+Sécurité plus bas).
+
+### À la main
+
+Les deux ZIP restent attachés à chaque release, pour une installation hors ligne
+ou si tu préfères garder la main :
+
+1. Télécharge **Standard** (~550 Ko, nécessite le
+   [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0))
+   ou **Portable** (~46 Mo, autonome).
 2. Extrais-le où tu veux.
-3. Place `yt-dlp.exe` et `ffmpeg.exe` dans un dossier `Tools\` à côté de l'exécutable (non inclus, voir [Prérequis](#prérequis-développeurs)).
+3. Place `yt-dlp.exe` et `ffmpeg.exe` à côté de l'exécutable (non inclus, voir [Prérequis](#prérequis-développeurs)).
 4. Lance `ChaturbateRecorder.exe`.
 
 Guide détaillé (première configuration, sécurité, dépannage) : voir le **[Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki)**.
