@@ -34,6 +34,32 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**v1.28.1 (2026-08-08) — DEUX defauts que j'avais INTRODUITS en v1.28.0, et
+que seule l'execution reelle a montres** :
+- **`Copy-Item -LiteralPath 'dossier\*'` ne copie RIEN et ne leve AUCUNE
+  erreur.** `-LiteralPath` desactive l'interpretation du joker, qui devient un
+  nom de fichier litteral inexistant. En « ameliorant » le script j'avais
+  remplace `-Path` par `-LiteralPath` — creant exactement l'echec silencieux que
+  la v1.28.0 pretendait supprimer, double d'un « Mise a jour appliquee » mensonger.
+  Mesure isolement pour en avoir le coeur net : 0 fichier copie, 0 erreur.
+  Corrige par une copie element par element **avec compteur** : une copie vide
+  devient une erreur bruyante.
+- **La fiche de desinstallation recevait `Assembly.GetName().Version`**,
+  c'est-a-dire la version EN COURS D'EXECUTION — donc l'ancienne. Elle ecrivait
+  1.27.5 par-dessus 1.27.5 en annoncant une mise a jour. Corrige en passant
+  l'`UpdateInfo` entier a `DownloadAndInstallAsync` au lieu de valeurs
+  separees : regrouper ce qui va ensemble supprime la possibilite de les melanger.
+- **Protocole de test, reutilisable** : construire le source courant avec une
+  version INFERIEURE a la derniere publiee (`-p:Version=1.27.5`), le poser dans
+  une vraie installation, et declencher la mise a jour par un `Shown` temporaire
+  — avec un **fichier temoin**, sans quoi la relance post-mise-a-jour rejoue le
+  declencheur en boucle (constate : 16 executions).
+- **Resultat final verifie** : exe 1.27.5 -> 1.28.0, registre 1.27.5 -> 1.28.0.
+- **Lecon, la troisieme de la journee** : les tests unitaires et la compilation
+  n'ont rien vu. Ni pour le plantage au demarrage, ni pour le mode silencieux de
+  l'installateur, ni ici. **Ce qui touche au systeme de fichiers, aux processus
+  ou au registre doit etre EXECUTE pour etre cru.**
+
 **v1.28.0 (2026-08-08) — la mise a jour interne n'avait JAMAIS ete exercee** :
 - **Trouve par relecture, pas par execution** : ce code date de la 1.2.0 et rien
   ne l'avait jamais fait tourner. Avant de le modifier pour la coherence avec

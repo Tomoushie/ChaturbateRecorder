@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -41,8 +41,18 @@ namespace ChaturbateRecorderApp.Services
         /// </summary>
         private const string InnoAppId = "{7C4E1F2A-9B63-4D18-A5E7-3F0C6D2B84A1}";
 
-        public static async Task DownloadAndInstallAsync(string downloadUrl, string appDir, string expectedSha256 = "")
+        /// <summary>
+        /// Prend l'UpdateInfo entier plutot que des valeurs separees : une
+        /// premiere version passait l'URL et l'empreinte a part, et ecrivait
+        /// dans la fiche de desinstallation la version de l'assembly EN COURS
+        /// — donc l'ancienne. Regrouper ce qui va ensemble supprime la
+        /// possibilite meme de melanger les trois.
+        /// </summary>
+        public static async Task DownloadAndInstallAsync(UpdateInfo update, string appDir)
         {
+            var downloadUrl = update.DownloadUrl;
+            var expectedSha256 = update.Sha256;
+
             var tempDir = Path.Combine(Path.GetTempPath(), "ChaturbateRecorder_Update_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var zipPath = Path.Combine(tempDir, "update.zip");
@@ -86,7 +96,11 @@ namespace ChaturbateRecorderApp.Services
             // a été posée par l'installateur — la présence de son désinstalleur
             // est le marqueur le plus simple et le plus fiable.
             var installedBySetup = File.Exists(Path.Combine(appDir, "unins000.exe"));
-            var version = typeof(UpdateInstaller).Assembly.GetName().Version?.ToString(3) ?? "";
+            // La version a inscrire est celle QUI ARRIVE, pas celle qui tourne.
+            // Mesure le 2026-08-08 : l'assembly en cours d'execution est
+            // l'ancienne version, donc la fiche restait inchangee tout en
+            // annoncant une mise a jour reussie.
+            var version = update.Version;
 
             var script = $@"
 $ErrorActionPreference = 'Stop'
@@ -99,8 +113,23 @@ try {{
     Wait-Process -Id {Environment.ProcessId} -Timeout 120 -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
 
-    Copy-Item -LiteralPath '{extractDir}\*' -Destination '{appDir}' -Recurse -Force
-    Note 'Mise a jour appliquee.'
+    # Copie element par element, et NON 'dossier\*'.
+    #
+    # Piege mesure le 2026-08-08 : « Copy-Item -LiteralPath 'dossier\*' » ne
+    # copie RIEN et ne leve AUCUNE erreur — -LiteralPath desactive
+    # l'interpretation du joker, qui devient un nom de fichier litteral
+    # inexistant. Le script annoncait donc « mise a jour appliquee » sur une
+    # copie vide : exactement l'echec silencieux qu'il etait cense supprimer.
+    #
+    # Le compteur est le garde-fou : une copie vide devient une erreur bruyante
+    # au lieu d'un succes mensonger.
+    $copied = 0
+    Get-ChildItem -LiteralPath '{extractDir}' | ForEach-Object {{
+        Copy-Item -LiteralPath $_.FullName -Destination '{appDir}' -Recurse -Force
+        $copied++
+    }}
+    if ($copied -eq 0) {{ throw 'Archive vide : aucun fichier a installer.' }}
+    Note ""Mise a jour appliquee ($copied element(s)).""
 
     if ('{installedBySetup}' -eq 'True') {{
         $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{InnoAppId}_is1'

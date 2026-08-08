@@ -241,6 +241,11 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : une mise à jour qui échouait (application encore ouverte, fichier verrouillé) relançait l'ancienne version sans rien dire — on pouvait croire avoir mis à jour. Le délai d'attente passe de 15 secondes à 2 minutes, et tout échec est désormais écrit dans les logs.",
                 "Après une mise à jour, la fiche « Applications installées » de Windows affiche enfin la bonne version.",
             }),
+            ("1.28.1", new[]
+            {
+                "Correctif : la mise à jour de la version précédente ne remplaçait en réalité aucun fichier, tout en annonçant avoir réussi. Vérifié cette fois en exécutant une vraie mise à jour de bout en bout.",
+                "Correctif : la fiche « Applications installées » recevait l'ancien numéro de version au lieu du nouveau, donc restait inchangée.",
+            }),
         };
 
         /// <summary>
@@ -362,6 +367,11 @@ namespace ChaturbateRecorderApp.Config
                 "The automatic update now verifies the checksum of the downloaded file before replacing anything. On mismatch, nothing is installed.",
                 "Fix: an update that failed (application still open, file locked) restarted the old version without saying anything — you could believe you had updated. The wait goes from 15 seconds to 2 minutes, and any failure is now written to the logs.",
                 "After an update, the Windows \"Installed apps\" entry finally shows the right version.",
+            },
+            ["1.28.1"] = new[]
+            {
+                "Fix: the previous version's update actually replaced no file at all, while reporting success. Verified this time by running a real end-to-end update.",
+                "Fix: the \"Installed apps\" entry was given the old version number instead of the new one, so it stayed unchanged.",
             },
         };
 
