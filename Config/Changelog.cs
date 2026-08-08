@@ -234,6 +234,13 @@ namespace ChaturbateRecorderApp.Config
                 "Les logs et les rapports de plantage vont maintenant dans AppData, qui existe toujours et reste inscriptible — c'est ce qui empêchait le rapport détaillé d'être enregistré quand l'application plantait au démarrage.",
                 "Si tu enregistrais déjà ailleurs, ton dossier est conservé : seule la valeur par défaut change.",
             }),
+            ("1.28.0", new[]
+            {
+                "Nouvel installateur, à télécharger depuis les releases GitHub : il propose installation classique ou version portable, télécharge et vérifie yt-dlp et ffmpeg pour toi, et n'exige aucun runtime .NET.",
+                "La mise à jour automatique vérifie désormais l'empreinte du fichier téléchargé avant de remplacer quoi que ce soit. En cas de non-correspondance, rien n'est installé.",
+                "Correctif : une mise à jour qui échouait (application encore ouverte, fichier verrouillé) relançait l'ancienne version sans rien dire — on pouvait croire avoir mis à jour. Le délai d'attente passe de 15 secondes à 2 minutes, et tout échec est désormais écrit dans les logs.",
+                "Après une mise à jour, la fiche « Applications installées » de Windows affiche enfin la bonne version.",
+            }),
         };
 
         /// <summary>
@@ -348,6 +355,13 @@ namespace ChaturbateRecorderApp.Config
                 "A save folder that became unreachable (drive unplugged, folder deleted) no longer crashes the application: it warns you, switches to the default folder and carries on.",
                 "Logs and crash reports now go to AppData, which always exists and stays writable — that is what prevented the detailed report from being saved when the app crashed at startup.",
                 "If you were already recording elsewhere, your folder is kept: only the default value changes.",
+            },
+            ["1.28.0"] = new[]
+            {
+                "New installer, downloadable from the GitHub releases: it offers a regular install or a portable version, downloads and verifies yt-dlp and ffmpeg for you, and requires no .NET runtime.",
+                "The automatic update now verifies the checksum of the downloaded file before replacing anything. On mismatch, nothing is installed.",
+                "Fix: an update that failed (application still open, file locked) restarted the old version without saying anything — you could believe you had updated. The wait goes from 15 seconds to 2 minutes, and any failure is now written to the logs.",
+                "After an update, the Windows \"Installed apps\" entry finally shows the right version.",
             },
         };
 

@@ -1991,7 +1991,7 @@ namespace ChaturbateRecorderApp
             if (result != DialogResult.Yes) return;
 
             AppendLog($"[{DateTime.Now:HH:mm:ss}] Téléchargement de la mise à jour v{update.Version}...");
-            await UpdateInstaller.DownloadAndInstallAsync(update.DownloadUrl, AppConfig.AppDir);
+            await UpdateInstaller.DownloadAndInstallAsync(update.DownloadUrl, AppConfig.AppDir, update.Sha256);
         }
 
         // Premier passage rapproché (1 min) plutôt qu'immédiat : le démarrage

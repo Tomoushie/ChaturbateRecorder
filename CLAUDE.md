@@ -34,6 +34,36 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**v1.28.0 (2026-08-08) — la mise a jour interne n'avait JAMAIS ete exercee** :
+- **Trouve par relecture, pas par execution** : ce code date de la 1.2.0 et rien
+  ne l'avait jamais fait tourner. Avant de le modifier pour la coherence avec
+  l'installateur, une lecture attentive a revele deux defauts plus graves que
+  celui qu'on venait corriger.
+- **Le ZIP etait telecharge et execute SANS aucun controle d'integrite**, dans
+  une application qui verifie obsessionnellement le hash de yt-dlp et de ffmpeg.
+  **Verifie sur l'API avant de coder** : GitHub expose desormais `digest` par
+  fichier de release (`sha256:042bb7ff...`), et la valeur correspondait
+  exactement a celle calculee en local. `UpdateChecker` la transporte,
+  `UpdateInstaller` la controle **avant d'extraire**.
+- **Echec silencieux** : `Wait-Process -Timeout 15` puis copie sur un exe encore
+  verrouille -> `Copy-Item` echoue -> le script relancait **l'ancienne version
+  sans rien signaler**. Delai porte a 120 s (arreter des enregistrements prend
+  du temps) et tout echec ecrit dans `update.log`.
+- **Coherence avec l'installateur** (le defaut de depart) : `DisplayVersion` de
+  la fiche de desinstallation est mise a jour, uniquement si `unins000.exe`
+  existe a cote de l'exe — marqueur simple et fiable d'une installation par
+  l'installateur.
+- **Ecarte : faire telecharger le nouveau setup.exe par la mise a jour.** Plus
+  elegant en apparence (un seul mecanisme), mais chaque mise a jour
+  re-telechargerait **150 Mo** — yt-dlp et ffmpeg compris, deja presents et deja
+  verifies — pour corriger une incoherence cosmetique. Le critere est ce que vit
+  l'utilisateur, pas l'elegance de l'architecture.
+- **Empreinte absente = on installe quand meme**, avec une ligne de log. Refuser
+  rendrait toutes les releases anterieures au champ `digest` impossibles a
+  installer, ce qui serait pire que le risque evite.
+- **Tests** : `Tests/UpdateDigestTests.cs` (8, **195 au total**), batis sur la
+  forme reellement relevee sur l'API. Eprouves en les cassant (4 echecs).
+
 **23.0 traite (2026-08-08) — installateur** (CI + nouveau dossier `installer/`,
 pas de bump : rien ne change dans l'application elle-meme) :
 - **Motif** : plusieurs testeurs reels (proches du mainteneur) ont abandonne a

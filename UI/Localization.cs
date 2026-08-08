@@ -205,6 +205,9 @@ namespace ChaturbateRecorderApp.UI
             ["update.runningJobsWarning"] = (
                 "\n\n⚠ {0} enregistrement(s) en cours seront interrompus par le redémarrage.",
                 "\n\n⚠ {0} recording(s) in progress will be interrupted by the restart."),
+            ["update.hashMismatch"] = (
+                "Le fichier de mise à jour téléchargé ne correspond pas à l'empreinte publiée par GitHub.\n\nAttendu : {0}\nObtenu  : {1}\n\nLa mise à jour est annulée : aucun fichier n'a été remplacé.",
+                "The downloaded update file does not match the checksum published by GitHub.\n\nExpected: {0}\nGot     : {1}\n\nThe update was cancelled: no file has been replaced."),
             ["error.updateCheckFailed"] = (
                 "Échec de la vérification des mises à jour : {0}",
                 "Update check failed: {0}"),
