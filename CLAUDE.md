@@ -1,4 +1,4 @@
-# Chaturbate Recorder — contexte projet
+﻿# Chaturbate Recorder — contexte projet
 
 App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
@@ -33,6 +33,31 @@ uniquement, pas de bump) :
 - **Ne pas signaler a GitHub en l'etat** : rien ne prouve un defaut de leur
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
+
+**v1.29.0 (2026-08-08) — 29.0 / 4.1 : historique enrichi** :
+- **Les miniatures existaient depuis la 1.3.0 et n'etaient affichees NULLE
+  PART.** ffmpeg en generait une a la fin de chaque enregistrement, deposee en
+  `.jpg` a cote de la video — du travail paye a chaque capture pour rien pendant
+  26 versions. Elles apparaissent enfin dans l'historique.
+- **Piege WinForms** : en vue `Details`, la hauteur de ligne suit celle du
+  `SmallImageList`. Une vignette 48x27 fait donc passer les lignes de ~17 a
+  27 px — d'ou `grpHistory` de 130 a 170, sans quoi la liste ne montrait plus
+  que trois entrees. Les panneaux suivants se repositionnent seuls (chaine
+  `Bottom + sectionGap`).
+- **`Image.FromFile` verrouille le fichier** tant que l'image vit : la video
+  n'aurait plus pu etre supprimee ni deplacee depuis l'explorateur. D'ou lecture
+  via `FileStream` puis copie dans un `Bitmap`.
+- **Decodage sur le thread de fond** : ouvrir et redimensionner 50 JPEG sur le
+  thread UI figerait la fenetre a chaque rafraichissement. `ImageList` recopiant
+  l'image dans son propre handle, la notre est liberee aussitot apres l'ajout.
+- **Defaut PREEXISTANT revele par la capture** : les colonnes totalisaient 490 px
+  pour une liste de 470, ce qui coupait la colonne Date et affichait un ascenseur
+  horizontal. Jamais signale, jamais vu — parce que personne ne regardait ce
+  panneau de pres. Reajuste a 445 px au total (185/70/60/130) et annee sur deux
+  chiffres. **Toute modification de ces largeurs doit garder le total sous ~450.**
+- **Quatre cycles de capture** ont ete necessaires pour equilibrer ces colonnes :
+  chaque essai deplacait la troncature ailleurs. Mesurer plutot que d'estimer
+  aurait ete plus rapide (~8,5 px par caractere a Segoe UI 9pt).
 
 **v1.28.1 (2026-08-08) — DEUX defauts que j'avais INTRODUITS en v1.28.0, et
 que seule l'execution reelle a montres** :

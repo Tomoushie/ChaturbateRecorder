@@ -246,6 +246,12 @@ namespace ChaturbateRecorderApp.Config
                 "Correctif : la mise à jour de la version précédente ne remplaçait en réalité aucun fichier, tout en annonçant avoir réussi. Vérifié cette fois en exécutant une vraie mise à jour de bout en bout.",
                 "Correctif : la fiche « Applications installées » recevait l'ancien numéro de version au lieu du nouveau, donc restait inchangée.",
             }),
+            ("1.29.0", new[]
+            {
+                "L'historique affiche enfin les miniatures de tes enregistrements. Elles étaient générées après chaque capture depuis la version 1.3.0, déposées à côté de la vidéo… et n'étaient affichées nulle part.",
+                "Nouveau bouton \"Ouvrir fichier\" : lance la vidéo sélectionnée dans ton lecteur habituel, sans passer par l'explorateur.",
+                "Le panneau d'historique est plus haut et ses colonnes ont été réajustées : la date n'est plus tronquée et la barre de défilement horizontale a disparu.",
+            }),
         };
 
         /// <summary>
@@ -372,6 +378,12 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Fix: the previous version's update actually replaced no file at all, while reporting success. Verified this time by running a real end-to-end update.",
                 "Fix: the \"Installed apps\" entry was given the old version number instead of the new one, so it stayed unchanged.",
+            },
+            ["1.29.0"] = new[]
+            {
+                "The history finally shows thumbnails of your recordings. They had been generated after every capture since version 1.3.0, saved next to the video… and displayed nowhere.",
+                "New \"Open file\" button: plays the selected video in your usual player, without going through the explorer.",
+                "The history panel is taller and its columns were readjusted: the date is no longer truncated and the horizontal scrollbar is gone.",
             },
         };
 

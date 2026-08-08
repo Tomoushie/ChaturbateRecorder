@@ -36,6 +36,9 @@ namespace ChaturbateRecorderApp
         private ListView historyListView = null!;
         private Button refreshHistoryButton = null!;
         private Button openHistoryFolderButton = null!;
+        // 4.1 : ouverture directe de la vidéo, et miniatures dans la liste.
+        private Button openHistoryFileButton = null!;
+        private ImageList historyThumbnails = null!;
         private RoundedGroupPanel grpFavorites = null!;
         private RoundedGroupPanel grpDonate = null!;
         private RoundedGroupPanel grpLogs = null!;
@@ -873,6 +876,61 @@ namespace ChaturbateRecorderApp
         /// via SafeInvoke. Limité aux 50 fichiers les plus récents pour éviter
         /// un scan trop lourd sur un dossier avec un historique important.
         /// </summary>
+        /// <summary>
+        /// Charge la miniature d'une vidéo si elle existe. Elles sont générées
+        /// par ffmpeg à la fin de chaque enregistrement depuis la v1.3.0, posées
+        /// en .jpg à côté du fichier — et n'avaient jamais été affichées nulle
+        /// part. Ce travail était donc payé à chaque capture pour rien.
+        /// </summary>
+        private static Bitmap? LoadThumbnail(string videoPath)
+        {
+            try
+            {
+                var jpg = Path.ChangeExtension(videoPath, ".jpg");
+                if (!File.Exists(jpg)) return null;
+
+                // Passer par un FileStream, et NON Image.FromFile : celui-ci
+                // garde le fichier ouvert tant que l'image vit, ce qui
+                // empêcherait de supprimer ou déplacer la vidéo depuis
+                // l'explorateur tant que l'application tourne.
+                using var stream = File.OpenRead(jpg);
+                using var source = Image.FromStream(stream);
+
+                var bitmap = new Bitmap(48, 27);
+                using var g = Graphics.FromImage(bitmap);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(source, 0, 0, 48, 27);
+                return bitmap;
+            }
+            catch (Exception ex)
+            {
+                // Miniature illisible ou tronquée : la ligne s'affiche sans
+                // image, ce n'est pas une raison de perdre tout l'historique.
+                Logger.Log($"Miniature illisible pour '{videoPath}' : {ex.Message}", LogLevel.WARN);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Ouvre la vidéo sélectionnée avec le lecteur par défaut (4.1).
+        /// </summary>
+        private void OnOpenHistoryFileClick(object? sender, EventArgs e)
+        {
+            if (historyListView.SelectedItems.Count == 0) return;
+            if (historyListView.SelectedItems[0].Tag is not string path) return;
+
+            if (!File.Exists(path))
+            {
+                // Le fichier a pu être supprimé depuis le dernier rafraîchissement.
+                MessageBox.Show(this, Localization.Format("error.fileGone", path),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                RefreshHistoryAsync();
+                return;
+            }
+
+            OpenExternal(path);
+        }
+
         private void RefreshHistoryAsync()
         {
             var captureDir = AppConfig.CaptureDir;
@@ -881,7 +939,7 @@ namespace ChaturbateRecorderApp
 
             Task.Run(() =>
             {
-                var entries = new List<(string Name, long Size, string Duration, DateTime Date, string FullPath)>();
+                var entries = new List<(string Name, long Size, string Duration, DateTime Date, string FullPath, Bitmap? Thumb)>();
                 try
                 {
                     if (Directory.Exists(captureDir))
@@ -896,7 +954,11 @@ namespace ChaturbateRecorderApp
                                 f.Length,
                                 hasFFprobe ? ProbeDuration(ffprobePath, f.FullName) : "N/A",
                                 f.LastWriteTime,
-                                f.FullName
+                                f.FullName,
+                                // Décodée ici, sur le thread de fond : ouvrir et
+                                // redimensionner 50 JPEG sur le thread UI figerait
+                                // la fenêtre à chaque rafraîchissement.
+                                LoadThumbnail(f.FullName)
                             )));
                     }
                 }
@@ -908,13 +970,26 @@ namespace ChaturbateRecorderApp
                 SafeInvoke(() =>
                 {
                     historyListView.Items.Clear();
+                    historyThumbnails.Images.Clear();
+
                     foreach (var entry in entries)
                     {
                         var item = new ListViewItem(entry.Name);
                         item.SubItems.Add(FormatSize(entry.Size));
                         item.SubItems.Add(entry.Duration);
-                        item.SubItems.Add(entry.Date.ToString("dd/MM/yyyy HH:mm"));
+                        item.SubItems.Add(entry.Date.ToString("dd/MM/yy HH:mm"));
                         item.Tag = entry.FullPath;
+
+                        if (entry.Thumb != null)
+                        {
+                            // ImageList recopie l'image dans son propre handle :
+                            // on libère la nôtre aussitôt, sinon 50 bitmaps
+                            // fuiraient à chaque rafraîchissement.
+                            historyThumbnails.Images.Add(entry.Thumb);
+                            item.ImageIndex = historyThumbnails.Images.Count - 1;
+                            entry.Thumb.Dispose();
+                        }
+
                         historyListView.Items.Add(item);
                     }
                 });
@@ -1707,6 +1782,7 @@ namespace ChaturbateRecorderApp
             historyListView.Columns[3].Text = L("column.date");
             refreshHistoryButton.Text = L("button.refresh");
             openHistoryFolderButton.Text = L("button.openFolder");
+            openHistoryFileButton.Text = L("button.openFile");
 
             grpFavorites.Title = L("panel.favorites");
             loadFavoriteButton.Text = L("button.load");
@@ -2444,31 +2520,56 @@ namespace ChaturbateRecorderApp
             jobsListPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
 
             // --- Panel : Historique des enregistrements (4.4) ---
-            grpHistory = new RoundedGroupPanel { Title = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 130) };
+            // Hauteur 170 (au lieu de 130) depuis l'affichage des miniatures :
+            // en vue Details, la hauteur de ligne suit celle du SmallImageList,
+            // donc 27 px au lieu de ~17. Sans cet agrandissement, la liste ne
+            // montrerait plus que trois enregistrements. Les panneaux suivants
+            // se repositionnent tout seuls (chaine Bottom + sectionGap).
+            grpHistory = new RoundedGroupPanel { Title = "Historique des enregistrements", Location = new Point(12, 468), Size = new Size(660, 170) };
+
+            // 48x27 : rapport 16/9 des captures, et hauteur de ligne encore
+            // lisible. Plus grand rendrait la liste inutilisable dans ce panneau.
+            historyThumbnails = new ImageList
+            {
+                ImageSize = new Size(48, 27),
+                ColorDepth = ColorDepth.Depth32Bit,
+            };
+
             historyListView = new ListView
             {
                 Location = new Point(12, 22),
-                Size = new Size(470, 98),
+                Size = new Size(470, 138),
                 View = View.Details,
                 FullRowSelect = true,
                 MultiSelect = false,
                 HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                SmallImageList = historyThumbnails,
             };
-            historyListView.Columns.Add("Fichier", 220);
-            historyListView.Columns.Add("Taille", 80);
-            historyListView.Columns.Add("Durée", 70);
-            historyListView.Columns.Add("Date", 120);
+            // Les quatre largeurs totalisent 445 px, pour une liste de 470 :
+            // il reste de quoi loger la barre de défilement verticale (~17 px)
+            // sans declencher de barre HORIZONTALE. L'ancien jeu (220+80+70+120
+            // = 490) depassait deja, ce qui coupait la colonne Date et ajoutait
+            // un ascenseur horizontal — visible seulement a la capture, jamais
+            // signale. Toute modification de ces largeurs doit conserver le
+            // total sous ~450.
+            historyListView.Columns.Add("Fichier", 185);
+            historyListView.Columns.Add("Taille", 70);
+            historyListView.Columns.Add("Durée", 60);
+            historyListView.Columns.Add("Date", 130);
 
             // Largeur 150 (au lieu de 120) : le Padding horizontal des boutons
             // (8.4/9.2) ne laissait plus assez de place pour "Ouvrir dossier",
             // tronqué en "Ouvrir".
             refreshHistoryButton = new Button { Text = "Actualiser", Location = new Point(492, 22), Size = new Size(150, 26) };
             openHistoryFolderButton = new Button { Text = "Ouvrir dossier", Location = new Point(492, 54), Size = new Size(150, 26) };
+            openHistoryFileButton = new Button { Text = "Ouvrir fichier", Location = new Point(492, 86), Size = new Size(150, 26) };
 
             refreshHistoryButton.Click += (s, e) => RefreshHistoryAsync();
             openHistoryFolderButton.Click += OnOpenHistoryFolderClick;
+            openHistoryFileButton.Click += OnOpenHistoryFileClick;
 
-            grpHistory.Controls.AddRange(new Control[] { historyListView, refreshHistoryButton, openHistoryFolderButton });
+            grpHistory.Controls.AddRange(new Control[] { historyListView, refreshHistoryButton, openHistoryFolderButton, openHistoryFileButton });
+            openHistoryFileButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             historyListView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             refreshHistoryButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             openHistoryFolderButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;

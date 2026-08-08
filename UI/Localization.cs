@@ -75,6 +75,10 @@ namespace ChaturbateRecorderApp.UI
             ["column.date"] = ("Date", "Date"),
             ["button.refresh"] = ("Actualiser", "Refresh"),
             ["button.openFolder"] = ("Ouvrir dossier", "Open folder"),
+            ["button.openFile"] = ("Ouvrir fichier", "Open file"),
+            ["error.fileGone"] = (
+                "Ce fichier n'existe plus :\n{0}\n\nLa liste vient d'être actualisée.",
+                "This file no longer exists:\n{0}\n\nThe list has just been refreshed."),
 
             ["panel.favorites"] = ("Favoris", "Favorites"),
             ["button.load"] = ("Charger", "Load"),
