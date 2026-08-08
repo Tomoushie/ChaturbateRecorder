@@ -72,6 +72,28 @@ pas de bump : rien ne change dans l'application elle-meme) :
   et **demarrage de l'application installee**.
 - **Reste non signe** : SmartScreen affichera « Editeur inconnu », meme blocage
   que 1.1 (certificat payant).
+- **Complete le 2026-08-08 apres un cycle installation/desinstallation reel** :
+  - **`installed-components.json`** ecrit par l'installateur : versions reelles
+    (interrogees aupres des executables), empreintes verifiees et **licences**
+    de yt-dlp et ffmpeg. Motif : le SBOM de la release ne couvre que les
+    dependances NuGet, donc **le GPL de ffmpeg n'y apparait nulle part** alors
+    qu'il represente l'essentiel du poids installe. Un inventaire qui omet ca
+    donne une image fausse, precisement au public qui lit ce genre de fichier.
+  - **Les logs de LocalAppData sont desormais supprimes a la desinstallation**
+    (`filesandordirs`). Depuis la v1.27.0 ils vivent hors du dossier
+    d'installation, donc ils survivaient. Les ENREGISTREMENTS ne sont jamais
+    touches.
+  - **PIEGE INNO a retenir** : les fichiers extraits d'un ZIP a l'installation
+    ne sont **pas suivis** par Inno — il ignore leur existence et ne les
+    supprimera jamais seul. Tout le contenu de l'archive doit figurer nommement
+    dans `[UninstallDelete]`. Le `.pdb` oublie restait seul et empechait meme
+    `dirifempty` de nettoyer le dossier.
+  - **Seconde propriete d'Inno** : les regles de desinstallation sont **figees
+    dans le desinstalleur au moment de l'installation**. Corriger
+    `[UninstallDelete]` ne change RIEN pour les installations existantes — il
+    faut reinstaller pour tester, et les utilisateurs deja installes gardent
+    l'ancien comportement jusqu'a leur prochaine installation.
+
 
 **v1.27.0 (2026-08-08) — l'application ne demarrait pas ailleurs que chez le
 mainteneur** :

@@ -130,15 +130,28 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchApp}"; Flags: nowait postin
 [UninstallDelete]
 ; Fichiers crees par l'application a cote de son exe : sans ca le dossier
 ; resterait apres desinstallation avec des reglages orphelins.
+; ATTENTION : les fichiers extraits du ZIP a l'installation ne sont PAS suivis
+; par Inno — il ne sait pas qu'ils existent, donc il ne les supprimera jamais de
+; lui-meme. Tout ce que contient l'archive doit figurer ici nommement. Constate
+; en testant une desinstallation : le .pdb, oublie dans une premiere version de
+; cette liste, restait seul dans le dossier et empechait meme sa suppression
+; par dirifempty.
 Type: files; Name: "{app}\{#AppExe}"
+Type: files; Name: "{app}\ChaturbateRecorder.pdb"
 Type: files; Name: "{app}\yt-dlp.exe"
 Type: files; Name: "{app}\ffmpeg.exe"
 Type: files; Name: "{app}\donate_qr.png"
 Type: files; Name: "{app}\settings.json"
 Type: files; Name: "{app}\favorites.json"
 Type: files; Name: "{app}\watchlist.json"
+Type: files; Name: "{app}\installed-components.json"
 Type: files; Name: "{app}\trusted-binaries.json"
 Type: dirifempty; Name: "{app}"
+; Depuis la v1.27.0 les logs et rapports de plantage vivent HORS du dossier
+; d'installation (LocalAppData, toujours inscriptible). Sans cette ligne, une
+; desinstallation les laissait derriere elle. Les ENREGISTREMENTS ne sont jamais
+; touches : ils sont dans les Videos de l'utilisateur, et ils lui appartiennent.
+Type: filesandordirs; Name: "{localappdata}\ChaturbateRecorder"
 
 [Code]
 const
@@ -339,11 +352,54 @@ begin
   SaveStringToFile(ExpandConstant('{app}\trusted-binaries.json'), Json, False);
 end;
 
+{ Inventaire de ce qui est REELLEMENT installe.
+  Le SBOM attache a la release decrit ce que le projet publie : ses dependances
+  NuGet. Il ne mentionne ni yt-dlp ni ffmpeg, qui n'en sont pas — alors qu'ils
+  representent l'essentiel du poids installe et que **ffmpeg est sous GPL**. Un
+  inventaire qui les omet donne une image fausse des licences en presence,
+  precisement pour le public qui lit ce genre de fichier.
+  L'installateur est le seul endroit qui connaisse la reponse exacte : il vient
+  de telecharger ces binaires et d'en verifier les empreintes.
+
+  Genere par un script PowerShell temporaire plutot qu'en assemblant du JSON en
+  Pascal : les versions s'obtiennent en interrogeant les executables, et les
+  guillemets imbriques dans une commande en ligne sont une source d'erreurs. }
+procedure WriteInstalledComponents;
+var
+  Ps, App, ScriptPath: String;
+begin
+  App := ExpandConstant('{app}');
+  ScriptPath := ExpandConstant('{tmp}\components.ps1');
+
+  Ps :=
+    '$app = ''' + App + '''' + #13#10 +
+    '$yt = (& "$app\yt-dlp.exe" --version 2>$null | Select-Object -First 1)' + #13#10 +
+    '$ffLine = (& "$app\ffmpeg.exe" -version 2>$null | Select-Object -First 1)' + #13#10 +
+    '$ff = if ($ffLine -match ''ffmpeg version (\S+)'') { $Matches[1] } else { "inconnue" }' + #13#10 +
+    '$doc = [ordered]@{' + #13#10 +
+    '  generatedAtUtc = (Get-Date).ToUniversalTime().ToString("s") + "Z"' + #13#10 +
+    '  note = "Composants tiers installes par l''installateur. Complete le SBOM de la release, qui ne couvre que les dependances NuGet de l''application."' + #13#10 +
+    '  components = @(' + #13#10 +
+    '    [ordered]@{ name = "yt-dlp"; version = "$yt"; sha256 = (Get-FileHash "$app\yt-dlp.exe" -Algorithm SHA256).Hash; license = "Unlicense"; source = "https://github.com/yt-dlp/yt-dlp" }' + #13#10 +
+    '    [ordered]@{ name = "ffmpeg"; version = "$ff"; sha256 = (Get-FileHash "$app\ffmpeg.exe" -Algorithm SHA256).Hash; license = "GPL-3.0 (build release-essentials)"; source = "https://www.gyan.dev/ffmpeg/builds/" }' + #13#10 +
+    '  )' + #13#10 +
+    '}' + #13#10 +
+    '$doc | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$app\installed-components.json" -Encoding UTF8' + #13#10;
+
+  if SaveStringToFile(ScriptPath, Ps, False) then
+    RunHidden('& ''' + ScriptPath + '''');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
     if InstallPayload then
+    begin
       WriteTrustedBinaries;
+      { Purement informatif : un echec ici ne doit pas faire echouer une
+        installation par ailleurs reussie. }
+      WriteInstalledComponents;
+    end;
   end;
 end;
