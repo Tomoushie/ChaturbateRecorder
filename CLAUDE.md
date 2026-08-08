@@ -34,6 +34,31 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**v1.30.0 (2026-08-08) — 29.0 / 2.2 : Safe Mode** :
+- **Principe qui gouverne tout** : aucune de ces defaillances ne justifie de
+  refuser de demarrer. ffmpeg absent interdit le reencodage et les miniatures,
+  PAS la capture ; un cookies.txt illisible interdit le contenu reserve, PAS le
+  flux public. Ce qui produisait un echec obscur au moment d'enregistrer — voire
+  TOTALEMENT silencieux pour le cookies.txt du 2026-08-08 — devient un message
+  clair au demarrage.
+- **Deux origines, un seul etat** : manuel (cases des Parametres, persistees par
+  NOM et non par index, pour qu'ajouter un composant a l'enum ne decale pas les
+  reglages existants) et automatique (controle rate au demarrage). **Le manuel
+  prime a l'affichage** : dire a quelqu'un que l'application a desactive ce
+  qu'il a decoche lui-meme serait faux et le ferait chercher un bug.
+- **Reactiver a la main efface l'automatique** : sans ca, quelqu'un qui vient de
+  reparer son ffmpeg cocherait la case sans effet. Controle refait au demarrage.
+- **Cases « coche = actif »** et non « desactiver X » : une negation obligerait a
+  raisonner a l'envers pour lire l'etat courant.
+- **Un seul message au demarrage**, et RIEN quand tout va bien — une boite
+  « tout va bien » a chaque lancement serait fermee sans etre lue.
+- **Le controle du cookies.txt de la v1.26.1 ne servait qu'a la selection** : un
+  fichier devenu invalide apres coup repassait inapercu. Il tourne desormais
+  aussi au demarrage.
+- **Tests** : `Tests/SafeModeTests.cs` (8, **203 au total**). `SafeMode` etant un
+  etat global statique, chaque test le remet a zero — sans quoi l'ordre
+  d'execution changerait les resultats.
+
 **v1.29.0 (2026-08-08) — 29.0 / 4.1 : historique enrichi** :
 - **Les miniatures existaient depuis la 1.3.0 et n'etaient affichees NULLE
   PART.** ffmpeg en generait une a la fin de chaque enregistrement, deposee en

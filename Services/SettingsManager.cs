@@ -35,6 +35,11 @@ namespace ChaturbateRecorderApp.Services
         // verifies toutes les minutes feraient 14 400 requetes par jour vers
         // le site. Plancher a 60 s, applique aussi a la lecture.
         public int WatchIntervalSeconds { get; set; } = 120;
+        // Safe Mode (29.0 / 2.2) : composants desactives a la main par
+        // l'utilisateur. Stockes par NOM et non par index, pour qu'ajouter un
+        // composant a l'enum ne decale pas silencieusement les reglages
+        // existants.
+        public List<string> DisabledComponents { get; set; } = new();
     }
 
     /// <summary>

@@ -203,6 +203,8 @@ namespace ChaturbateRecorderApp
             WarnIfBroadWriteAccess(AppConfig.CaptureDir);
             WarnIfBroadWriteAccess(AppConfig.LogDir);
 
+            ApplySafeMode();
+
             _favorites.Load();
             foreach (var fav in _favorites.Favorites)
                 favoritesListBox.Items.Add(fav);
@@ -265,6 +267,75 @@ namespace ChaturbateRecorderApp
             })
             { IsBackground = true, Name = "SecondInstanceWatcher" };
             thread.Start();
+        }
+
+        /// <summary>
+        /// Rejoue les interrupteurs manuels, puis controle ce qui peut l'etre
+        /// et desactive automatiquement ce qui est defaillant (29.0 / 2.2).
+        ///
+        /// **Regle** : aucune de ces defaillances n'empeche de demarrer. Un
+        /// ffmpeg absent interdit le reencodage et les miniatures, pas la
+        /// capture ; un cookies.txt illisible interdit le contenu reserve, pas
+        /// le flux public. Ce qui etait auparavant un echec obscur au moment
+        /// d'enregistrer — voire un echec TOTALEMENT silencieux pour le
+        /// cookies.txt — devient un message clair au demarrage.
+        /// </summary>
+        private void ApplySafeMode()
+        {
+            SafeMode.LoadManual(_settings.DisabledComponents);
+            SafeMode.ClearAutomatic();
+
+            if (!File.Exists(AppConfig.FFmpegPath))
+                SafeMode.DisableAutomatically(SafeComponent.Ffmpeg,
+                    Localization.Format("safe.reason.ffmpegMissing", AppConfig.FFmpegPath));
+
+            // Le controle du cookies.txt existe depuis la v1.26.1 mais ne
+            // servait qu'au moment de le choisir : un fichier devenu invalide
+            // apres coup (reexport rate, edition manuelle) repassait inapercu.
+            if (!string.IsNullOrWhiteSpace(AppConfig.CookiesFilePath))
+            {
+                if (!File.Exists(AppConfig.CookiesFilePath))
+                {
+                    SafeMode.DisableAutomatically(SafeComponent.Cookies,
+                        Localization.Format("safe.reason.cookiesMissing", AppConfig.CookiesFilePath));
+                }
+                else
+                {
+                    try
+                    {
+                        var check = CookieFileValidator.Validate(File.ReadAllLines(AppConfig.CookiesFilePath));
+                        if (!check.IsValid)
+                            SafeMode.DisableAutomatically(SafeComponent.Cookies,
+                                Localization.Format("safe.reason.cookiesInvalid", check.Problem, check.Line));
+                    }
+                    catch (Exception ex)
+                    {
+                        SafeMode.DisableAutomatically(SafeComponent.Cookies, ex.Message);
+                    }
+                }
+            }
+
+            ReportAutomaticSafeMode();
+        }
+
+        /// <summary>
+        /// Un seul message, listant tout ce qui a ete desactive et pourquoi.
+        /// Rien ne s'affiche si tout va bien — c'est le cas courant, et une
+        /// boite « tout va bien » a chaque demarrage serait vite fermee sans
+        /// etre lue, ce qui la rendrait inutile le jour ou elle compte.
+        /// </summary>
+        private void ReportAutomaticSafeMode()
+        {
+            var disabled = SafeMode.AutomaticallyDisabled;
+            if (disabled.Count == 0) return;
+
+            var details = string.Join("\n\n", disabled.Select(c =>
+                $"- {Localization.Get("safe.component." + c)} : {SafeMode.AutomaticReason(c)}"));
+
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] Safe Mode : {disabled.Count} composant(s) desactive(s).");
+            MessageBox.Show(this,
+                Localization.Get("safe.intro") + "\n\n" + details + "\n\n" + Localization.Get("safe.outro"),
+                Localization.Get("safe.title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private static string CurrentVersion =>
@@ -727,7 +798,9 @@ namespace ChaturbateRecorderApp
                     }
                     else
                     {
-                        GenerateThumbnail(row.Job);
+                        // Sans ffmpeg, pas de miniature — mais la capture, elle,
+                        // a bien eu lieu : il n'y a aucune raison de la perdre.
+                        if (SafeMode.IsEnabled(SafeComponent.Ffmpeg)) GenerateThumbnail(row.Job);
                         if (state == DownloadState.Completed)
                             ShowNotification(Localization.Get("notify.recordingDone.title"), row.Job.RoomName);
                         else
@@ -746,7 +819,8 @@ namespace ChaturbateRecorderApp
                     // la fin normale d'un téléchargement, or un live s'arrête toujours
                     // par un Kill du process (STOP ou fermeture du formulaire), qui ne
                     // laisse jamais ce post-traitement interne s'exécuter.
-                    if (row.Job.CodecChoice != "copy" && state != DownloadState.Failed)
+                    if (row.Job.CodecChoice != "copy" && state != DownloadState.Failed
+                        && SafeMode.IsEnabled(SafeComponent.Ffmpeg))
                         ReencodeCaptureAsync(row.Job);
                     break;
             }
@@ -1362,6 +1436,7 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private async Task RunWatchPassAsync()
         {
+            if (!SafeMode.IsEnabled(SafeComponent.Watch)) return;
             if (_watchTickRunning || watchListView.Items.Count == 0) return;
             _watchTickRunning = true;
             try
@@ -1380,7 +1455,9 @@ namespace ChaturbateRecorderApp
                     }
 
                     var status = await RoomStatusChecker.CheckAsync(
-                        AppConfig.YtDlpPath, url, AppConfig.CookiesFilePath, AppConfig.ProxyUrl);
+                        AppConfig.YtDlpPath, url,
+                        SafeMode.IsEnabled(SafeComponent.Cookies) ? AppConfig.CookiesFilePath : "",
+                        SafeMode.IsEnabled(SafeComponent.Proxy) ? AppConfig.ProxyUrl : "");
 
                     // L'appel dure plusieurs secondes : la fenetre a pu etre
                     // fermee entre-temps.
@@ -1501,6 +1578,15 @@ namespace ChaturbateRecorderApp
             var roomName = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             if (string.IsNullOrWhiteSpace(roomName)) roomName = "Chaturbate";
 
+            // Safe Mode : un seul enregistrement a la fois quand le
+            // multi-stream est desactive. Refus explicite plutot que silencieux.
+            if (!SafeMode.IsEnabled(SafeComponent.MultiStream)
+                && _jobRows.Any(r => r.Job.Engine.State == DownloadState.Running))
+            {
+                RefuseStart(interactive, Localization.Get("safe.multiStreamOff"), Localization.Get("dialog.info"));
+                return;
+            }
+
             if (_jobRows.Any(r => r.Job.RoomName == roomName && r.Job.Engine.State == DownloadState.Running))
             {
                 // En surveillance, un enregistrement déjà en cours est le cas
@@ -1562,8 +1648,14 @@ namespace ChaturbateRecorderApp
                 var logFilePath = Path.Combine(AppConfig.LogDir, $"{job.OutputBaseName}.log");
                 var outputPath  = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.%(ext)s");
 
+                // Safe Mode : un composant desactive n'est pas transmis a yt-dlp.
+                // Passer un cookies.txt invalide faisait echouer TOUTES les
+                // captures (constate le 2026-08-08) ; mieux vaut enregistrer
+                // sans authentification que ne rien enregistrer du tout.
                 job.Engine.Start(AppConfig.YtDlpPath, AppConfig.FFmpegPath, urlInput, outputPath, logFilePath, formatSelector, containerExt,
-                    AppConfig.CookiesFilePath, AppConfig.ProxyUrl, AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
+                    SafeMode.IsEnabled(SafeComponent.Cookies) ? AppConfig.CookiesFilePath : "",
+                    SafeMode.IsEnabled(SafeComponent.Proxy) ? AppConfig.ProxyUrl : "",
+                    AppConfig.YtDlpWatchdogTimeoutSeconds, AppConfig.LogMaxFileSizeBytes);
             }
             row.RestartEngine = StartEngine;
 

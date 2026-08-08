@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -42,6 +44,9 @@ namespace ChaturbateRecorderApp.UI
         private CheckBox autoUpdateCheckbox = null!;
         private Label watchIntervalLabel = null!;
         private ComboBox watchIntervalCombo = null!;
+        // 29.0 / 2.2 : un interrupteur par composant, dans l'ordre de l'enum.
+        private Label safeSectionLabel = null!;
+        private readonly Dictionary<SafeComponent, CheckBox> _safeBoxes = new();
         private Button closeButton = null!;
 
         public SettingsForm(UserSettings settings, AppTheme theme, AppLanguage language,
@@ -73,6 +78,9 @@ namespace ChaturbateRecorderApp.UI
             autoReconnectCheckbox.Text = L("checkbox.autoReconnect");
             autoUpdateCheckbox.Text = L("checkbox.autoUpdateCheck");
             watchIntervalLabel.Text = L("label.watchInterval");
+            safeSectionLabel.Text = L("safe.section");
+            foreach (var (component, box) in _safeBoxes)
+                box.Text = L("safe.component." + component);
             closeButton.Text = L("button.close");
 
             var themeIndex = themeCombo.SelectedIndex;
@@ -196,6 +204,24 @@ namespace ChaturbateRecorderApp.UI
         /// de l'application : le Timer de surveillance vit dans MainForm et
         /// n'est pas rappele ici. C'est assume, le reglage n'a rien d'urgent.
         /// </summary>
+        /// <summary>
+        /// 29.0 / 2.2 — bascule manuelle d'un composant.
+        ///
+        /// Reactiver a la main efface aussi la desactivation AUTOMATIQUE : sans
+        /// ca, l'utilisateur qui vient de reparer son ffmpeg cocherait la case
+        /// sans effet, et conclurait a un bug. La verification sera refaite au
+        /// prochain demarrage et redesactivera si le probleme persiste.
+        /// </summary>
+        private void OnSafeComponentChanged(SafeComponent component, bool enabled)
+        {
+            SafeMode.SetManual(component, !enabled);
+            if (enabled) SafeMode.ClearAutomatic();
+
+            _settings.DisabledComponents = SafeMode.ManualNames.ToList();
+            SettingsManager.Save(_settings);
+            _appendLog($"Safe Mode : {component} {(enabled ? "réactivé" : "désactivé")}.");
+        }
+
         private void OnWatchIntervalChanged(object? sender, EventArgs e)
         {
             _settings.WatchIntervalSeconds = watchIntervalCombo.SelectedIndex switch
@@ -227,7 +253,7 @@ namespace ChaturbateRecorderApp.UI
             // de mise à jour (79.0) : une ligne de plus au même pas vertical
             // (48 px de case + 12 px de gouttière) et le bouton Fermer décalé
             // d'autant.
-            ClientSize = new Size(480, 430);
+            ClientSize = new Size(480, 540);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -343,7 +369,31 @@ namespace ChaturbateRecorderApp.UI
             };
             watchIntervalCombo.SelectedIndexChanged += OnWatchIntervalChanged;
 
-            closeButton = new Button { Text = "Fermer", Location = new Point(368, 386), Size = new Size(100, 26) };
+            // 29.0 / 2.2 — Safe Mode. Deux colonnes pour tenir en trois rangees :
+            // cinq cases empilees auraient ajoute 150 px a une fenetre deja haute.
+            safeSectionLabel = new Label { Text = "Fonctionnalites (Safe Mode)", Location = new Point(12, 372), AutoSize = true };
+
+            var components = new[]
+            {
+                SafeComponent.Ffmpeg, SafeComponent.Cookies, SafeComponent.Proxy,
+                SafeComponent.MultiStream, SafeComponent.Watch,
+            };
+            for (var i = 0; i < components.Length; i++)
+            {
+                var component = components[i];
+                var box = new CheckBox
+                {
+                    // Coche = actif. L'inverse (« desactiver X ») obligerait a
+                    // lire une negation pour comprendre l'etat courant.
+                    Checked = SafeMode.IsEnabled(component),
+                    Location = new Point(12 + (i % 2) * 230, 396 + (i / 2) * 24),
+                    Size = new Size(225, 22),
+                };
+                box.CheckedChanged += (s, e) => OnSafeComponentChanged(component, box.Checked);
+                _safeBoxes[component] = box;
+            }
+
+            closeButton = new Button { Text = "Fermer", Location = new Point(368, 496), Size = new Size(100, 26) };
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[]
@@ -354,8 +404,11 @@ namespace ChaturbateRecorderApp.UI
                 proxyLabel, proxyTextBox,
                 autoReconnectCheckbox, autoUpdateCheckbox,
                 watchIntervalLabel, watchIntervalCombo,
+                safeSectionLabel,
                 closeButton,
             });
+            foreach (var box in _safeBoxes.Values) Controls.Add(box);
+
             themeCombo.Items.AddRange(new object[] { "Clair", "Sombre" });
             themeCombo.SelectedIndex = _theme == AppTheme.Dark ? 1 : 0;
 

@@ -291,6 +291,32 @@ namespace ChaturbateRecorderApp.UI
             ["label.watchInterval"] = (
                 "Vérifier les salons surveillés toutes les :",
                 "Check monitored rooms every:"),
+            // --- 29.0 / 2.2 : Safe Mode ---
+            ["safe.title"] = ("Fonctionnalités désactivées", "Features disabled"),
+            ["safe.intro"] = (
+                "L'application a désactivé ce qui suit pour pouvoir démarrer normalement :",
+                "The application has disabled the following so that it can start normally:"),
+            ["safe.outro"] = (
+                "Le reste fonctionne normalement. Tu peux réactiver ces éléments dans Paramètres une fois le problème corrigé.",
+                "Everything else works normally. You can re-enable these in Settings once the problem is fixed."),
+            ["safe.section"] = ("Fonctionnalités (Safe Mode)", "Features (Safe Mode)"),
+            ["safe.component.Ffmpeg"] = ("Réencodage et miniatures", "Re-encoding and thumbnails"),
+            ["safe.component.Cookies"] = ("Fichier cookies", "Cookies file"),
+            ["safe.component.Proxy"] = ("Proxy", "Proxy"),
+            ["safe.component.MultiStream"] = ("Enregistrements simultanés", "Simultaneous recordings"),
+            ["safe.component.Watch"] = ("Surveillance automatique", "Automatic monitoring"),
+            ["safe.reason.ffmpegMissing"] = (
+                "ffmpeg.exe est introuvable ({0}). Les enregistrements fonctionnent, mais sans réencodage ni miniature.",
+                "ffmpeg.exe was not found ({0}). Recordings still work, but without re-encoding or thumbnails."),
+            ["safe.reason.cookiesMissing"] = (
+                "Le fichier cookies n'existe plus ({0}). Les flux publics restent enregistrables.",
+                "The cookies file no longer exists ({0}). Public streams can still be recorded."),
+            ["safe.reason.cookiesInvalid"] = (
+                "Le fichier cookies serait refusé par yt-dlp ({0}, ligne {1}), ce qui ferait échouer tous les enregistrements. Il est donc ignoré.",
+                "The cookies file would be rejected by yt-dlp ({0}, line {1}), which would make every recording fail. It is therefore ignored."),
+            ["safe.multiStreamOff"] = (
+                "Les enregistrements simultanés sont désactivés dans les Paramètres.\n\nAttends la fin de l'enregistrement en cours, ou réactive-les.",
+                "Simultaneous recordings are disabled in Settings.\n\nWait for the current recording to finish, or re-enable them."),
             ["checkbox.autoUpdateCheck"] = (
                 "Rechercher automatiquement les mises à jour (toutes les heures)",
                 "Automatically check for updates (every hour)"),

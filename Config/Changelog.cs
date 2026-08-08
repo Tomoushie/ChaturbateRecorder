@@ -252,6 +252,13 @@ namespace ChaturbateRecorderApp.Config
                 "Nouveau bouton \"Ouvrir fichier\" : lance la vidéo sélectionnée dans ton lecteur habituel, sans passer par l'explorateur.",
                 "Le panneau d'historique est plus haut et ses colonnes ont été réajustées : la date n'est plus tronquée et la barre de défilement horizontale a disparu.",
             }),
+            ("1.30.0", new[]
+            {
+                "Mode dégradé : quand un composant est défaillant, l'application le désactive, te dit lequel et pourquoi, et continue de fonctionner — au lieu d'échouer plus tard sans explication.",
+                "Concrètement : ffmpeg absent n'empêche plus d'enregistrer (seuls le réencodage et les miniatures sont suspendus), et un fichier cookies illisible est ignoré au lieu de faire échouer toutes les captures en silence.",
+                "Nouvelle section \"Fonctionnalités\" dans les Paramètres : tu peux désactiver toi-même le réencodage, les cookies, le proxy, les enregistrements simultanés ou la surveillance — utile pour isoler un problème.",
+                "Réactiver une fonctionnalité à la main annule aussi la désactivation automatique : la vérification sera refaite au prochain démarrage.",
+            }),
         };
 
         /// <summary>
@@ -384,6 +391,13 @@ namespace ChaturbateRecorderApp.Config
                 "The history finally shows thumbnails of your recordings. They had been generated after every capture since version 1.3.0, saved next to the video… and displayed nowhere.",
                 "New \"Open file\" button: plays the selected video in your usual player, without going through the explorer.",
                 "The history panel is taller and its columns were readjusted: the date is no longer truncated and the horizontal scrollbar is gone.",
+            },
+            ["1.30.0"] = new[]
+            {
+                "Degraded mode: when a component is faulty, the application disables it, tells you which one and why, and keeps working — instead of failing later with no explanation.",
+                "In practice: a missing ffmpeg no longer prevents recording (only re-encoding and thumbnails are suspended), and an unreadable cookies file is ignored instead of silently making every capture fail.",
+                "New \"Features\" section in Settings: you can turn off re-encoding, cookies, proxy, simultaneous recordings or monitoring yourself — handy to isolate a problem.",
+                "Re-enabling a feature by hand also clears the automatic shutdown: the check will run again on next startup.",
             },
         };
 
