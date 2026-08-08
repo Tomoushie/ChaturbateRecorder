@@ -172,8 +172,27 @@ namespace ChaturbateRecorderApp
                 Environment.Exit(1);
             }
 
-            Directory.CreateDirectory(AppConfig.CaptureDir);
-            Directory.CreateDirectory(AppConfig.LogDir);
+            // Ces deux appels tuaient l'application au demarrage quand le chemin
+            // designait un disque absent — cas d'un reglage enregistre sur une
+            // cle USB retiree, ou d'une valeur par defaut heritee d'une version
+            // anterieure a 1.27.0. Un dossier de capture injoignable est un
+            // probleme reel, mais il ne justifie pas de refuser de demarrer :
+            // on retombe sur le defaut et on le dit.
+            AppConfig.CaptureDir = DirectoryResolver.EnsureOrFallback(
+                AppConfig.CaptureDir, AppConfig.DefaultCaptureDir(), AppConfig.AppDir, out var captureFellBack);
+            AppConfig.LogDir = DirectoryResolver.EnsureOrFallback(
+                AppConfig.LogDir, AppConfig.DefaultLogDir(), AppConfig.AppDir, out _);
+
+            if (captureFellBack)
+            {
+                // Le reglage persiste est corrige, sinon l'avertissement
+                // reviendrait a chaque lancement sans que rien ne change.
+                _settings.CaptureDir = AppConfig.CaptureDir;
+                SettingsManager.Save(_settings);
+                MessageBox.Show(
+                    Localization.Format("warn.captureDirFellBack", AppConfig.CaptureDir),
+                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
 
             LogRotationManager.PurgeOldLogs(AppConfig.LogDir, AppConfig.LogRetentionDays);
 

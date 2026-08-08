@@ -227,6 +227,13 @@ namespace ChaturbateRecorderApp.Config
                 "Ce contrôle vient d'un cas réel : un simple dièse manquant devant \"HttpOnly_\" invalidait 5 cookies sur 6, dont celui de session. Tous les enregistrements échouaient, et la surveillance automatique restait muette, sans que rien ne désigne les cookies.",
                 "Correctif : ajouter un favori déjà présent affichait \"URL invalide ou déjà présente\", laissant deviner laquelle des deux causes s'appliquait. Les deux cas ont maintenant leur propre message.",
             }),
+            ("1.27.0", new[]
+            {
+                "Correctif majeur : sur une machine sans disque E:, l'application affichait \"erreur fatale\" et se fermait avant même d'apparaître. Les dossiers par défaut pointaient vers un chemin propre au poste du développeur. Ils sont désormais dans tes dossiers personnels : le sous-dossier \"Chaturbate Recorder\" de tes Vidéos, pour les enregistrements.",
+                "Un dossier de sauvegarde devenu inaccessible (disque débranché, dossier supprimé) ne fait plus planter l'application : elle prévient, bascule sur le dossier par défaut et continue.",
+                "Les logs et les rapports de plantage vont maintenant dans AppData, qui existe toujours et reste inscriptible — c'est ce qui empêchait le rapport détaillé d'être enregistré quand l'application plantait au démarrage.",
+                "Si tu enregistrais déjà ailleurs, ton dossier est conservé : seule la valeur par défaut change.",
+            }),
         };
 
         /// <summary>
@@ -334,6 +341,13 @@ namespace ChaturbateRecorderApp.Config
                 "The cookies file is now checked when you select it. A file that yt-dlp would reject is reported straight away, with the offending line and what to fix, instead of silently making every recording fail.",
                 "This check comes from a real case: a single missing hash before \"HttpOnly_\" invalidated 5 cookies out of 6, including the session one. Every recording failed, and automatic monitoring stayed silent, with nothing pointing at the cookies.",
                 "Fix: adding a favorite that was already present showed \"invalid URL or already present\", leaving you to guess which of the two applied. Both cases now have their own message.",
+            },
+            ["1.27.0"] = new[]
+            {
+                "Major fix: on a machine without an E: drive, the application showed \"fatal error\" and closed before even appearing. The default folders pointed at a path specific to the developer's machine. They now live in your own user folders: the \"Chaturbate Recorder\" subfolder of your Videos, for recordings.",
+                "A save folder that became unreachable (drive unplugged, folder deleted) no longer crashes the application: it warns you, switches to the default folder and carries on.",
+                "Logs and crash reports now go to AppData, which always exists and stays writable — that is what prevented the detailed report from being saved when the app crashed at startup.",
+                "If you were already recording elsewhere, your folder is kept: only the default value changes.",
             },
         };
 

@@ -17,8 +17,47 @@ namespace ChaturbateRecorderApp.Config
 
         public static string FFmpegPath        = Path.Combine(AppDir, "ffmpeg.exe");
         public static string YtDlpPath         = Path.Combine(AppDir, "yt-dlp.exe");
-        public static string CaptureDir        = @"E:\Streamlink\videos";
-        public static string LogDir            = @"E:\Streamlink\logs";
+        // Dossiers par defaut, propres a l'utilisateur courant.
+        //
+        // Ils valaient "E:\Streamlink\videos" et "E:\Streamlink\logs" jusqu'a la
+        // v1.26.x : les chemins du poste du mainteneur, codes en dur. Sur toute
+        // machine sans disque E:, le premier Directory.CreateDirectory du
+        // demarrage levait DirectoryNotFoundException et l'application mourait
+        // AVANT d'afficher quoi que ce soit — et le rapport de crash lui-meme ne
+        // pouvait pas s'ecrire, puisqu'il va dans LogDir\crashes. Signale par un
+        // utilisateur qui avait pourtant tout installe correctement.
+        //
+        // Lecon : une valeur par defaut n'est pas une preference, c'est le
+        // premier contact d'un inconnu avec le logiciel. Aucun chemin absolu
+        // specifique a une machine ne doit y figurer.
+        public static string CaptureDir        = DefaultCaptureDir();
+        public static string LogDir            = DefaultLogDir();
+
+        /// <summary>
+        /// Dossier de capture par defaut : "Vidéos" de l'utilisateur. Repli sur
+        /// le dossier de l'application si le profil est indisponible (compte de
+        /// service, profil temporaire), cas rare mais qui ne doit pas empecher
+        /// le demarrage.
+        /// </summary>
+        public static string DefaultCaptureDir()
+        {
+            var videos = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+            if (string.IsNullOrWhiteSpace(videos)) videos = AppDir;
+            return Path.Combine(videos, "Chaturbate Recorder");
+        }
+
+        /// <summary>
+        /// Logs dans LocalAppData plutot qu'a cote de l'exe : le dossier existe
+        /// toujours, il est inscriptible sans elevation, et il survit a un
+        /// deplacement de l'application. C'est aussi la que va le rapport de
+        /// crash, qui doit pouvoir s'ecrire meme quand tout le reste a echoue.
+        /// </summary>
+        public static string DefaultLogDir()
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrWhiteSpace(local)) local = AppDir;
+            return Path.Combine(local, "ChaturbateRecorder", "logs");
+        }
         public static string FavoritesFile     = Path.Combine(AppDir, "favorites.json");
         public static string DonateQrPath      = Path.Combine(AppDir, "donate_qr.png");
         public static string DonateQrExpectedSha256 = "FD21762BBE7C23A1CBDB5AB18210FDC2F6466B6840E20D2E795548D80F73CB71";

@@ -17,7 +17,12 @@ namespace ChaturbateRecorderApp.Services
     /// </summary>
     public static class CrashReporter
     {
-        private static readonly string CrashDir = Path.Combine(AppConfig.LogDir, "crashes");
+        // Propriete et non champ static readonly : AppConfig.LogDir peut changer
+        // au demarrage (repli quand le dossier configure est injoignable, voir
+        // MainForm.EnsureDirectoryOrFallback). Un champ fige a l'initialisation
+        // du type aurait garde l'ancien chemin — precisement celui qui vient
+        // d'echouer — et le rapport de crash n'aurait toujours pas pu s'ecrire.
+        private static string CrashDir => Path.Combine(AppConfig.LogDir, "crashes");
 
         public static void Install()
         {

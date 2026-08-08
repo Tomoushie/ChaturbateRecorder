@@ -128,6 +128,9 @@ namespace ChaturbateRecorderApp.UI
             ["error.unauthorizedLocation"] = (
                 "Cette application ne peut pas s'exécuter depuis cet emplacement (partage réseau, dossier temporaire/éphémère ou dossier compressé NTFS). Déplace l'exécutable vers un dossier local standard.",
                 "This application cannot run from this location (network share, temporary/ephemeral folder, or NTFS-compressed folder). Move the executable to a standard local folder."),
+            ["warn.captureDirFellBack"] = (
+                "Le dossier de sauvegarde configuré n'est plus accessible (disque déconnecté, dossier supprimé ou droits refusés).\n\nLes enregistrements iront désormais dans :\n{0}\n\nTu peux en choisir un autre dans Paramètres.",
+                "The configured save folder is no longer reachable (drive disconnected, folder deleted, or access denied).\n\nRecordings will now go to:\n{0}\n\nYou can pick another one in Settings."),
             ["error.invalidCaptureOrLogDir"] = (
                 "Dossier de capture ou de logs invalide (sandbox de chemins).",
                 "Invalid capture or log folder (path sandbox)."),

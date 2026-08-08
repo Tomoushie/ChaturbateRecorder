@@ -34,6 +34,37 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**v1.27.0 (2026-08-08) — l'application ne demarrait pas ailleurs que chez le
+mainteneur** :
+- **Signale par un utilisateur** qui avait pourtant installe les dependances et
+  place yt-dlp/ffmpeg au bon endroit : « erreur fatale » avant meme l'affichage
+  de la fenetre, avec `DirectoryNotFoundException` sur `E:\Streamlinkideos`.
+- **Cause** : `AppConfig.CaptureDir` et `LogDir` valaient les chemins du poste du
+  mainteneur, **codes en dur**. Sur une machine sans disque E:, le premier
+  `Directory.CreateDirectory` du demarrage levait, et rien ne rattrapait.
+  **Aggravant** : le rapport de crash s'ecrit dans `LogDir\crashes`, donc lui
+  non plus ne pouvait pas s'ecrire — l'utilisateur voyait « le rapport detaille
+  n'a pas pu etre enregistre » et repartait sans aucune piste.
+- **Note de CLAUDE.md a corriger, elle etait trompeuse** : elle presentait ces
+  deux chemins comme « les seuls chemins absolus legitimes du depot ». Ils
+  n'etaient pas legitimes, ils etaient un bug latent depuis l'origine, invisible
+  parce que le seul testeur avait un disque E:.
+- **Correctif en trois niveaux** : `Vidéos\Chaturbate Recorder` par defaut,
+  `LocalAppData\ChaturbateRecorder\logs` pour les logs (toujours present et
+  inscriptible), et `Services/DirectoryResolver.cs` qui replie au lieu de lever
+  — dossier demande, puis defaut, puis dossier de l'application en dernier
+  recours. Un reglage persiste devenu injoignable est corrige et l'utilisateur
+  prevenu, au lieu d'un plantage a chaque lancement.
+- **`CrashReporter.CrashDir` passe de champ `static readonly` a propriete** :
+  fige a l'initialisation du type, il aurait garde le chemin qui vient
+  precisement d'echouer.
+- **Regle generale** : une valeur par defaut n'est pas une preference, c'est le
+  premier contact d'un inconnu avec le logiciel. Aucun chemin absolu specifique
+  a une machine ne doit y figurer.
+- **Tests** : `Tests/DirectoryResolverTests.cs` (7, **187 au total**), dont un
+  qui reproduit le plantage exact et un qui echouerait si quelqu'un remettait un
+  jour `E:\` en dur. Eprouves en les cassant volontairement (5 echecs).
+
 **86.0 traite (2026-08-05) — SBOM CycloneDX** (CI uniquement, pas de bump ni
 d'entree de changelog, meme regle que 34.0/38.0) :
 - **Job `sbom` dans `security-scan.yml`** (artefact, 90 jours) **et SBOM attache
