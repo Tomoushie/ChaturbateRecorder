@@ -102,6 +102,28 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
+          # En-tete fixe place AVANT les notes generees par GitHub, qui sont
+          # ajoutees a la suite. Motif : cinq fichiers sans hierarchie, c'est
+          # exactement ce qui rebutait les testeurs — le probleme n'est pas leur
+          # NOMBRE mais l'absence d'indication sur celui qu'il faut prendre.
+          # Aucun ne peut etre supprime : l'installateur telecharge le ZIP
+          # portable, et la mise a jour interne telecharge l'un ou l'autre.
+          body: |
+            ### Quelle version télécharger ? / Which file should I download?
+
+            | Fichier | Pour qui | Taille |
+            |---|---|---|
+            | **`setup.exe`** | **La plupart des gens.** Installe tout, y compris yt-dlp et ffmpeg. Propose installation ou version portable. | ~2 Mo |
+            | `portable.zip` | Aucune installation, aucun téléchargement pendant l'usage. Nécessite yt-dlp et ffmpeg à côté de l'exe. | ~46 Mo |
+            | `standard.zip` | Tu as déjà le .NET 10 Desktop Runtime. | ~0,6 Mo |
+            | `sbom.json` | Liste des dépendances (audit). Inutile pour utiliser le logiciel. | — |
+
+            *English: pick **`setup.exe`** unless you know you want one of the others.
+            `portable.zip` needs no install but requires yt-dlp/ffmpeg alongside;
+            `standard.zip` requires the .NET 10 Desktop Runtime; `sbom.json` is for audits.*
+
+            ---
+
           # Convention semver : un tag avec un suffixe (v1.17.1-test) est une
           # pré-version. GitHub l'exclut alors de /releases/latest, donc ni le
           # site ni le vérificateur de mise à jour de l'app ne la voient — c'est

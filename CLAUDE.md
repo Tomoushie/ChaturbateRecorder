@@ -1,4 +1,4 @@
-﻿# Chaturbate Recorder — contexte projet
+# Chaturbate Recorder — contexte projet
 
 App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
@@ -1133,6 +1133,24 @@ restent documentées comme méthode de secours/référence :
    - Portable : `dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true` (~46 Mo compressé, autonome)
    - Récupérer le token : `printf "protocol=https\nhost=github.com\n\n" | git credential fill | grep '^password=' | cut -d= -f2-`
    - Ne JAMAIS inclure `yt-dlp.exe`/`ffmpeg.exe` dans les ZIP de release (licence GPL de ffmpeg — voir README)
+
+**Fichiers attaches aux releases — NE JAMAIS EN SUPPRIMER SANS VERIFIER LES
+DEPENDANCES** (etabli le 2026-08-08). Chaque release porte quatre fichiers, et
+trois d'entre eux ont un consommateur AUTOMATIQUE :
+- `setup.exe` — l'installateur. **Il ne contient pas l'application** : il
+  telecharge `portable.zip` de SA release. Supprimer ce ZIP casse toute
+  installation.
+- `portable.zip` — charge utile de l'installateur, ET cible de la mise a jour
+  interne pour les installations autonomes.
+- `standard.zip` — cible de la mise a jour interne pour les installations
+  dependantes du runtime. 604 Ko : le garder ne coute rien.
+- `sbom.json` — inventaire des dependances (86.0).
+
+La question « peut-on ne publier que le setup.exe ? » s'est posee et la reponse
+est **non** : l'installateur et le verificateur de mise a jour cessent tous deux
+de fonctionner. Le vrai probleme etait la **presentation**, pas le nombre — d'ou
+l'en-tete fixe des notes de release (`body:` dans `publish-release.yml`) qui dit
+lequel prendre. **Le maintenir a jour si un fichier est ajoute ou retire.**
 
 **Vérification visuelle des changements UI** — WinForms ne peut pas être piloté par `computer-use` (exe non reconnu comme "app installée"). À la place : ajouter temporairement dans le constructeur de `MainForm` un handler `Shown += (s,e) => { ... DrawToBitmap ... Environment.Exit(0); }` qui capture un vrai rendu en PNG dans le scratchpad, à regarder via `Read`. Piège découvert : `Form.DrawToBitmap()` ne rend pas correctement le fond d'un `Panel` avec `AutoScroll=true` imbriqué — capturer directement `contentPanel.DrawToBitmap(...)` à la place donne le rendu réel. Pour vérifier une animation (ex: transition de thème) : `Shown += async (s,e) => { ... await Task.Delay(...); Capture(...); TriggerAnimation(); await Task.Delay(...); Capture(...); Environment.Exit(0); }` — capturer après un délai supérieur à la durée de l'animation donne l'état final, `DrawToBitmap` n'étant pas affecté par `Form.Opacity` (qui n'agit que sur le compositing OS, pas le rendu GDI). Toujours retirer ce code de debug avant de committer, et penser aussi à commenter/décommenter `ShowFirstRunDialogs()` si un dialogue de premier lancement bloquerait la capture.
 
