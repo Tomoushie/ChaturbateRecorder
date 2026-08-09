@@ -10,50 +10,63 @@ title: Roadmap
 
 # Roadmap
 
-État d'avancement du projet — voir aussi le
+Ce que le projet fait déjà, ce qui est prévu, et ce qui ne se fera pas — avec
+la raison dans chaque cas. Voir aussi le
 [changelog complet des releases](https://github.com/Tomoushie/ChaturbateRecorder/releases)
 et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 
 ## ✅ Déjà en place
 
-- **Sécurité** : sandbox de chemins/URLs, vérification d'intégrité des
-  binaires externes, détection d'ACL permissives, TLS/SAN du serveur
-  distant — voir la [page Fonctionnalités](features.html).
-- **Robustesse** : watchdog anti-freeze, traitement `ffmpeg`/`yt-dlp` hors
-  thread d'interface, logs JSON structurés avec rotation.
-- **Interface modernisée** : thème clair/sombre animé, mode simple/avancé,
-  notifications toast, icônes vectorielles, fenêtre Paramètres dédiée.
-- **Multi-langue** : sélecteur Français/English pour l'interface
-  principale.
-- **Mises à jour intégrées** : vérification et installation automatique
-  des nouvelles releases GitHub.
-- **CI/CD** : build + tests automatiques, publication de release
-  automatisée (build, ZIP standard/portable, upload), analyse de sécurité
-  (CodeQL + audit des dépendances), déploiement automatique de ce site.
-- **Distribution** : releases au format standard (nécessite le runtime
-  .NET) et portable (autonome, single-file).
-- **Package NuGet** : les validateurs de sécurité sont aussi disponibles
-  séparément dans
+- **Quatre plateformes** : Chaturbate, Twitch, YouTube et TikTok. Colle
+  l'adresse du live, celle que tu utiliserais dans ton navigateur.
+- **Installateur Windows** : `setup.exe` télécharge l'application, yt-dlp et
+  ffmpeg, vérifie leurs empreintes, et n'exige aucun droit administrateur. Le
+  format portable reste disponible.
+- **Enregistrement** : plusieurs lives en parallèle, choix de la qualité, du
+  codec et du conteneur, réencodage optionnel sans jamais toucher au fichier
+  d'origine, minuteur d'arrêt par enregistrement, reconnexion automatique.
+- **Surveillance** : une liste de salons contrôlée à intervalle régulier,
+  l'enregistrement démarrant dès qu'un live commence.
+- **Mode dégradé** : un composant défaillant est désactivé et signalé au
+  démarrage plutôt que de faire échouer une capture plus tard.
+- **Sécurité** : empreintes et signatures des binaires externes, bac à sable
+  de chemins et d'URL, détection d'ACL permissives, épinglage TLS, contrôle du
+  dossier d'exécution — voir la [page Fonctionnalités](features.html).
+- **Interface** : thème clair/sombre, cartes, mode simple/avancé, notifications,
+  historique avec miniatures, fenêtre Paramètres dédiée, bilingue FR/EN.
+- **Mises à jour intégrées** : vérification automatique et installation, avec
+  contrôle d'intégrité de l'archive téléchargée.
+- **CI/CD** : build et tests automatiques, releases publiées de bout en bout,
+  analyse de sécurité (CodeQL, audit des dépendances), SBOM attaché à chaque
+  release, déploiement automatique de ce site.
+- **Package NuGet** : les garde-fous de sécurité et la supervision de processus
+  sont réutilisables séparément dans
   [`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard).
 
 ## 🚧 Prévu
 
-- **Portage macOS** de l'application.
-- **Extension navigateur** détectant automatiquement les sources
-  compatibles pour les intégrer au logiciel, puis portée sur macOS/Safari
-  une fois disponible sur Windows.
-- **Installateur** Windows avec étapes d'installation graphiques, en plus
-  du format portable actuel.
+- **Mode ligne de commande** pour automatiser un enregistrement sans ouvrir la
+  fenêtre (tâches planifiées, scripts).
+- **Signalement de bug depuis l'application**, sans compte GitHub.
+- **Système de modules** pour ajouter une plateforme sans toucher au cœur du
+  logiciel.
+- **Portage macOS**, puis **extension navigateur** détectant les sources
+  compatibles.
 
-## ⛔ Écarté ou bloqué
+## ⛔ Écarté, et pourquoi
 
+- **Instagram** : mesuré, pas supposé — sans session authentifiée, le site
+  redirige vers sa page de connexion et yt-dlp ne peut rien en tirer. La prise
+  en charge attend de pouvoir être éprouvée contre un vrai direct.
 - **Signature Authenticode de l'exécutable** : nécessite un certificat de
-  signature de code, non disponible actuellement — aucune solution
-  purement logicielle possible.
-- **NativeAOT** : non supporté par WinForms à ce jour, ce n'est pas un
-  choix de configuration mais une limitation du framework.
-- **Palette de couleurs pastel** : la palette bleu Windows 11 actuelle a
-  été délibérément conservée.
+  signature de code payant. Aucune solution purement logicielle n'existe, d'où
+  l'avertissement « Éditeur inconnu » de Windows.
+- **NativeAOT** : non supporté par WinForms. C'est une limite du framework, pas
+  un choix de configuration.
+- **Import des favoris du compte** : retiré en v1.24.0. La seule voie technique
+  restante revenait à contourner une protection anti-robots du site, ce que le
+  projet refuse de faire.
+- **Palette pastel** : la palette bleu Windows 11 a été délibérément conservée.
 
 ---
 
@@ -65,48 +78,62 @@ et le [tableau de suivi GitHub](https://github.com/users/Tomoushie/projects/2).
 
 # Roadmap
 
-Project progress — see also the
+What the project already does, what is planned, and what will not happen — with
+the reason in each case. See also the
 [full release changelog](https://github.com/Tomoushie/ChaturbateRecorder/releases)
 and the [GitHub tracking board](https://github.com/users/Tomoushie/projects/2).
 
 ## ✅ Already in place
 
-- **Security**: path/URL sandboxing, external binary integrity
-  verification, permissive-ACL detection, remote server TLS/SAN — see the
-  [Features page](features.html).
-- **Robustness**: anti-freeze watchdog, `ffmpeg`/`yt-dlp` handling off the
-  UI thread, structured JSON logs with rotation.
-- **Modernized interface**: animated light/dark theme, simple/advanced
-  mode, toast notifications, vector icons, dedicated Settings window.
-- **Multi-language**: French/English selector for the main interface.
-- **Built-in updates**: automatic checking and installation of new GitHub
-  releases.
-- **CI/CD**: automatic build + tests, automated release publishing
-  (build, standard/portable ZIP, upload), security analysis (CodeQL +
-  dependency audit), automatic deployment of this site.
-- **Distribution**: releases in standard format (requires the .NET
-  runtime) and portable format (self-contained, single-file).
-- **NuGet package**: the security validators are also available
-  separately in
+- **Four platforms**: Chaturbate, Twitch, YouTube and TikTok. Paste the stream
+  address, the same one you would use in your browser.
+- **Windows installer**: `setup.exe` downloads the application, yt-dlp and
+  ffmpeg, verifies their checksums, and needs no administrator rights. The
+  portable format is still available.
+- **Recording**: several lives in parallel, choice of quality, codec and
+  container, optional re-encoding that never touches the original file, a stop
+  timer per recording, automatic reconnection.
+- **Monitoring**: a list of rooms checked at a regular interval, with recording
+  starting as soon as a stream goes live.
+- **Degraded mode**: a faulty component is disabled and reported at startup,
+  rather than making a capture fail later on.
+- **Security**: checksums and signatures of external binaries, path and URL
+  sandboxing, permissive-ACL detection, TLS pinning, execution-location checks
+  — see the [Features page](features.html).
+- **Interface**: light/dark theme, cards, simple/advanced mode, notifications,
+  history with thumbnails, dedicated Settings window, bilingual FR/EN.
+- **Built-in updates**: automatic checking and installation, with an integrity
+  check on the downloaded archive.
+- **CI/CD**: automatic build and tests, end-to-end release publishing, security
+  analysis (CodeQL, dependency audit), an SBOM attached to every release,
+  automatic deployment of this site.
+- **NuGet package**: the security guardrails and the process supervision are
+  separately reusable through
   [`SentinelGuard`](https://www.nuget.org/packages/SentinelGuard).
 
 ## 🚧 Planned
 
-- **macOS port** of the application.
-- **Browser extension** auto-detecting compatible sources to feed into
-  the app, later ported to macOS/Safari once available on Windows.
-- Windows **installer** with graphical setup steps, in addition to the
-  current portable format.
+- **Command-line mode** to automate a recording without opening the window
+  (scheduled tasks, scripts).
+- **Bug reporting from inside the application**, with no GitHub account.
+- **A module system** to add a platform without touching the core of the
+  software.
+- **macOS port**, then a **browser extension** detecting compatible sources.
 
-## ⛔ Dropped or blocked
+## ⛔ Dropped, and why
 
-- **Authenticode signing of the executable**: requires a code-signing
-  certificate, not currently available — no purely software-side
-  solution exists.
-- **NativeAOT**: not supported by WinForms at this time — a framework
-  limitation, not a configuration choice.
-- **Pastel color palette**: the current Windows 11 blue palette was
-  deliberately kept instead.
+- **Instagram**: measured, not assumed — without an authenticated session the
+  site redirects to its login page and yt-dlp can do nothing with it. Support
+  waits until it can be tested against a real live stream.
+- **Authenticode signing of the executable**: requires a paid code-signing
+  certificate. No software-only solution exists, hence the "Unknown publisher"
+  warning from Windows.
+- **NativeAOT**: not supported by WinForms. A framework limitation, not a
+  configuration choice.
+- **Importing account favourites**: removed in v1.24.0. The only remaining
+  technical route amounted to circumventing the site's bot protection, which
+  this project refuses to do.
+- **Pastel colour palette**: the Windows 11 blue palette was deliberately kept.
 
 ---
 

@@ -32,6 +32,19 @@
 
 ![Capture d'écran de Chaturbate Recorder](Assets/screenshot.png)
 
+## Démarrage rapide — 2 minutes
+
+1. Télécharge **[`setup.exe`](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest)** (2 Mo).
+2. Lance-le. Il installe l'application, yt-dlp et ffmpeg, vérifie leurs empreintes, et ne demande aucun droit administrateur.
+3. Colle l'adresse d'un live — Chaturbate, Twitch, YouTube ou TikTok — et clique sur **Démarrer**.
+
+Rien d'autre à installer : ni .NET, ni yt-dlp, ni ffmpeg. Windows affichera
+« Éditeur inconnu » faute d'un certificat de signature payant — *Informations
+complémentaires* puis *Exécuter quand même*.
+
+Les autres formats (portable, standard) et l'installation manuelle sont
+détaillés dans [Installation](#installation-utilisateurs).
+
 ## Fonctionnalités
 
 - 📺 **Quatre plateformes** — Chaturbate, **Twitch**, **YouTube** et **TikTok**. Colle l'adresse du live, celle que tu utiliserais dans ton navigateur.

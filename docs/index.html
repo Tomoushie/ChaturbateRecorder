@@ -151,6 +151,31 @@
 </header>
 
 <main>
+  <!--
+    106.0 — Démarrage rapide, placé AVANT les fonctionnalités : quelqu'un qui
+    arrive ici veut d'abord savoir s'il peut essayer, pas lire une liste de
+    caractéristiques. Trois étapes, aucune décision à prendre.
+  -->
+  <section>
+    <h2 id="quickTitle"></h2>
+    <p id="quickIntro"></p>
+    <div class="grid">
+      <div class="card">
+        <h3 id="step1Title"></h3>
+        <p id="step1Desc"></p>
+      </div>
+      <div class="card">
+        <h3 id="step2Title"></h3>
+        <p id="step2Desc"></p>
+      </div>
+      <div class="card">
+        <h3 id="step3Title"></h3>
+        <p id="step3Desc"></p>
+      </div>
+    </div>
+    <div class="note" id="quickNote"></div>
+  </section>
+
   <section>
     <h2 id="featuresTitle"></h2>
     <div class="grid">
@@ -217,8 +242,16 @@
       navScreenshots: "Captures d'écran",
       navSentinelGuard: "SentinelGuard (NuGet)",
       navRoadmap: "Roadmap",
-      navLegal: "Legality",
       navLegal: "Légalité",
+      quickTitle: "Démarrage rapide",
+      quickIntro: "Deux minutes, trois étapes, aucune configuration.",
+      step1Title: "1. Télécharger",
+      step1Desc: "Prends setup.exe dans la dernière release. Il pèse 2 Mo.",
+      step2Title: "2. Installer",
+      step2Desc: "Lance-le. Il télécharge l'application, yt-dlp et ffmpeg, vérifie leurs empreintes, et n'a besoin d'aucun droit administrateur.",
+      step3Title: "3. Enregistrer",
+      step3Desc: "Colle l'adresse d'un live — Chaturbate, Twitch, YouTube ou TikTok — et clique sur Démarrer.",
+      quickNote: "Rien d'autre à installer : ni .NET, ni yt-dlp, ni ffmpeg. Windows affichera « Éditeur inconnu » au lancement de l'installateur, faute d'un certificat de signature payant — clique sur <em>Informations complémentaires</em> puis <em>Exécuter quand même</em>.",
       featuresTitle: "Fonctionnalités",
       feat1Title: "Multi-stream",
       feat1Desc: "Enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.",
@@ -232,9 +265,9 @@
       feat5Desc: "Support d'un proxy SOCKS5/HTTP et import de cookies navigateur pour le contenu réservé aux comptes connectés.",
       feat6Title: "Mises à jour intégrées",
       feat6Desc: "Bouton \"Rechercher une mise à jour\" qui vérifie les releases GitHub et installe la nouvelle version automatiquement.",
-      installTitle: "Installation",
-      installText: "Télécharge le ZIP de la <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">dernière release</a>, extrais-le où tu veux, et lance <code>ChaturbateRecorder.exe</code>.",
-      installNote: "Nécessite le <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe et ffmpeg.exe ne sont pas inclus (voir le README du dépôt) pour rester neutre vis-à-vis de leurs licences respectives — place tes propres binaires dans un dossier <code>Tools\\</code> à côté de l'exécutable.",
+      installTitle: "Les autres formats",
+      installText: "Si tu préfères te passer de l'installateur, chaque <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">release</a> attache aussi deux archives : <strong>portable</strong> (~46 Mo, autonome, aucun runtime requis) et <strong>standard</strong> (~600 Ko, nécessite le <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>). Extrais celle que tu veux et lance <code>ChaturbateRecorder.exe</code>.",
+      installNote: "Dans ce cas seulement, place toi-même <code>yt-dlp.exe</code> et <code>ffmpeg.exe</code> à côté de l'exécutable : ils ne sont pas inclus dans les archives, la licence GPL de ffmpeg imposant de ne pas le redistribuer ici. L'installateur, lui, s'en charge et vérifie leurs empreintes.",
       sourceTitle: "Code source",
       sourceText: "Le projet est open source sur <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, retours et rapports de bugs sont les bienvenus via les issues du dépôt.",
       footerSponsor: "❤ Sponsoriser",
@@ -249,6 +282,18 @@
       navScreenshots: "Screenshots",
       navSentinelGuard: "SentinelGuard (NuGet)",
       navRoadmap: "Roadmap",
+      // Absente jusqu'ici : le lien « Légalité » affichait donc "undefined"
+      // sur toute la version anglaise du site.
+      navLegal: "Legality",
+      quickTitle: "Quick start",
+      quickIntro: "Two minutes, three steps, no configuration.",
+      step1Title: "1. Download",
+      step1Desc: "Grab setup.exe from the latest release. It weighs 2 MB.",
+      step2Title: "2. Install",
+      step2Desc: "Run it. It downloads the application, yt-dlp and ffmpeg, verifies their checksums, and needs no administrator rights.",
+      step3Title: "3. Record",
+      step3Desc: "Paste a stream address — Chaturbate, Twitch, YouTube or TikTok — and click Start.",
+      quickNote: "Nothing else to install: no .NET, no yt-dlp, no ffmpeg. Windows will say \"Unknown publisher\" when the installer starts, for lack of a paid signing certificate — click <em>More info</em> then <em>Run anyway</em>.",
       featuresTitle: "Features",
       feat1Title: "Multi-stream",
       feat1Desc: "Records multiple lives in parallel without opening multiple instances of the app.",
@@ -262,9 +307,9 @@
       feat5Desc: "SOCKS5/HTTP proxy support and browser cookie import for content restricted to logged-in accounts.",
       feat6Title: "Built-in updates",
       feat6Desc: "\"Check for updates\" button that checks GitHub releases and installs the new version automatically.",
-      installTitle: "Installation",
-      installText: "Download the ZIP of the <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">latest release</a>, extract it wherever you like, and launch <code>ChaturbateRecorder.exe</code>.",
-      installNote: "Requires the <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>. yt-dlp.exe and ffmpeg.exe are not included (see the repo's README) to stay neutral regarding their respective licenses — place your own binaries in a <code>Tools\\</code> folder next to the executable.",
+      installTitle: "The other formats",
+      installText: "If you would rather skip the installer, every <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">release</a> also attaches two archives: <strong>portable</strong> (~46 MB, self-contained, no runtime needed) and <strong>standard</strong> (~600 KB, requires the <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>). Extract the one you want and launch <code>ChaturbateRecorder.exe</code>.",
+      installNote: "In that case only, place <code>yt-dlp.exe</code> and <code>ffmpeg.exe</code> next to the executable yourself: they are not included in the archives, as ffmpeg's GPL licence means it is not redistributed here. The installer handles them for you, and verifies their checksums.",
       sourceTitle: "Source code",
       sourceText: "The project is open source on <a href=\"https://github.com/Tomoushie/ChaturbateRecorder\">GitHub</a>. Contributions, feedback, and bug reports are welcome via the repo's issues.",
       footerSponsor: "❤ Sponsor",
@@ -284,6 +329,13 @@
     document.getElementById("navSentinelGuard").textContent = s.navSentinelGuard;
     document.getElementById("navRoadmap").textContent = s.navRoadmap;
     document.getElementById("navLegal").textContent = s.navLegal;
+    document.getElementById("quickTitle").textContent = s.quickTitle;
+    document.getElementById("quickIntro").textContent = s.quickIntro;
+    for (var k = 1; k <= 3; k++) {
+      document.getElementById("step" + k + "Title").textContent = s["step" + k + "Title"];
+      document.getElementById("step" + k + "Desc").textContent = s["step" + k + "Desc"];
+    }
+    document.getElementById("quickNote").innerHTML = s.quickNote;
     document.getElementById("featuresTitle").textContent = s.featuresTitle;
     for (var i = 1; i <= 6; i++) {
       document.getElementById("feat" + i + "Title").textContent = s["feat" + i + "Title"];
