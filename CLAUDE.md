@@ -54,6 +54,30 @@ uniquement, pas de bump) :
   utilisateurs de l'app ne sont de toute facon pas affectes, le verificateur de
   mise a jour lit l'API GitHub et non le site.
 
+**106.0 / 107.0 (2026-08-09) — démarrage rapide et roadmap** (site, README et
+wiki uniquement : aucun changement applicatif, pas de bump) :
+- **107.0 reposait sur une prémisse fausse** : « ajouter une roadmap publique »
+  — elle existe depuis 37.0. Le vrai problème était qu'elle avait vieilli au
+  point d'induire en erreur (l'installateur y figurait comme « prévu » alors
+  qu'il est livré depuis la v1.27.x, rien sur les quatre plateformes ni la
+  surveillance). **Réflexe à garder** : vérifier ce qui existe avant de créer,
+  un item du backlog peut avoir été traité par une autre voie.
+- **La section « écarté » dit désormais POURQUOI** : Instagram mesuré
+  infaisable, Authenticode bloqué sur un certificat payant, import des favoris
+  retiré pour ne pas contourner une protection. Une roadmap qui explique ses
+  refus vaut mieux qu'une liste de promesses — et évite qu'on redemande.
+- **Deux défauts trouvés sur la PAGE D'ACCUEIL en écrivant 106.0** :
+  - sa section Installation était **fausse** : elle ignorait `setup.exe`,
+    présentait le runtime .NET comme nécessaire, et demandait de placer yt-dlp
+    et ffmpeg dans un dossier `Tools\` qui n'existe plus. Elle envoyait donc
+    tout visiteur vers le chemin le plus pénible, avec une instruction qui ne
+    marche pas ;
+  - le lien « Légalité » affichait **"undefined"** sur toute la version
+    ANGLAISE : la clé `navLegal` manquait dans le bloc `en` alors que
+    `setLanguage` la lit sans garde, et le bloc `fr` la définissait deux fois.
+- **Vérifié dans un navigateur**, pas seulement relu : la page d'accueil rend
+  et bascule FR/EN correctement, puis contrôlée en ligne après déploiement.
+
 **109.0 / 110.0 / 111.0 (2026-08-09) — trois régressions signalées en usage
 réel, toutes dans le rendu introduit par 39.0** :
 - **109.0, colonnes de l'historique qui disparaissent.** `DrawItem` est levé
