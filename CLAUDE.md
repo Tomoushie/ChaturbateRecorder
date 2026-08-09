@@ -4,12 +4,16 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-09 — version courante : v1.31.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-09 — version courante : v1.32.0 (app), SentinelGuard 1.1.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
-**Dernier tag PUBLIÉ : v1.28.1.** Les v1.29.0, v1.30.0 et v1.31.0 vivent sur
-`main` sans tag, à la demande de l'utilisateur (il voulait 39.0 puis 36.0
-avant de publier). Vérifier avec lui avant de taguer quoi que ce soit :
-`git tag` + push déclenche la publication d'une release publique.
+**Tags publiés à jour** : v1.29.0 à v1.32.0 sont sorties le 2026-08-09, ainsi
+que `sentinelguard-v1.1.0` sur nuget.org. **Redemander avant tout tag** : il
+déclenche une release publique.
+
+**SentinelGuard 1.2.0 est prêt mais NON publié** : le package contient déjà le
+correctif « `@` autorisé dans un segment d'URL » (indispensable à YouTube et
+TikTok), livré à l'application par référence de projet. Le publier demande un
+tag `sentinelguard-v1.2.0`.
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
@@ -54,6 +58,55 @@ uniquement, pas de bump) :
   a deux fichiers apres chaque release** et rattraper au besoin — les
   utilisateurs de l'app ne sont de toute facon pas affectes, le verificateur de
   mise a jour lit l'API GitHub et non le site.
+
+**v1.32.0 (2026-08-09) — 40.0 : Twitch, YouTube et TikTok** :
+- **Tout a été MESURÉ sur le vrai yt-dlp avant d'écrire une ligne d'interface**,
+  et c'est la mesure qui a dicté la conception. Les quatre découvertes :
+  - Twitch et TikTok hors ligne disent « The channel is not currently live ».
+    Sans ce marqueur, `RoomStatusChecker` retombait en `Unknown` sur ces deux
+    plateformes : la surveillance n'aurait **jamais** rien déclenché, en
+    silence. Mode de panne identique à celui de la v1.26.1.
+  - **Twitch distingue un compte inexistant** (« does not exist ») d'un compte
+    hors ligne, là où Chaturbate rend les deux indiscernables. D'où
+    `RoomStatus.NotFound` : une faute de frappe n'est plus attendue
+    indéfiniment (défaut que la v1.25.0 avait dû documenter faute de pouvoir le
+    corriger).
+  - **YouTube rend le code de sortie 0 MÊME sur une vidéo ordinaire.** S'en
+    tenir au code de retour aurait fait « surveiller » une VOD et lancé un
+    enregistrement immédiat. D'où la lecture de `live_status`, qui fiabilise au
+    passage le chemin Chaturbate. `NA` (champ non renseigné) retombe sur le
+    code de sortie, pour ne rien changer au comportement existant.
+  - Le premier segment d'URL vaut `watch` sur `youtube.com/watch?v=ID` : tous
+    les enregistrements YouTube auraient porté le même nom de fichier. D'où
+    `Services/StreamPlatform.cs`, qui sait tirer un nom de chaque forme d'URL
+    et le nettoie de ce qui est interdit dans un chemin.
+- **Piège trouvé avant l'UI** : le bac à sable d'URL refusait `@` dans un
+  segment, donc `youtube.com/@chaîne` et `tiktok.com/@compte`. Corrigé dans
+  SentinelGuard (1.2.0, non publié) : le `@` dangereux est celui de
+  l'AUTORITÉ (`user:pass@hôte`), qui ne peut pas se trouver dans un segment et
+  que `Uri.UserInfo` refuse déjà un cran plus haut. Un test le prouve.
+- **`AppConfig.Whitelist` est DÉRIVÉE de `Platforms.AllowedDomains`** : deux
+  listes auraient fini par diverger, et une plateforme ajoutée à l'une mais pas
+  à l'autre donne des URLs refusées sans raison compréhensible. Un test vérifie
+  que chaque plateforme reconnue passe le bac à sable.
+- **INSTAGRAM DEMANDÉ MAIS ÉCARTÉ, mesuré infaisable** : sans session
+  authentifiée il redirige vers `/accounts/login/` et yt-dlp répond
+  « Unsupported URL ». Écrire l'UI, les traductions et les tests avant d'avoir
+  vérifié le contact réel est exactement l'erreur de 92.0 (quatre versions
+  perdues). **Ce qu'il faudrait pour reprendre** : un `cookies.txt` couvrant
+  instagram.com ET un direct en cours au moment du test — un lien seul ne
+  suffit pas.
+- **Le NOM du logiciel ne change pas** (décision du mainteneur). Seuls les
+  libellés se neutralisent : « URL du live », colonne « Source ».
+- **Note de légalité généralisée** dans l'app ET le wiki (FR/EN) : sur les
+  plateformes non adultes l'enjeu est le droit d'auteur et non le consentement,
+  et enfreindre des conditions d'utilisation reste contractuel, pas pénal.
+- **Wiki mis à jour au passage** : la page Installation ne mentionnait NULLE
+  PART `setup.exe` et affirmait qu'il fallait fournir yt-dlp/ffmpeg soi-même —
+  faux depuis l'installateur. C'est la première page que lit un nouveau venu.
+  Aperçu de l'interface ajouté (FR/EN), données factices.
+- **Tests** : `Tests/PlatformsTests.cs` (20) + 9 cas de classification bâtis sur
+  les sorties réelles, **201 au total**.
 
 **Fusion Security/ ↔ SentinelGuard (2026-08-09, suite immédiate de 36.0)** — pas
 de bump applicatif, rien de visible ne change :

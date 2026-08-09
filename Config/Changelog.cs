@@ -269,6 +269,15 @@ namespace ChaturbateRecorderApp.Config
                 "Les intitulés de champ passent au second plan et le pourcentage d'un enregistrement s'affiche en nombre entier : la décimale changeait plusieurs fois par seconde sans rien apprendre à personne.",
                 "Les libellés de boutons sont réellement centrés avec leur icône, quel que soit leur largeur.",
             }),
+
+            ("1.32.0", new[]
+            {
+                "Trois nouvelles plateformes : Twitch, YouTube et TikTok. Colle l'adresse du live comme tu le ferais pour Chaturbate — le champ s'appelle désormais « URL du live ».",
+                "La surveillance sait maintenant dire qu'une chaîne n'existe pas, au lieu d'attendre indéfiniment une adresse mal saisie.",
+                "Sur YouTube, seuls les vrais directs déclenchent un enregistrement : une vidéo déjà publiée n'est plus prise pour un live.",
+                "Les enregistrements YouTube portent enfin le nom de la chaîne ou de la vidéo, au lieu de s'appeler tous « watch ».",
+                "La note de légalité couvre les nouvelles plateformes : sur celles qui ne sont pas adultes, l'enjeu est le droit d'auteur, et enfreindre des conditions d'utilisation reste contractuel, pas pénal.",
+            }),
         };
 
         /// <summary>
@@ -417,6 +426,14 @@ namespace ChaturbateRecorderApp.Config
                 "Lists and fields finally follow the dark theme: no more white column header above a black list, and no more light border around text fields and drop-down menus.",
                 "Field labels step back visually, and a recording's percentage is shown as a whole number: the decimal changed several times a second without telling anyone anything.",
                 "Button labels are genuinely centred together with their icon, whatever the button width.",
+            },
+            ["1.32.0"] = new[]
+            {
+                "Three new platforms: Twitch, YouTube and TikTok. Paste the stream address just as you would for Chaturbate — the field is now called \"Stream URL\".",
+                "Monitoring can now tell you that a channel does not exist, instead of waiting forever on a mistyped address.",
+                "On YouTube, only actual live streams start a recording: an already published video is no longer mistaken for a live one.",
+                "YouTube recordings are finally named after the channel or the video, instead of all being called \"watch\".",
+                "The legality note now covers the new platforms: on non-adult ones the issue is copyright, and breaching terms of service remains contractual, not criminal.",
             },
         };
 
