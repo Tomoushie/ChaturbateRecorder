@@ -6,15 +6,18 @@ using System.Security.Principal;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Détecte si un groupe largement partagé (Everyone, BUILTIN\Users,
-    /// Authenticated Users) dispose d'un droit d'écriture sur un dossier
-    /// donné — un autre compte local pourrait sinon remplacer un binaire
-    /// vérifié par un binaire malveillant, ou altérer des fichiers sensibles.
-    /// Volontairement non bloquant par nature (retourne un booléen + détail,
-    /// à toi de décider quoi en faire) : "AUTORITE NT\Utilisateurs authentifiés"
-    /// hérite de droits Modify par défaut sur la plupart des dossiers Windows
-    /// non durcis.
+    /// Detects whether a broad group (Everyone, BUILTIN\Users, Authenticated
+    /// Users) holds write access on a directory — otherwise another local
+    /// account could swap a binary you just verified, or tamper with sensitive
+    /// files.
     /// </summary>
+    /// <remarks>
+    /// Deliberately informational rather than blocking: it returns a boolean
+    /// plus the offending rule, and you decide what to do. On most non-hardened
+    /// Windows installations, <c>NT AUTHORITY\Authenticated Users</c> inherits
+    /// Modify rights on a great many directories — treating that as fatal would
+    /// stop the application on perfectly ordinary machines.
+    /// </remarks>
     public static class AclValidator
     {
         private const FileSystemRights WriteMask =
@@ -78,7 +81,7 @@ namespace SentinelGuard
                         if (identity.Equals(sid))
                         {
                             var name = TryTranslate(identity);
-                            details = $"{name} a un droit d'écriture ({rule.FileSystemRights}) sur '{directoryPath}'";
+                            details = $"{name} has write access ({rule.FileSystemRights}) on '{directoryPath}'";
                             return true;
                         }
                     }
@@ -88,7 +91,7 @@ namespace SentinelGuard
             }
             catch (Exception ex)
             {
-                details = $"Impossible de vérifier les ACL de '{directoryPath}' : {ex.Message}";
+                details = $"Could not read the ACLs of '{directoryPath}': {ex.Message}";
                 return false;
             }
         }

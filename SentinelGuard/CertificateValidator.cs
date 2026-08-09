@@ -8,13 +8,13 @@ using System.Security.Cryptography.X509Certificates;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Vérification TLS explicite d'un serveur distant (pinning optionnel) et
-    /// vérification du SAN (Subject Alternative Name).
+    /// Explicit TLS verification of a remote server (optional pinning) and
+    /// Subject Alternative Name (SAN) validation.
     ///
-    /// Note : .NET valide déjà le nom d'hôte nativement pendant
-    /// SslStream.AuthenticateAsClient (remonté via sslPolicyErrors, capté
-    /// ci-dessous). La vérification SAN explicite ajoutée ici est une défense
-    /// en profondeur, pas un correctif d'une faille béante.
+    /// Note: .NET already validates the host name natively during
+    /// SslStream.AuthenticateAsClient (surfaced through sslPolicyErrors, caught
+    /// below). The explicit SAN check added here is defence in depth, not a fix
+    /// for a gaping hole.
     /// </summary>
     public static class CertificateValidator
     {
@@ -89,7 +89,7 @@ namespace SentinelGuard
 
                 if (sslStream.RemoteCertificate == null)
                 {
-                    reason = $"Aucun certificat reçu du serveur {hostName}.";
+                    reason = $"No certificate received from server {hostName}.";
                     return false;
                 }
 
@@ -97,7 +97,7 @@ namespace SentinelGuard
 
                 if (DateTime.Now < remoteCert.NotBefore || DateTime.Now > remoteCert.NotAfter)
                 {
-                    reason = $"Certificat serveur hors période de validité pour {hostName}.";
+                    reason = $"Server certificate outside its validity period for {hostName}.";
                     return false;
                 }
 
@@ -114,7 +114,7 @@ namespace SentinelGuard
 
                 if (!string.IsNullOrEmpty(expectedIssuer) && remoteCert.Issuer != expectedIssuer)
                 {
-                    reason = $"Émetteur serveur inattendu pour {hostName}.";
+                    reason = $"Unexpected server issuer for {hostName}.";
                     return false;
                 }
 
@@ -128,7 +128,7 @@ namespace SentinelGuard
             }
             catch (Exception ex)
             {
-                reason = $"Erreur lors de la vérification TLS de {hostName} : {ex.Message}";
+                reason = $"Error while verifying TLS for {hostName}: {ex.Message}";
                 return false;
             }
         }
@@ -172,7 +172,7 @@ namespace SentinelGuard
 
             if (sanExtension == null)
             {
-                reason = "Aucune extension SAN (Subject Alternative Name) trouvée sur le certificat.";
+                reason = "No Subject Alternative Name (SAN) extension found on the certificate.";
                 return false;
             }
 
@@ -183,13 +183,13 @@ namespace SentinelGuard
             }
             catch (Exception ex)
             {
-                reason = $"Erreur lors du décodage de l'extension SAN : {ex.Message}";
+                reason = $"Error while decoding the SAN extension: {ex.Message}";
                 return false;
             }
 
             if (dnsNames.Count == 0)
             {
-                reason = "Extension SAN présente mais aucune entrée DNS Name exploitable.";
+                reason = "SAN extension present but no usable DNS Name entry.";
                 return false;
             }
 
@@ -207,16 +207,16 @@ namespace SentinelGuard
                 }
             }
 
-            reason = $"Le nom d'hôte '{expectedHostName}' ne correspond à aucune entrée SAN du certificat.";
+            reason = $"Host name '{expectedHostName}' matches no SAN entry on the certificate.";
             return false;
         }
 
         /// <summary>
-        /// Décode les entrées dNSName de l'extension SAN (OID 2.5.29.17) via un
-        /// parsing ASN.1 direct (System.Formats.Asn1), plutôt que via
-        /// X509Extension.Format() dont la sortie est LOCALISÉE selon la langue
-        /// de l'OS ("DNS Name=" en anglais, "Nom DNS=" en français...).
-        /// dNSName est encodé en GeneralName comme [2] IMPLICIT IA5String.
+        /// Decodes the dNSName entries of the SAN extension (OID 2.5.29.17) through
+        /// direct ASN.1 parsing (System.Formats.Asn1) rather than through
+        /// X509Extension.Format(), whose output is LOCALISED to the language of the
+        /// OS ("DNS Name=" in English, "Nom DNS=" in French, and so on).
+        /// dNSName is encoded in GeneralName as [2] IMPLICIT IA5String.
         /// </summary>
         private static List<string> ParseDnsSanEntries(byte[] rawData)
         {

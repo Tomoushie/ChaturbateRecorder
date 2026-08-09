@@ -4,11 +4,11 @@ using System.IO;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Vérifie qu'un exécutable tourne depuis un emplacement légitime : ni un
-    /// partage réseau (UNC ou lecteur mappé), ni un dossier temporaire/éphémère
-    /// (%TEMP%, Téléchargements, Bureau, Corbeille), ni un dossier compressé
-    /// NTFS. Défense contre les "repacks" qui s'exécutent après extraction
-    /// furtive dans %TEMP% ou depuis un partage distant non fiable.
+    /// Checks that an executable runs from a legitimate location: not a network
+    /// share (UNC or mapped drive), not a temporary or ephemeral folder
+    /// (<c>%TEMP%</c>, Downloads, Desktop, recycle bin), and not an
+    /// NTFS-compressed folder. A defence against repacks that run straight after
+    /// being extracted into <c>%TEMP%</c>, or from an untrusted remote share.
     /// </summary>
     public static class WorkingDirectoryValidator
     {
@@ -47,7 +47,7 @@ namespace SentinelGuard
 
             if (string.IsNullOrWhiteSpace(appDir))
             {
-                reason = "Dossier d'exécution vide.";
+                reason = "Execution directory is empty.";
                 return false;
             }
 
@@ -55,7 +55,7 @@ namespace SentinelGuard
 
             if (normalized.StartsWith(@"\\", StringComparison.Ordinal))
             {
-                reason = $"Exécution depuis un partage réseau UNC interdite : {normalized}";
+                reason = $"Running from a UNC network share is not allowed: {normalized}";
                 return false;
             }
 
@@ -67,7 +67,7 @@ namespace SentinelGuard
                     var drive = new DriveInfo(root);
                     if (drive.DriveType == DriveType.Network)
                     {
-                        reason = $"Exécution depuis un lecteur réseau mappé interdite : {normalized} ({root})";
+                        reason = $"Running from a mapped network drive is not allowed: {normalized} ({root})";
                         return false;
                     }
                 }
@@ -93,14 +93,14 @@ namespace SentinelGuard
                 if (normalized.Equals(normalizedRisky, StringComparison.OrdinalIgnoreCase) ||
                     normalized.StartsWith(normalizedRisky + @"\", StringComparison.OrdinalIgnoreCase))
                 {
-                    reason = $"Exécution depuis un dossier temporaire/éphémère interdite : {normalized}";
+                    reason = $"Running from a temporary or ephemeral folder is not allowed: {normalized}";
                     return false;
                 }
             }
 
             if (normalized.IndexOf(@"$Recycle.Bin", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                reason = $"Exécution depuis la corbeille interdite : {normalized}";
+                reason = $"Running from the recycle bin is not allowed: {normalized}";
                 return false;
             }
 
@@ -111,7 +111,7 @@ namespace SentinelGuard
                     var attrs = File.GetAttributes(normalized);
                     if ((attrs & FileAttributes.Compressed) != 0)
                     {
-                        reason = $"Exécution depuis un dossier compressé NTFS interdite : {normalized}";
+                        reason = $"Running from an NTFS-compressed folder is not allowed: {normalized}";
                         return false;
                     }
                 }

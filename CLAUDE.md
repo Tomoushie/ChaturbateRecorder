@@ -87,9 +87,16 @@ de bump applicatif, rien de visible ne change :
   s'ouvrir. Lancée pour de vrai : démarre, tourne, aucun rapport de crash, et
   l'avertissement d'ACL permissive prouve que les validateurs du package
   s'exécutent.
-- **Reste en français** : les motifs de refus du package. Incohérent pour un
-  package dont tout le reste (README, docs XML, description nuget.org) est en
-  anglais — **à trancher avant de publier 1.1.0**.
+- **Motifs de refus traduits en anglais (2026-08-09, avant publication)** :
+  ils étaient en français dans un package dont tout le reste (README, docs XML,
+  description nuget.org) est anglais. **Règle qui en découle** : dans
+  `SentinelGuard/`, les commentaires `//` restent en français comme partout dans
+  le dépôt, mais tout ce qui SORT du package — docs `///` (elles partent dans le
+  .xml d'IntelliSense) et chaînes `reason`/`details` — s'écrit en anglais.
+- **Effet de bord assumé côté application** : ses logs, français, contiennent
+  désormais des motifs anglais (« Chemin de log refusé : Path is empty. »). Sans
+  gravité — la sortie brute de yt-dlp y est déjà en anglais — et c'était le prix
+  d'un seul exemplaire du code.
 
 **36.0 traité (2026-08-09) — SentinelGuard 1.1.0, et l'application le CONSOMME**
 (pas de bump applicatif : aucun changement visible, ça part avec la v1.31.0 non

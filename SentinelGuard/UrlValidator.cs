@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Validation stricte des URLs (schéma, hôte, segments, query string).
+    /// Strict URL validation: scheme, host, path segments and query string.
     /// </summary>
     public static class UrlValidator
     {
@@ -152,7 +152,7 @@ namespace SentinelGuard
 
             if (string.IsNullOrWhiteSpace(urlToTest))
             {
-                reason = "URL vide.";
+                reason = "URL is empty.";
                 return false;
             }
 
@@ -160,25 +160,25 @@ namespace SentinelGuard
             try { uri = new Uri(urlToTest); }
             catch (Exception ex)
             {
-                reason = $"URL malformée : {ex.Message}";
+                reason = $"Malformed URL: {ex.Message}";
                 return false;
             }
 
             var scheme = uri.Scheme.ToLowerInvariant();
             if (Array.IndexOf(ForbiddenSchemes, scheme) >= 0)
             {
-                reason = $"Schéma interdit : {scheme}://";
+                reason = $"Scheme not allowed: {scheme}://";
                 return false;
             }
             if (scheme != "https")
             {
-                reason = "Seul le schéma https:// est autorisé.";
+                reason = "Only the https:// scheme is allowed.";
                 return false;
             }
 
             if (!string.IsNullOrEmpty(uri.UserInfo))
             {
-                reason = "Identifiants intégrés dans l'URL interdits.";
+                reason = "Credentials embedded in the URL are not allowed.";
                 return false;
             }
 
@@ -187,13 +187,13 @@ namespace SentinelGuard
             // explicite protège aussi si la whitelist est élargie par erreur).
             if (uri.Host == "localhost" || uri.Host == "127.0.0.1" || uri.Host == "::1")
             {
-                reason = $"Hôte local/loopback interdit : {uri.Host}";
+                reason = $"Local/loopback host not allowed: {uri.Host}";
                 return false;
             }
 
             if (!IsDomainAllowed(uri.Host, allowedDomains, blacklist))
             {
-                reason = $"Domaine non autorisé : {uri.Host}";
+                reason = $"Domain not allowed: {uri.Host}";
                 return false;
             }
 
@@ -202,7 +202,7 @@ namespace SentinelGuard
             {
                 if (!IsSafePathSegment(seg))
                 {
-                    reason = $"Segment de chemin invalide : '{seg}'";
+                    reason = $"Invalid path segment: '{seg}'";
                     return false;
                 }
             }
@@ -210,7 +210,7 @@ namespace SentinelGuard
             var query = uri.Query.TrimStart('?');
             if (!IsSafeQueryString(query))
             {
-                reason = $"Query string invalide : '{query}'";
+                reason = $"Invalid query string: '{query}'";
                 return false;
             }
 

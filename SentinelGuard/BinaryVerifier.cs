@@ -6,8 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Vérification d'intégrité de binaires externes : hash SHA256, signature
-    /// Authenticode, chaîne de certification, et pinning CA optionnel.
+    /// Integrity checks on external executables: SHA-256 hash, Authenticode
+    /// signature, certificate chain, and optional CA pinning.
     /// </summary>
     public static class BinaryVerifier
     {
@@ -40,7 +40,7 @@ namespace SentinelGuard
 
             if (string.IsNullOrWhiteSpace(expectedHashHex))
             {
-                reason = $"Aucun hash attendu fourni pour '{filePath}' : vérification refusée par sécurité.";
+                reason = $"No expected hash provided for '{filePath}': refusing to verify (fail-closed).";
                 return false;
             }
 
@@ -172,7 +172,7 @@ namespace SentinelGuard
 
                 if (!chain.Build(signerCert))
                 {
-                    reason = $"Échec de la chaîne de certification pour {filePath}";
+                    reason = $"Certificate chain validation failed for {filePath}";
                     return false;
                 }
 
@@ -186,7 +186,7 @@ namespace SentinelGuard
                         || status.Status == X509ChainStatusFlags.NotTimeValid
                         || status.Status == X509ChainStatusFlags.NotSignatureValid)
                     {
-                        reason = $"Statut de chaîne problématique pour {filePath} : {status.Status}";
+                        reason = $"Problematic chain status for {filePath}: {status.Status}";
                         return false;
                     }
                 }
@@ -212,15 +212,15 @@ namespace SentinelGuard
             }
             catch (Exception ex)
             {
-                reason = $"Erreur lors de la vérification Authenticode de {filePath} : {ex.Message}";
+                reason = $"Error while verifying the Authenticode signature of {filePath}: {ex.Message}";
                 return false;
             }
         }
 
         /// <summary>
-        /// Pinning CA local : compare le certificat signataire du binaire à un
-        /// thumbprint/issuer attendu. Note : ceci épingle le certificat FEUILLE
-        /// du signataire, pas une CA racine au sens strict.
+        /// Local CA pinning: compares the certificate that signed the binary to an
+        /// expected thumbprint and issuer. Note that this pins the signer's LEAF
+        /// certificate, not a root CA in the strict sense.
         /// </summary>
         /// <param name="filePath">Path to the signed executable.</param>
         /// <param name="expectedThumbprint">Expected certificate thumbprint.</param>
@@ -247,7 +247,7 @@ namespace SentinelGuard
             {
                 if (string.IsNullOrEmpty(expectedThumbprint))
                 {
-                    reason = $"Aucun thumbprint CA attendu fourni pour {filePath} : vérification refusée par sécurité.";
+                    reason = $"No expected CA thumbprint provided for {filePath}: refusing to verify (fail-closed).";
                     return false;
                 }
 
@@ -265,13 +265,13 @@ namespace SentinelGuard
 
                 if (!string.IsNullOrEmpty(expectedIssuer) && cert.Issuer != expectedIssuer)
                 {
-                    reason = $"Émetteur CA inattendu pour {filePath}.";
+                    reason = $"Unexpected CA issuer for {filePath}.";
                     return false;
                 }
 
                 if (DateTime.Now < cert.NotBefore || DateTime.Now > cert.NotAfter)
                 {
-                    reason = $"Certificat CA hors période de validité pour {filePath}.";
+                    reason = $"CA certificate outside its validity period for {filePath}.";
                     return false;
                 }
 
@@ -282,7 +282,7 @@ namespace SentinelGuard
 
                 if (!chain.Build(cert))
                 {
-                    reason = $"Échec de construction de la chaîne CA pour {filePath}.";
+                    reason = $"Could not build the CA chain for {filePath}.";
                     return false;
                 }
 
@@ -290,7 +290,7 @@ namespace SentinelGuard
             }
             catch (Exception ex)
             {
-                reason = $"Erreur lors de la vérification CA pour {filePath} : {ex.Message}";
+                reason = $"Error while checking the CA for {filePath}: {ex.Message}";
                 return false;
             }
         }

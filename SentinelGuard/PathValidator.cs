@@ -5,9 +5,10 @@ using System.Text.RegularExpressions;
 namespace SentinelGuard
 {
     /// <summary>
-    /// Sandbox de chemins de fichiers : interdiction des UNC, chemins étendus
-    /// (\\?\ , \\.\), espace de noms \Device\, flux ADS, noms réservés Windows,
-    /// symlinks/reparse points (sur le chemin et sur chaque dossier parent).
+    /// Path sandbox: rejects UNC paths, extended paths (\\?\ , \\.\), the
+    /// \Device\ namespace, alternate data streams, Windows reserved device
+    /// names, and symlinks or reparse points — on the path itself and on every
+    /// existing parent directory.
     /// </summary>
     public static class PathValidator
     {
@@ -57,44 +58,44 @@ namespace SentinelGuard
 
             if (string.IsNullOrWhiteSpace(path))
             {
-                reason = "Chemin vide.";
+                reason = "Path is empty.";
                 return false;
             }
 
             if (Regex.IsMatch(path, @"^\\\\[^\?\.]"))
             {
-                reason = $"Chemin UNC interdit : {path}";
+                reason = $"UNC path not allowed: {path}";
                 return false;
             }
 
             if (Regex.IsMatch(path, @"^\\\\\?\\") || Regex.IsMatch(path, @"^\\\\\.\\"))
             {
-                reason = $"Chemin étendu (\\\\?\\ ou \\\\.\\) interdit : {path}";
+                reason = $"Extended path (\\\\?\\ or \\\\.\\) not allowed: {path}";
                 return false;
             }
 
             if (path.IndexOf(@"\Device\", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                reason = $"Chemin faisant référence à \\Device\\ interdit : {path}";
+                reason = $"Path referring to the \\Device\\ namespace not allowed: {path}";
                 return false;
             }
 
             var driveLessPath = Regex.Replace(path, "^[a-zA-Z]:", "");
             if (driveLessPath.Contains(':'))
             {
-                reason = $"Flux alternatif NTFS (ADS) interdit : {path}";
+                reason = $"NTFS alternate data stream (ADS) not allowed: {path}";
                 return false;
             }
 
             if (Regex.IsMatch(path, "[\x00-\x1F]"))
             {
-                reason = $"Caractères de contrôle interdits dans le chemin : {path}";
+                reason = $"Control characters not allowed in a path: {path}";
                 return false;
             }
 
             if (!Regex.IsMatch(path, @"^[a-zA-Z]:\\"))
             {
-                reason = $"Le chemin doit être un chemin absolu local (ex: C:\\...) : {path}";
+                reason = $"Path must be a local absolute path (e.g. C:\\...): {path}";
                 return false;
             }
 
@@ -105,7 +106,7 @@ namespace SentinelGuard
                 var baseName = seg.Split('.')[0].ToUpperInvariant();
                 if (Array.IndexOf(ReservedNames, baseName) >= 0)
                 {
-                    reason = $"Nom de fichier/dossier réservé Windows interdit : '{seg}'";
+                    reason = $"Windows reserved device name not allowed: '{seg}'";
                     return false;
                 }
             }
@@ -117,19 +118,19 @@ namespace SentinelGuard
                     var attrs = File.GetAttributes(path);
                     if ((attrs & FileAttributes.ReparsePoint) != 0)
                     {
-                        reason = $"Symlink / reparse point interdit : {path}";
+                        reason = $"Symlink / reparse point not allowed: {path}";
                         return false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    reason = $"Erreur lors de la vérification du chemin '{path}' : {ex.Message}";
+                    reason = $"Could not inspect path '{path}': {ex.Message}";
                     return false;
                 }
             }
             else if (mustExist)
             {
-                reason = $"Chemin introuvable : {path}";
+                reason = $"Path does not exist: {path}";
                 return false;
             }
 
@@ -142,7 +143,7 @@ namespace SentinelGuard
                     var attrs = File.GetAttributes(current);
                     if ((attrs & FileAttributes.ReparsePoint) != 0)
                     {
-                        reason = $"Un dossier parent est un symlink / reparse point : {current}";
+                        reason = $"A parent directory is a symlink / reparse point: {current}";
                         return false;
                     }
                 }
