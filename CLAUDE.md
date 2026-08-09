@@ -59,6 +59,42 @@ uniquement, pas de bump) :
   utilisateurs de l'app ne sont de toute facon pas affectes, le verificateur de
   mise a jour lit l'API GitHub et non le site.
 
+**109.0 / 110.0 / 111.0 (2026-08-09) — trois régressions signalées en usage
+réel, toutes dans le rendu introduit par 39.0** :
+- **109.0, colonnes de l'historique qui disparaissent.** `DrawItem` est levé
+  pour la ligne ENTIÈRE, mais WinForms ne redessine que les cellules croisant
+  la région invalidée. Remplir tout `e.Bounds` dans `DrawItem` effaçait donc
+  des cellules que la passe n'allait pas repeindre : taille, durée et date
+  s'évanouissaient, et un clic — qui invalide tout — les ramenait. **Chaque
+  cellule peint désormais son propre fond dans `DrawSubItem`** ; `DrawItem` ne
+  dessine plus rien en vue Details.
+- **110.0, coins des combos qui scintillent au survol.** La première version
+  repeignait PAR-DESSUS le rendu natif : correct à l'arrêt, mais chaque
+  survol fait repeindre le contrôle dans son état « chaud », visible une
+  fraction de seconde. `ThemedComboBox` traite maintenant `WM_PAINT` **à la
+  place** du natif (BeginPaint/EndPaint, sans appeler `base`), et refuse
+  `WM_ERASEBKGND`. Rien de natif ne subsiste, donc rien ne peut réapparaître.
+- **111.0, boutons « rognés » dans le Guide de démarrage.** Cause réelle :
+  `TutorialForm`, `DiagnosticForm` et `CrashReportForm` **n'appelaient jamais
+  `ThemeManager.Apply`**. Leurs ThemedButton masquaient donc leurs coins
+  arrondis avec `SystemColors.Control` sur un fond clair — quatre angles gris
+  visibles. Deux correctifs : `ThemedButton.SurfaceColor` laissée vide se
+  déduit désormais **du fond du parent** (un bouton non thématisé ne peut plus
+  être laid), et le Guide comme le Diagnostic reçoivent le thème courant — ils
+  s'affichaient d'ailleurs en clair au milieu d'une application sombre.
+- **MÉTHODE, la leçon la plus réutilisable de la journée** : `DrawToBitmap`
+  n'emprunte PAS `WM_PAINT` (il envoie `WM_PRINT`). Tout rendu qui passe par
+  `WM_PAINT` est donc INVISIBLE à la capture habituelle. Ces trois défauts ont
+  dû être vérifiés par `Graphics.CopyFromScreen` sur la fenêtre réelle,
+  `TopMost` activé le temps du cliché — sans quoi une autre fenêtre se
+  retrouve dans l'image.
+- **Contrepartie assumée, mesurée en comparant deux captures d'écran** :
+  `SetWindowTheme(..., "DarkMode_Explorer")`, qui donne les ascenseurs sombres,
+  fait aussi dessiner les séparateurs de colonnes dans la zone vide sous les
+  lignes. Conservé : une barre blanche vive se remarque bien plus qu'un filet
+  gris, qui est le rendu même de l'Explorateur. "ItemsView" essayé, mêmes
+  séparateurs.
+
 **103.0 (2026-08-09) — icônes des plateformes prises en charge** :
 - **Glyphes SIMPLIFIÉS, pas les logos officiels.** IconManager retint chaque
   icône à la couleur du thème, ce que les chartes de YouTube et Twitch

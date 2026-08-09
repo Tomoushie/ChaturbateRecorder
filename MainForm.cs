@@ -394,7 +394,7 @@ namespace ChaturbateRecorderApp
 
         private void ShowTutorial()
         {
-            using var tutorial = new TutorialForm();
+            using var tutorial = new TutorialForm(_currentTheme);
             tutorial.ShowDialog(this);
         }
 
@@ -2563,7 +2563,7 @@ namespace ChaturbateRecorderApp
             reportBugButton.Click += OnReportBugClick;
 
             diagnosticButton = new ThemedButton { Location = new Point(12, topBarRow3Y), Size = new Size(160, topBarButtonHeight) };
-            diagnosticButton.Click += (s, e) => new DiagnosticForm().ShowDialog(this);
+            diagnosticButton.Click += (s, e) => new DiagnosticForm(_currentTheme).ShowDialog(this);
 
             // --- Panel : Enregistrement ---
             // Ancrage Left+Right (fenêtre redimensionnable, v1.7.0) : le panneau

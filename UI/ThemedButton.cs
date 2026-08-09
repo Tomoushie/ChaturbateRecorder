@@ -128,10 +128,28 @@ namespace ChaturbateRecorderApp.UI
             set { if (_iconSize != value) { _iconSize = value; InvalidateIcon(); } }
         }
 
-        /// <summary>Fond de la surface qui porte le bouton — les coins arrondis
-        /// laissent voir cette couleur, faute de vraie transparence.</summary>
+        /// <summary>
+        /// Fond de la surface qui porte le bouton — les coins arrondis laissent
+        /// voir cette couleur, faute de vraie transparence.
+        ///
+        /// **Laissée vide, elle se déduit du parent** (voir
+        /// <see cref="ResolvedSurface"/>). Sans ce repli, un bouton posé dans
+        /// une fenêtre qui n'appelle pas ThemeManager peignait ses coins en gris
+        /// système sur un fond clair : quatre angles visibles, exactement
+        /// l'aspect « bouton rogné » signalé sur le Guide de démarrage (111.0).
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Color SurfaceColor { get; set; } = SystemColors.Control;
+        public Color SurfaceColor { get; set; } = Color.Empty;
+
+        /// <summary>
+        /// Couleur réellement utilisée pour masquer les coins : celle posée par
+        /// le thème si elle existe, sinon le fond du parent, qui est toujours
+        /// juste même quand personne n'a thématisé la fenêtre.
+        /// </summary>
+        private Color ResolvedSurface =>
+            !SurfaceColor.IsEmpty ? SurfaceColor
+            : Parent != null ? Parent.BackColor
+            : SystemColors.Control;
 
         /// <summary>Fond au repos.</summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -143,10 +161,18 @@ namespace ChaturbateRecorderApp.UI
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color PressedFillColor { get; set; } = SystemColors.ControlDark;
 
-        /// <summary>Bordure, ou <see cref="Color.Empty"/> pour aucune (cas des
-        /// boutons pleins, où elle n'ajouterait qu'un liseré plus foncé).</summary>
+        /// <summary>
+        /// Bordure, ou <see cref="Color.Empty"/> pour aucune — ce que
+        /// ThemeManager pose sur les boutons pleins, où elle n'ajouterait qu'un
+        /// liseré plus foncé.
+        ///
+        /// La valeur PAR DÉFAUT en a une, contrairement aux boutons d'accent :
+        /// tant qu'aucun thème n'est appliqué, le fond du bouton est celui du
+        /// système et ne se distingue pas toujours de la fenêtre. Sans bordure,
+        /// le bouton disparaîtrait purement et simplement.
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Color BorderColor { get; set; } = Color.Empty;
+        public Color BorderColor { get; set; } = SystemColors.ControlDark;
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color DisabledFillColor { get; set; } = SystemColors.Control;
@@ -278,7 +304,7 @@ namespace ChaturbateRecorderApp.UI
             // Les coins arrondis découvrent la surface porteuse : sans ce
             // remplissage préalable, ils garderaient le contenu précédent du
             // buffer (traînées noires au redimensionnement).
-            using (var surfaceBrush = new SolidBrush(SurfaceColor))
+            using (var surfaceBrush = new SolidBrush(ResolvedSurface))
                 g.FillRectangle(surfaceBrush, ClientRectangle);
 
             var fill = !Enabled ? DisabledFillColor

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ChaturbateRecorderApp.UI
@@ -15,13 +16,17 @@ namespace ChaturbateRecorderApp.UI
     /// menu déroulant s'ouvrait en blanc. `FlatStyle.Flat` ne change que la
     /// forme du bouton, pas ses couleurs.
     ///
-    /// **Stratégie, volontairement minimale** : on ne remplace pas le contrôle,
-    /// on repeint par-dessus. `DrawMode.OwnerDrawFixed` couvre le texte fermé
-    /// ET les éléments de la liste déroulante (WinForms lève <c>DrawItem</c>
-    /// pour les deux, distingués par <see cref="DrawItemState.ComboBoxEdit"/>),
-    /// et un passage après <c>WM_PAINT</c> redessine la bordure et la flèche.
-    /// Le comportement natif — clavier, ouverture, défilement — reste intact,
-    /// ce qu'une réécriture complète aurait mis en jeu pour un gain nul.
+    /// **Stratégie** : le contrôle natif est conservé — clavier, ouverture,
+    /// défilement du menu restent les siens — mais l'état FERMÉ est dessiné
+    /// intégralement par l'application, à la place du rendu de Windows et non
+    /// par-dessus. `DrawMode.OwnerDrawFixed` couvre les éléments du menu
+    /// déroulant, qui est une fenêtre à part.
+    ///
+    /// **Repeindre par-dessus ne suffisait pas** : c'était la première version,
+    /// correcte à l'arrêt mais scintillante au survol. Chaque passage de souris
+    /// fait repeindre le contrôle natif dans son état « chaud », visible une
+    /// fraction de seconde avant d'être recouvert — signalé en utilisation
+    /// réelle (110.0) comme des coins qui changent de thème par intermittence.
     /// </summary>
     public class ThemedComboBox : ComboBox
     {
@@ -36,6 +41,31 @@ namespace ChaturbateRecorderApp.UI
         // WM_PRINTCLIENT que la procédure par défaut est censée se renvoyer
         // n'arrive pas toujours jusqu'ici.
         private const int WM_PRINT = 0x0317;
+        private const int WM_ERASEBKGND = 0x0014;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left, Top, Right, Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PAINTSTRUCT
+        {
+            public IntPtr Hdc;
+            public int Erase;
+            public RECT PaintRect;
+            public int Restore;
+            public int IncUpdate;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+            public byte[] Reserved;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr BeginPaint(IntPtr window, ref PAINTSTRUCT paint);
+
+        [DllImport("user32.dll")]
+        private static extern bool EndPaint(IntPtr window, ref PAINTSTRUCT paint);
         private const int ArrowZoneWidth = 20;
         private const int CornerRadius = 4;
 
@@ -81,25 +111,81 @@ namespace ChaturbateRecorderApp.UI
 
         protected override void WndProc(ref Message m)
         {
+            // WM_PAINT est traité À LA PLACE du rendu natif, pas après lui.
+            //
+            // Repeindre par-dessus fonctionnait à l'arrêt mais SCINTILLAIT au
+            // survol : chaque passage de souris fait repeindre le contrôle
+            // natif dans son état « chaud », visible une fraction de seconde
+            // avant d'être recouvert — d'où des coins qui changent de thème
+            // par intermittence, parfois plusieurs fois d'affilée (110.0,
+            // signalé en utilisation réelle). La seule façon de le supprimer
+            // est de ne jamais laisser Windows peindre cette zone.
+            //
+            // BeginPaint/EndPaint valident la région invalide : sans eux,
+            // ignorer WM_PAINT relancerait indéfiniment le message.
+            if (m.Msg == WM_PAINT && !IsDisposed && IsHandleCreated)
+            {
+                var ps = new PAINTSTRUCT();
+                var hdc = BeginPaint(m.HWnd, ref ps);
+                if (hdc != IntPtr.Zero)
+                {
+                    try
+                    {
+                        using var g = Graphics.FromHdc(hdc);
+                        PaintClosedState(g);
+                    }
+                    finally
+                    {
+                        EndPaint(m.HWnd, ref ps);
+                    }
+                    m.Result = IntPtr.Zero;
+                    return;
+                }
+            }
+
+            // Le fond effacé par Windows produit un éclair clair avant notre
+            // dessin : on le lui refuse, PaintClosedState couvre tout.
+            if (m.Msg == WM_ERASEBKGND)
+            {
+                m.Result = (IntPtr)1;
+                return;
+            }
+
             base.WndProc(ref m);
 
-            // Après le dessin natif, pas à sa place : la zone de texte et la
-            // liste sont déjà correctes (OnDrawItem), il ne reste qu'à couvrir
-            // ce que Windows peint avec ses propres couleurs.
             if (IsDisposed || !IsHandleCreated) return;
 
-            if (m.Msg == WM_PAINT)
-            {
-                using var g = Graphics.FromHwnd(Handle);
-                PaintChrome(g);
-            }
-            else if ((m.Msg == WM_PRINTCLIENT || m.Msg == WM_PRINT) && m.WParam != IntPtr.Zero)
+            // DrawToBitmap passe par WM_PRINT/WM_PRINTCLIENT, jamais par
+            // WM_PAINT : ce chemin-là dessine bien APRÈS le rendu natif, faute
+            // de pouvoir l'empêcher, mais il ne concerne que les captures.
+            if ((m.Msg == WM_PRINTCLIENT || m.Msg == WM_PRINT) && m.WParam != IntPtr.Zero)
             {
                 // Le DC appartient à l'appelant : Graphics.FromHdc ne le libère
                 // pas, contrairement à FromHwnd.
                 using var g = Graphics.FromHdc(m.WParam);
                 PaintChrome(g);
             }
+        }
+
+        /// <summary>
+        /// Dessine le contrôle fermé DE BOUT EN BOUT : fond, texte de l'élément
+        /// sélectionné, chevron, bordure. Rien du rendu natif ne subsiste, donc
+        /// rien ne peut réapparaître au survol.
+        /// </summary>
+        private void PaintClosedState(Graphics g)
+        {
+            using (var back = new SolidBrush(BackColor))
+                g.FillRectangle(back, ClientRectangle);
+
+            var text = Text;
+            if (!string.IsNullOrEmpty(text))
+            {
+                var textRect = new Rectangle(4, 0, Math.Max(0, Width - ArrowZoneWidth - 6), Height);
+                TextRenderer.DrawText(g, text, Font, textRect, ForeColor,
+                    TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+            }
+
+            PaintChrome(g);
         }
 
         private void PaintChrome(Graphics g)

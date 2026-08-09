@@ -31,9 +31,15 @@ namespace ChaturbateRecorderApp.UI
         private TextBox _reportBox = null!;
         private ThemedButton _refreshButton = null!;
 
-        public DiagnosticForm()
+        /// <param name="theme">
+        /// Thème de l'application. Comme le Guide de démarrage, cette fenêtre
+        /// ne l'appliquait pas : elle restait claire en thème sombre, et ses
+        /// boutons masquaient leurs coins avec une couleur système (111.0).
+        /// </param>
+        public DiagnosticForm(AppTheme theme = AppTheme.Light)
         {
             InitializeComponent();
+            ThemeManager.Apply(this, theme);
             _ = RefreshReportAsync();
         }
 

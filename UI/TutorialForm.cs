@@ -37,9 +37,17 @@ namespace ChaturbateRecorderApp.UI
         private ThemedButton backButton = null!;
         private ThemedButton nextButton = null!;
 
-        public TutorialForm()
+        /// <param name="theme">
+        /// Thème de l'application. Cette fenêtre ne l'appliquait PAS jusqu'ici :
+        /// elle s'affichait donc en clair même en thème sombre, et ses boutons
+        /// dessinés par l'application masquaient leurs coins arrondis avec une
+        /// couleur système au lieu de celle du fond — d'où l'aspect « rogné »
+        /// signalé en utilisation réelle (111.0).
+        /// </param>
+        public TutorialForm(AppTheme theme = AppTheme.Light)
         {
             InitializeComponent();
+            ThemeManager.Apply(this, theme);
             RenderStep();
         }
 

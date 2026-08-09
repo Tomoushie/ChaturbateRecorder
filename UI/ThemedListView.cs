@@ -40,6 +40,13 @@ namespace ChaturbateRecorderApp.UI
         /// Sans ça, une liste sombre garde deux barres blanches sur ses bords —
         /// exactement le défaut qui avait motivé ThemedScrollBar là où le
         /// contrôle, lui, était remplaçable.
+        ///
+        /// **Contrepartie assumée, mesurée en comparant les deux rendus à
+        /// l'écran** : ce thème fait aussi dessiner par Windows les séparateurs
+        /// de colonnes dans la zone VIDE sous les lignes. On l'accepte — une
+        /// barre blanche vive sur fond sombre se remarque bien davantage qu'un
+        /// filet gris, qui est de surcroît le rendu même de l'Explorateur. La
+        /// classe "ItemsView" a été essayée : mêmes séparateurs.
         /// </summary>
         [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
         private static extern int SetWindowTheme(IntPtr handle, string? appName, string? idList);
@@ -146,33 +153,31 @@ namespace ChaturbateRecorderApp.UI
         }
 
         /// <summary>
-        /// Fond de la ligne entière, sélection comprise : en vue Details, le
-        /// dessin des cellules qui suit ne couvre que la largeur des colonnes
-        /// définies — sans ce passage, la zone à droite de la dernière colonne
-        /// resterait de la couleur de fond pendant qu'une ligne est
-        /// sélectionnée, coupant la surbrillance en deux.
+        /// En vue Details, cette méthode ne dessine RIEN : chaque cellule peint
+        /// son propre fond dans <see cref="DrawCell"/>.
+        ///
+        /// **C'est un correctif, pas un choix esthétique.** WinForms ne
+        /// redessine que les cellules qui croisent la région invalidée, mais il
+        /// lève `DrawItem` pour la ligne ENTIÈRE. Remplir tout `e.Bounds` ici
+        /// effaçait donc des cellules que la même passe n'allait pas repeindre :
+        /// après un rafraîchissement de l'historique, taille, durée et date
+        /// disparaissaient, et un clic — qui invalide tout — les faisait
+        /// revenir. Signalé en utilisation réelle (109.0).
         /// </summary>
         private static void DrawRow(DrawListViewItemEventArgs e, ThemeManager.Palette p)
         {
-            // `e.State` et NON `e.Item.Selected` serait le réflexe : c'est un
-            // piège. En vue Details, l'état passé à DrawItem n'est pas
-            // renseigné de façon fiable — toutes les lignes se dessinaient
-            // sélectionnées, la liste entière apparaissant surlignée en bleu.
-            // L'item, lui, connaît son état.
-            var selected = e.Item?.Selected == true;
-            var fill = selected ? ThemeManager.Lerp(p.Input, p.Accent, 0.20f) : p.Input;
+            if (e.Item?.ListView?.View == View.Details) return;
+
+            // Vue autre que Details : DrawSubItem n'est jamais levé, le fond et
+            // le texte doivent être dessinés ici, sinon la liste paraît vide.
+            var fill = e.Item?.Selected == true ? ThemeManager.Lerp(p.Input, p.Accent, 0.20f) : p.Input;
 
             using (var brush = new SolidBrush(fill))
                 e.Graphics.FillRectangle(brush, e.Bounds);
 
-            // En vue autre que Details, DrawSubItem n'est jamais levé : le
-            // texte doit être dessiné ici, sinon la liste apparaît vide.
-            if (e.Item?.ListView?.View != View.Details)
-            {
-                TextRenderer.DrawText(e.Graphics, e.Item?.Text ?? string.Empty, e.Item?.Font ?? SystemFonts.DefaultFont,
-                    Rectangle.Inflate(e.Bounds, -6, 0), p.Fg,
-                    TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
-            }
+            TextRenderer.DrawText(e.Graphics, e.Item?.Text ?? string.Empty, e.Item?.Font ?? SystemFonts.DefaultFont,
+                Rectangle.Inflate(e.Bounds, -6, 0), p.Fg,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
         }
 
         private static void DrawCell(DrawListViewSubItemEventArgs e, ThemeManager.Palette p, ListView list)
@@ -180,6 +185,15 @@ namespace ChaturbateRecorderApp.UI
             if (e.Item == null) return;
 
             var bounds = e.Bounds;
+
+            // Chaque cellule peint SON fond : c'est ce qui rend le dessin
+            // correct quand WinForms ne redessine qu'une partie de la ligne
+            // (voir DrawRow). `e.Item.Selected` et non `e.ItemState`, pour la
+            // même raison de fiabilité qu'ailleurs.
+            var fill = e.Item.Selected ? ThemeManager.Lerp(p.Input, p.Accent, 0.20f) : p.Input;
+            using (var brush = new SolidBrush(fill))
+                e.Graphics.FillRectangle(brush, bounds);
+
             var x = bounds.Left + 6;
 
             // Miniature (v1.29.0) : en dessin par l'application, l'ImageList
