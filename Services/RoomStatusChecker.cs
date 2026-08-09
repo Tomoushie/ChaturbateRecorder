@@ -15,6 +15,13 @@ namespace ChaturbateRecorderApp.Services
         Offline,
         /// <summary>Ni l'un ni l'autre : réseau coupé, salon banni, yt-dlp absent. NE JAMAIS traiter comme Online.</summary>
         Unknown,
+        /// <summary>
+        /// La source n'existe pas (40.0). Distinct d'Offline : une faute de
+        /// frappe ne sera JAMAIS suivie d'une diffusion, l'attendre
+        /// indéfiniment n'a aucun sens. Seules certaines plateformes le disent
+        /// — Chaturbate rend les deux cas indiscernables, Twitch et TikTok non.
+        /// </summary>
+        NotFound,
     }
 
     /// <summary>
@@ -33,14 +40,38 @@ namespace ChaturbateRecorderApp.Services
     public static class RoomStatusChecker
     {
         /// <summary>
-        /// Message exact de l'extracteur Chaturbate quand la diffusion est
-        /// arrêtée. Observé tel quel le 2026-08-05 :
-        /// "ERROR: [Chaturbate] &lt;room&gt;: Room is currently offline".
+        /// Phrases par lesquelles les extracteurs annoncent qu'il n'y a rien à
+        /// enregistrer. Toutes relevées sur le vrai yt-dlp, jamais supposées :
+        /// "Room is currently offline" (Chaturbate, 2026-08-05),
+        /// "The channel is not currently live" (Twitch et TikTok, 2026-08-09).
         /// </summary>
-        private const string OfflineMarker = "is currently offline";
+        private static readonly string[] OfflineMarkers =
+        {
+            "is currently offline",
+            "is not currently live",
+        };
 
         /// <summary>
-        /// Traduit le résultat brut de yt-dlp en état de salon. Séparée de
+        /// Phrase par laquelle Twitch annonce un compte inexistant. Chaturbate
+        /// n'a pas d'équivalent : chez lui, une faute de frappe est
+        /// indiscernable d'une absence.
+        /// </summary>
+        private const string NotFoundMarker = "does not exist";
+
+        /// <summary>
+        /// Valeurs de <c>live_status</c> qui signifient « ce n'est pas une
+        /// diffusion en cours ». Le reste — y compris le "NA" que yt-dlp
+        /// imprime quand l'extracteur ne renseigne pas le champ — laisse
+        /// décider le code de sortie, ce qui préserve le comportement
+        /// historique sur Chaturbate.
+        /// </summary>
+        private static readonly string[] NotLiveStatuses =
+        {
+            "not_live", "was_live", "post_live", "is_upcoming",
+        };
+
+        /// <summary>
+        /// Traduit le résultat brut de yt-dlp en état de source. Séparée de
         /// l'exécution du processus pour rester testable sans réseau : c'est la
         /// seule partie qui puisse être fausse sans se voir.
         ///
@@ -48,14 +79,34 @@ namespace ChaturbateRecorderApp.Services
         /// l'autre devient Unknown, jamais Online. Un réseau coupé ne doit pas
         /// déclencher un enregistrement, et un salon banni ne doit pas faire
         /// croire à une absence temporaire qu'on attendrait indéfiniment.
+        ///
+        /// **Le code de sortie ne suffit pas depuis 40.0** : mesuré le
+        /// 2026-08-09, YouTube rend 0 sur une vidéo ORDINAIRE. S'en tenir au
+        /// code de retour aurait fait démarrer un « enregistrement » de VOD dès
+        /// qu'une URL YouTube entrait dans la surveillance.
         /// </summary>
-        internal static RoomStatus Classify(int exitCode, string standardError)
+        internal static RoomStatus Classify(int exitCode, string standardOutput, string standardError)
         {
-            if (exitCode == 0) return RoomStatus.Online;
+            var stdout = standardOutput ?? "";
+            var stderr = standardError ?? "";
 
-            return (standardError ?? "").Contains(OfflineMarker, StringComparison.OrdinalIgnoreCase)
-                ? RoomStatus.Offline
-                : RoomStatus.Unknown;
+            if (exitCode == 0)
+            {
+                foreach (var status in NotLiveStatuses)
+                    if (stdout.Contains(status, StringComparison.OrdinalIgnoreCase))
+                        return RoomStatus.Offline;
+
+                return RoomStatus.Online;
+            }
+
+            if (stderr.Contains(NotFoundMarker, StringComparison.OrdinalIgnoreCase))
+                return RoomStatus.NotFound;
+
+            foreach (var marker in OfflineMarkers)
+                if (stderr.Contains(marker, StringComparison.OrdinalIgnoreCase))
+                    return RoomStatus.Offline;
+
+            return RoomStatus.Unknown;
         }
 
         public static async Task<RoomStatus> CheckAsync(string ytDlpPath, string roomUrl,
@@ -81,6 +132,11 @@ namespace ChaturbateRecorderApp.Services
             psi.ArgumentList.Add("--simulate");
             psi.ArgumentList.Add("--no-warnings");
             psi.ArgumentList.Add("--no-playlist");
+            // Demande explicitement l'état de diffusion (40.0) : sur YouTube,
+            // le code de sortie vaut 0 aussi bien pour un live que pour une
+            // vidéo déjà enregistrée. Sans ce champ, les deux se confondent.
+            psi.ArgumentList.Add("--print");
+            psi.ArgumentList.Add("live_status=%(live_status)s");
             // Une seule tentative : c'est la boucle de surveillance qui réessaie,
             // à son propre rythme. Les reprises internes de yt-dlp allongeraient
             // le contrôle sans rien apporter.
@@ -123,8 +179,8 @@ namespace ChaturbateRecorderApp.Services
                 }
 
                 var stderr = await stderrTask;
-                await stdoutTask;
-                return Classify(process.ExitCode, stderr);
+                var stdout = await stdoutTask;
+                return Classify(process.ExitCode, stdout, stderr);
             }
             catch (Exception ex)
             {

@@ -15,11 +15,20 @@ namespace SentinelGuard
 
         // Un segment ne doit JAMAIS contenir '/' : '/' est le séparateur de segments,
         // pas un caractère valide à l'intérieur d'un segment.
+        //
+        // '@' est autorisé DANS UN SEGMENT depuis 1.2.0 : c'est la forme des
+        // identifiants de chaîne chez YouTube (/@NASA/live), TikTok
+        // (/@compte/live) ou Mastodon, et les refuser rendait ces plateformes
+        // inatteignables. Ce n'est pas un relâchement de la propriété qui
+        // compte : le '@' dangereux est celui de l'AUTORITÉ (user:pass@hôte),
+        // qui ne peut par construction pas se trouver dans un segment — une
+        // autorité se termine au premier '/' — et qui est refusé un cran plus
+        // haut par le contrôle explicite de Uri.UserInfo dans IsSafeUrl.
         private static readonly Regex SegmentPattern =
-            new(@"^[a-zA-Z0-9_\-\.]+$", RegexOptions.Compiled);
+            new(@"^[a-zA-Z0-9_\-\.@]+$", RegexOptions.Compiled);
 
         private static readonly Regex SegmentForbiddenChars =
-            new("[%\\?&=#\\s\"'<>\\\\;:@\x00]", RegexOptions.Compiled);
+            new("[%\\?&=#\\s\"'<>\\\\;:\x00]", RegexOptions.Compiled);
 
         // '%' n'est autorisé que comme début d'une séquence d'échappement valide %XX.
         private static readonly Regex QueryStringPattern =

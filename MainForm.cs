@@ -1379,13 +1379,11 @@ namespace ChaturbateRecorderApp
 
         private static string RoomNameFromUrl(string url)
         {
-            try
-            {
-                var name = new Uri(url).AbsolutePath.Trim('/')
-                    .Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                return string.IsNullOrWhiteSpace(name) ? url : name;
-            }
-            catch { return url; }
+            // Délégué à Platforms depuis 40.0 : le premier segment d'URL suffit
+            // pour Chaturbate et Twitch, mais donne « watch » sur toutes les
+            // adresses YouTube du type /watch?v=… — donc le même nom pour tous
+            // les enregistrements de la plateforme.
+            return Platforms.DisplayName(url);
         }
 
         private void OnAddWatchClick(object? sender, EventArgs e)
@@ -1513,9 +1511,17 @@ namespace ChaturbateRecorderApp
                     {
                         RoomStatus.Online => "watch.state.online",
                         RoomStatus.Offline => "watch.state.offline",
+                        // 40.0 — état distinct : une source inexistante ne
+                        // diffusera jamais. La confondre avec « hors ligne »
+                        // fait attendre indéfiniment une faute de frappe, et
+                        // c'est le seul cas où l'utilisateur doit agir.
+                        RoomStatus.NotFound => "watch.state.notfound",
                         _ => "watch.state.unknown",
                     };
                     SetWatchState(item, key);
+
+                    if (status == RoomStatus.NotFound)
+                        AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(url)} n'existe pas — vérifie l'adresse.");
 
                     // SEUL Online declenche. Unknown (reseau coupe, salon banni)
                     // ne doit jamais lancer un enregistrement dans le vide.
@@ -1628,8 +1634,10 @@ namespace ChaturbateRecorderApp
                 Logger.Log("TLS server pinning désactivé (validation TLS native uniquement).");
             }
 
-            var roomName = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(roomName)) roomName = "Chaturbate";
+            // Nom de la source, qui sert AUSSI de base au nom de fichier de
+            // sortie : c'est Platforms qui sait le tirer de chaque forme d'URL
+            // (40.0), et qui le nettoie des caractères interdits en chemin.
+            var roomName = Platforms.DisplayName(urlInput);
 
             // Safe Mode : un seul enregistrement a la fois quand le
             // multi-stream est desactive. Refus explicite plutot que silencieux.

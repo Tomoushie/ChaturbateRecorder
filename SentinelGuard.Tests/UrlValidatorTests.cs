@@ -40,6 +40,31 @@ namespace SentinelGuard.Tests
         }
 
         [Theory]
+        [InlineData("https://www.youtube.com/@SomeChannel/live")]
+        [InlineData("https://www.tiktok.com/@some.account/live")]
+        public void IsSafeUrl_AcceptsHandleSegments(string url)
+        {
+            // '@' dans un SEGMENT est la forme des identifiants de chaîne chez
+            // YouTube, TikTok ou Mastodon. Les refuser rendait ces plateformes
+            // inatteignables (constaté en implémentant leur prise en charge).
+            var whitelist = new[] { "youtube.com", "tiktok.com" };
+            Assert.True(UrlValidator.IsSafeUrl(url, whitelist, Blacklist));
+        }
+
+        [Theory]
+        [InlineData("https://user:pass@www.youtube.com/@SomeChannel/live")]
+        [InlineData("https://admin@www.youtube.com/@SomeChannel/live")]
+        public void IsSafeUrl_StillRejectsCredentialsEvenWithHandleSegments(string url)
+        {
+            // Le garde-fou qui compte, maintenant que '@' est accepté dans un
+            // segment : le '@' de l'AUTORITÉ reste refusé. Une autorité se
+            // termine au premier '/', les deux cas ne peuvent pas se confondre,
+            // et c'est Uri.UserInfo qui tranche — pas la forme du segment.
+            var whitelist = new[] { "youtube.com" };
+            Assert.False(UrlValidator.IsSafeUrl(url, whitelist, Blacklist));
+        }
+
+        [Theory]
         [InlineData("https://localhost/someroom/")]
         [InlineData("https://127.0.0.1/someroom/")]
         public void IsSafeUrl_RejectsLoopbackHosts(string url)

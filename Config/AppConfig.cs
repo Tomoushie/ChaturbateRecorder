@@ -101,7 +101,13 @@ namespace ChaturbateRecorderApp.Config
         public static string FFprobePath = Path.Combine(AppDir, "ffprobe.exe");
 
         public static readonly string[] Blacklist = { "example.com", "badhost.org" };
-        public static readonly string[] Whitelist = { "chaturbate.com" };
+        // 40.0 — la liste vient de Platforms.AllowedDomains : une plateforme
+        // prise en charge et un domaine autorisé sont la même chose, et deux
+        // listes à tenir finiraient par diverger (une plateforme ajoutée à
+        // l'une, oubliée dans l'autre, et le bac à sable refuse ses URLs).
+        // La correspondance de SentinelGuard porte sur le suffixe : les
+        // sous-domaines (www., m., fr.) sont couverts sans être listés.
+        public static readonly string[] Whitelist = Services.Platforms.AllowedDomains;
 
         // --- Vérification binaire (hash + Authenticode) ---
         public static string YtDlpExpectedSha256           = "52FE3C26DCF71FBDC85B528589020BB0B8E383155CFA81B64DD447BBE35E24B8";

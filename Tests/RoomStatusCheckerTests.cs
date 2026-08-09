@@ -1,4 +1,4 @@
-using ChaturbateRecorderApp.Services;
+﻿using ChaturbateRecorderApp.Services;
 using Xunit;
 
 namespace ChaturbateRecorderApp.Tests
@@ -28,13 +28,67 @@ namespace ChaturbateRecorderApp.Tests
         [Fact]
         public void ExitCodeZeroMeansOnline()
         {
-            Assert.Equal(RoomStatus.Online, RoomStatusChecker.Classify(0, ""));
+            Assert.Equal(RoomStatus.Online, RoomStatusChecker.Classify(0, "", ""));
         }
 
         [Fact]
         public void TheRealOfflineMessageIsRecognised()
         {
-            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(1, RealOfflineStderr));
+            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(1, "", RealOfflineStderr));
+        }
+
+        // --- 40.0 : autres plateformes. Sorties relevées sur le vrai yt-dlp le
+        // 2026-08-09, avant d'écrire la prise en charge.
+
+        [Theory]
+        [InlineData("ERROR: [twitch:stream] twitch: The channel is not currently live")]
+        [InlineData("ERROR: [tiktok:live] tiktok: The channel is not currently live")]
+        public void TwitchAndTikTokOfflineMessagesAreRecognised(string stderr)
+        {
+            // Sans ces marqueurs, la surveillance retombait en Unknown sur ces
+            // deux plateformes — et ne déclenchait donc JAMAIS rien, sans que
+            // rien ne le signale (le mode de panne de la v1.26.1).
+            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(1, "", stderr));
+        }
+
+        [Fact]
+        public void ANonExistentChannelIsNotConfusedWithAnOfflineOne()
+        {
+            // Twitch le dit, Chaturbate non. Là où l'information existe, il faut
+            // s'en servir : attendre indéfiniment une faute de frappe est le
+            // défaut que la v1.25.0 avait dû documenter faute de pouvoir le
+            // corriger.
+            const string stderr =
+                "ERROR: [twitch:stream] ce_salon_nexiste_pas: ce_salon_nexiste_pas does not exist";
+            Assert.Equal(RoomStatus.NotFound, RoomStatusChecker.Classify(1, "", stderr));
+        }
+
+        [Theory]
+        [InlineData("live_status=not_live")]
+        [InlineData("live_status=was_live")]
+        [InlineData("live_status=post_live")]
+        [InlineData("live_status=is_upcoming")]
+        public void YouTubeVideosThatAreNotLiveAreNotOnline(string stdout)
+        {
+            // LE piège de 40.0, mesuré : YouTube rend le code 0 même sur une
+            // vidéo ordinaire. S'en tenir au code de sortie aurait fait
+            // « surveiller » une VOD et lancer un enregistrement immédiat.
+            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(0, stdout, ""));
+        }
+
+        [Fact]
+        public void AnActualLiveIsOnline()
+        {
+            Assert.Equal(RoomStatus.Online, RoomStatusChecker.Classify(0, "live_status=is_live", ""));
+        }
+
+        [Fact]
+        public void AMissingLiveStatusFallsBackToTheExitCode()
+        {
+            // yt-dlp imprime "NA" quand l'extracteur ne renseigne pas le champ.
+            // Le traiter comme « pas en direct » casserait Chaturbate, qui
+            // fonctionnait très bien sur le seul code de sortie.
+            Assert.Equal(RoomStatus.Online, RoomStatusChecker.Classify(0, "live_status=NA", ""));
         }
 
         /// <summary>
@@ -50,13 +104,13 @@ namespace ChaturbateRecorderApp.Tests
         [InlineData("")]
         public void AnyOtherFailureStaysUnknown(string stderr)
         {
-            Assert.Equal(RoomStatus.Unknown, RoomStatusChecker.Classify(1, stderr));
+            Assert.Equal(RoomStatus.Unknown, RoomStatusChecker.Classify(1, "", stderr));
         }
 
         [Fact]
         public void NullStandardErrorDoesNotThrow()
         {
-            Assert.Equal(RoomStatus.Unknown, RoomStatusChecker.Classify(1, null!));
+            Assert.Equal(RoomStatus.Unknown, RoomStatusChecker.Classify(1, null!, null!));
         }
 
         /// <summary>
@@ -67,7 +121,7 @@ namespace ChaturbateRecorderApp.Tests
         public void OfflineDetectionIsCaseInsensitive()
         {
             Assert.Equal(RoomStatus.Offline,
-                RoomStatusChecker.Classify(1, "ERROR: room IS CURRENTLY OFFLINE"));
+                RoomStatusChecker.Classify(1, "", "ERROR: room IS CURRENTLY OFFLINE"));
         }
 
         /// <summary>
@@ -77,8 +131,8 @@ namespace ChaturbateRecorderApp.Tests
         [Fact]
         public void OfflineWinsOverTheParticularExitCode()
         {
-            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(2, RealOfflineStderr));
-            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(101, RealOfflineStderr));
+            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(2, "", RealOfflineStderr));
+            Assert.Equal(RoomStatus.Offline, RoomStatusChecker.Classify(101, "", RealOfflineStderr));
         }
     }
 }
