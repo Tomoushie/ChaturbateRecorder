@@ -38,6 +38,22 @@ uniquement, pas de bump) :
 - **Ne pas signaler a GitHub en l'etat** : rien ne prouve un defaut de leur
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
+- **2026-08-09 — LE CORRECTIF N'A PAS TENU, et cette note etait donc trop
+  affirmative.** A la publication de v1.31.0, le site servait encore `1.30.0`
+  alors que `docs/latest.json` valait bien `1.31.0` dans le depot. Le **test a
+  deux fichiers a tranche** : `sentinelguard.html` contenait, lui, les ajouts du
+  commit de la session — donc le deploiement a bien eu lieu, mais depuis l'arbre
+  de `main` **au moment du tag**, c'est-a-dire AVANT le commit du bot. Le SHA
+  fige n'a donc pas ete pris en compte sur ce chemin d'appel. Rattrape par
+  `workflow_dispatch` de `pages-build.yml` (`ref: main`), site revenu a 1.31.0,
+  verifie en ligne.
+- **A faire quand le sujet reviendra** : verifier ce que `update-checker.yml`
+  transmet reellement a `pages-build.yml` en `ref` lorsqu'il est appele DEPUIS
+  `publish-release.yml` (chaine imbriquee sur deux niveaux), et non seulement
+  lors d'un declenchement direct. Tant que ce n'est pas fait, **executer le test
+  a deux fichiers apres chaque release** et rattraper au besoin — les
+  utilisateurs de l'app ne sont de toute facon pas affectes, le verificateur de
+  mise a jour lit l'API GitHub et non le site.
 
 **Fusion Security/ ↔ SentinelGuard (2026-08-09, suite immédiate de 36.0)** — pas
 de bump applicatif, rien de visible ne change :
