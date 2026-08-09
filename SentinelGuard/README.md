@@ -32,7 +32,7 @@ Targets `net8.0-windows` and `net10.0-windows`.
 | Class | Guards against |
 |---|---|
 | `PathValidator` | UNC paths, extended paths (`\\?\`, `\\.\`), alternate data streams, reserved device names (`CON`, `NUL`…), symlinks and reparse points |
-| `UrlValidator` | Non-HTTPS schemes, domains outside your allow list, blacklisted hosts, unsafe path segments and query strings |
+| `UrlValidator` | Non-HTTPS schemes, credentials embedded in the URL, domains outside your allow list, blacklisted hosts, unsafe path segments and query strings |
 | `BinaryVerifier` | Tampered executables: SHA-256 hash mismatch, missing or invalid Authenticode signature, unexpected signing certificate (optional CA pinning) |
 | `AclValidator` | Folders writable by `Everyone` / `Authenticated Users` — where an attacker could swap a binary you are about to run |
 | `WorkingDirectoryValidator` | Running from a network share, temporary folder, recycle bin or NTFS-compressed folder |

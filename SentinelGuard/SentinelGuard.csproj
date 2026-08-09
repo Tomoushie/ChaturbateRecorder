@@ -30,8 +30,12 @@
     <AssemblyName>SentinelGuard</AssemblyName>
     <RootNamespace>SentinelGuard</RootNamespace>
     <!-- 1.1.0 (36.0) : ajout de GuardedProcessRunner et LogFileRotator.
-         Mineure et non majeure — aucune API existante n'a changé. -->
-    <Version>1.1.0</Version>
+         1.2.0 (40.0) : ComputeSha256, et '@' accepté dans un segment d'URL —
+         sans quoi les identifiants de chaîne (YouTube /@chaine, TikTok
+         /@compte, Mastodon) sont refusés. Mineure : aucune API existante n'a
+         changé de signature, et la validation ne s'assouplit que là où elle
+         refusait à tort. -->
+    <Version>1.2.0</Version>
     <Authors>Tomoushie</Authors>
     <Product>SentinelGuard</Product>
     <Title>SentinelGuard — Windows security guardrails for .NET</Title>
