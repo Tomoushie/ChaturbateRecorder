@@ -4,16 +4,11 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-09 — version courante : v1.32.0 (app), SentinelGuard 1.1.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-09 — version courante : v1.33.0 (app), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
-**Tags publiés à jour** : v1.29.0 à v1.32.0 sont sorties le 2026-08-09, ainsi
-que `sentinelguard-v1.1.0` sur nuget.org. **Redemander avant tout tag** : il
-déclenche une release publique.
-
-**SentinelGuard 1.2.0 est prêt mais NON publié** : le package contient déjà le
-correctif « `@` autorisé dans un segment d'URL » (indispensable à YouTube et
-TikTok), livré à l'application par référence de projet. Le publier demande un
-tag `sentinelguard-v1.2.0`.
+**Publiés le 2026-08-09** : v1.29.0 à v1.33.0 côté application, et
+`sentinelguard-v1.1.0` puis `sentinelguard-v1.2.0` sur nuget.org. **Redemander
+avant tout tag** : il déclenche une release publique.
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump

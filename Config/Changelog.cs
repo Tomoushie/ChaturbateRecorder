@@ -278,6 +278,16 @@ namespace ChaturbateRecorderApp.Config
                 "Les enregistrements YouTube portent enfin le nom de la chaîne ou de la vidéo, au lieu de s'appeler tous « watch ».",
                 "La note de légalité couvre les nouvelles plateformes : sur celles qui ne sont pas adultes, l'enjeu est le droit d'auteur, et enfreindre des conditions d'utilisation reste contractuel, pas pénal.",
             }),
+
+            ("1.33.0", new[]
+            {
+                "Les plateformes prises en charge sont affichées à côté du champ d'adresse, et chaque ligne surveillée porte l'icône de la sienne.",
+                "Correction : dans l'historique, la taille, la durée et la date disparaissaient jusqu'au prochain clic.",
+                "Correction : les coins des listes déroulantes changeaient brièvement d'apparence au passage de la souris.",
+                "Correction : les boutons du guide de démarrage s'affichaient mal depuis la refonte de l'interface.",
+                "Le guide de démarrage et la fenêtre Diagnostic suivent enfin le thème sombre, au lieu de s'ouvrir en clair.",
+                "Les ascenseurs des listes ne sont plus blancs en thème sombre.",
+            }),
         };
 
         /// <summary>
@@ -434,6 +444,15 @@ namespace ChaturbateRecorderApp.Config
                 "On YouTube, only actual live streams start a recording: an already published video is no longer mistaken for a live one.",
                 "YouTube recordings are finally named after the channel or the video, instead of all being called \"watch\".",
                 "The legality note now covers the new platforms: on non-adult ones the issue is copyright, and breaching terms of service remains contractual, not criminal.",
+            },
+            ["1.33.0"] = new[]
+            {
+                "The supported platforms are shown next to the address field, and every monitored row carries the icon of its own.",
+                "Fixed: in the history, size, duration and date disappeared until the next click.",
+                "Fixed: the corners of the drop-down lists briefly changed appearance as the mouse passed over them.",
+                "Fixed: the buttons in the getting started guide were badly drawn since the interface redesign.",
+                "The getting started guide and the Diagnostics window finally follow the dark theme, instead of opening in light.",
+                "List scrollbars are no longer white in dark theme.",
             },
         };
 
