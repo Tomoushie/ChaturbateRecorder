@@ -64,6 +64,41 @@ namespace ChaturbateRecorderApp.UI
                 "<polyline points=\"3,12 8,12 10,6 14,18 16,12 21,12\" fill=\"none\" stroke=\"{COLOR}\" " +
                 "stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"),
 
+            // --- 103.0 : plateformes prises en charge ---
+            //
+            // Glyphes SIMPLIFIÉS et monochromes, pas les logos officiels. Deux
+            // raisons : IconManager retint chaque icône à la couleur du thème,
+            // ce que les chartes de marque de YouTube et Twitch interdisent
+            // explicitement sur leur logo ; et un pictogramme sobre indiquant
+            // la compatibilité relève de l'usage nominatif, admis, là où
+            // reproduire une marque ne l'est pas.
+
+            // Twitch : l'écran à encoche, avec ses deux barres.
+            ["twitch"] = Wrap(
+                "<path d=\"M5 3 H21 V15 L16.5 19.5 H12.5 L9 23 V19.5 H5 Z\" fill=\"none\" stroke=\"{COLOR}\" " +
+                "stroke-width=\"1.8\" stroke-linejoin=\"round\"/>" +
+                "<rect x=\"11\" y=\"7.5\" width=\"1.8\" height=\"6\" fill=\"{COLOR}\"/>" +
+                "<rect x=\"15.5\" y=\"7.5\" width=\"1.8\" height=\"6\" fill=\"{COLOR}\"/>"),
+
+            // YouTube : l'écran arrondi et sa flèche de lecture.
+            ["youtube"] = Wrap(
+                "<rect x=\"2.5\" y=\"5.5\" width=\"19\" height=\"13\" rx=\"3.5\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.8\"/>" +
+                "<polygon points=\"10,9.5 16,12 10,14.5\" fill=\"{COLOR}\"/>"),
+
+            // TikTok : la note de musique.
+            ["tiktok"] = Wrap(
+                "<path d=\"M14 3 V13.5 a3.5 3.5 0 1 1 -2.5 -3.36\" fill=\"none\" stroke=\"{COLOR}\" " +
+                "stroke-width=\"1.8\" stroke-linecap=\"round\"/>" +
+                "<path d=\"M14 3 c0.6 2.6 2.4 4.2 5 4.5\" fill=\"none\" stroke=\"{COLOR}\" " +
+                "stroke-width=\"1.8\" stroke-linecap=\"round\"/>"),
+
+            // Chaturbate n'a pas de marque réductible à un pictogramme simple :
+            // une caméra générique dit « diffusion en direct » sans rien
+            // emprunter à personne.
+            ["camera"] = Wrap(
+                "<rect x=\"2.5\" y=\"6\" width=\"13\" height=\"12\" rx=\"2\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.8\"/>" +
+                "<polygon points=\"17,10 21.5,7 21.5,17 17,14\" fill=\"{COLOR}\"/>"),
+
             // Cœur plein (80.0, bouton "Sponsoriser"). Deux arcs symétriques
             // fermés par une pointe en bas, dessinés à la courbe plutôt qu'avec
             // un caractère ❤ : le rendu reste net à toute taille et suit la

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ChaturbateRecorderApp.UI
@@ -31,10 +32,38 @@ namespace ChaturbateRecorderApp.UI
 
         private static readonly ConditionalWeakTable<ListView, State> _states = new();
 
+        /// <summary>
+        /// Applique le thème système à un contrôle. Utilisé avec
+        /// "DarkMode_Explorer" pour obtenir des ASCENSEURS sombres : ceux d'une
+        /// ListView sont dessinés par Windows dans la zone non cliente, hors de
+        /// portée de <c>BackColor</c> comme de tout dessin par l'application.
+        /// Sans ça, une liste sombre garde deux barres blanches sur ses bords —
+        /// exactement le défaut qui avait motivé ThemedScrollBar là où le
+        /// contrôle, lui, était remplaçable.
+        /// </summary>
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        private static extern int SetWindowTheme(IntPtr handle, string? appName, string? idList);
+
         public static void Attach(ListView list, ThemeManager.Palette palette)
         {
             var state = _states.GetValue(list, _ => new State());
             state.Palette = palette;
+
+            if (list.IsHandleCreated)
+            {
+                // Le thème se déduit de la clarté du fond plutôt que d'un
+                // booléen transmis : la palette est parfois INTERPOLÉE pendant
+                // la transition clair/sombre, et un booléen ferait basculer les
+                // ascenseurs d'un coup au milieu du fondu.
+                var dark = palette.Input.R + palette.Input.G + palette.Input.B < 384;
+                try { SetWindowTheme(list.Handle, dark ? "DarkMode_Explorer" : "Explorer", null); }
+                catch (Exception ex)
+                {
+                    // uxtheme absent ou refusé : la liste reste utilisable,
+                    // seuls ses ascenseurs gardent le rendu clair.
+                    System.Diagnostics.Debug.WriteLine($"SetWindowTheme indisponible : {ex.Message}");
+                }
+            }
 
             if (!state.Wired)
             {
@@ -83,8 +112,21 @@ namespace ChaturbateRecorderApp.UI
         /// À rappeler après avoir ajouté ou retiré des lignes : l'ascenseur
         /// vertical apparaît alors sans que le contrôle change de taille, donc
         /// sans lever <c>Resize</c>.
+        ///
+        /// **Différé par BeginInvoke** : au retour de <c>Items.Add</c>, la
+        /// ListView n'a pas encore décidé si elle a besoin d'un ascenseur
+        /// vertical, donc <c>ClientSize</c> vaut encore la largeur SANS
+        /// ascenseur. Étirer à ce moment-là donne une dernière colonne trop
+        /// large de ~17 px, et fait apparaître un ascenseur HORIZONTAL — vu à
+        /// la capture, sur une liste de quatre lignes.
         /// </summary>
-        public static void Refresh(ListView list) => StretchLastColumn(list);
+        public static void Refresh(ListView list)
+        {
+            if (list.IsHandleCreated)
+                list.BeginInvoke(() => { if (!list.IsDisposed) StretchLastColumn(list); });
+            else
+                StretchLastColumn(list);
+        }
 
         private static void DrawHeader(DrawListViewColumnHeaderEventArgs e, ThemeManager.Palette p)
         {

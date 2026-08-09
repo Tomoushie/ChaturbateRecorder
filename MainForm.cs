@@ -24,6 +24,7 @@ namespace ChaturbateRecorderApp
         private ThemedButton diagnosticButton = null!;
         private ThemedButton modeToggleButton = null!;
         private Label urlLabel = null!;
+        private PlatformStrip platformStrip = null!;
         private TextBox urlTextBox = null!;
         private ThemedButton startButton = null!;
         private ThemedButton stopAllButton = null!;
@@ -1367,9 +1368,58 @@ namespace ChaturbateRecorderApp
         /// de l'URL pour l'affichage ; l'URL complete reste dans le Tag, c'est
         /// elle qui sert a interroger et a enregistrer.
         /// </summary>
+        /// <summary>
+        /// Pictogrammes de plateforme pour la liste de surveillance (103.0),
+        /// dans l'ordre de <see cref="Platforms.Supported"/> — c'est cet ordre
+        /// qui donne l'ImageIndex de chaque ligne.
+        ///
+        /// Rendus une fois pour toutes en gris moyen plutôt qu'à la couleur du
+        /// thème : une ImageList ne se retinte pas, il faudrait la reconstruire
+        /// à chaque changement de thème et réassigner tous les index. Ce gris
+        /// se lit correctement sur les deux fonds.
+        /// </summary>
+        private static ImageList BuildPlatformImageList()
+        {
+            var images = new ImageList { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
+
+            foreach (var platform in Platforms.Supported)
+            {
+                var (icon, _) = Platforms.Badge(platform);
+                try
+                {
+                    // PAS de `using` ici, contrairement aux miniatures de
+                    // l'historique (v1.29.0) : là-bas l'ImageList était déjà
+                    // réalisée, donc elle recopiait l'image immédiatement. Ici
+                    // la liste est construite AVANT d'être posée sur la
+                    // ListView : son handle n'existe pas encore, elle garde
+                    // donc la référence, et libérer le bitmap faisait planter
+                    // la réalisation du handle sur une image détruite —
+                    // ArgumentException « Parameter is not valid », très loin
+                    // de sa cause. Constaté à l'exécution.
+                    images.Images.Add(IconManager.Render(icon, 20, Color.FromArgb(0x8A, 0x8A, 0x8A)));
+                }
+                catch (Exception ex)
+                {
+                    // Une icône manquante ne doit pas vider la liste : sans
+                    // image à cet index, toutes les suivantes se décaleraient.
+                    Logger.Log($"Icône de plateforme '{icon}' indisponible : {ex.Message}", LogLevel.WARN);
+                    images.Images.Add(new Bitmap(20, 20));
+                }
+            }
+
+            return images;
+        }
+
         private void AddWatchRow(string url)
         {
-            var item = new ListViewItem(RoomNameFromUrl(url)) { Tag = url, Name = "watch.state.pending" };
+            var item = new ListViewItem(RoomNameFromUrl(url))
+            {
+                Tag = url,
+                Name = "watch.state.pending",
+                // 103.0 — l'index suit l'ordre de Platforms.Supported, celui
+                // dans lequel BuildPlatformImageList a rempli la liste.
+                ImageIndex = Array.IndexOf(Platforms.Supported, Platforms.Detect(url)),
+            };
             item.SubItems.Add(Localization.Get("watch.state.pending"));
             watchListView.Items.Add(item);
             // L'ascenseur vertical apparaît sans redimensionner le contrôle :
@@ -1895,6 +1945,7 @@ namespace ChaturbateRecorderApp
 
             grpRecord.Title = L("panel.record");
             urlLabel.Text = L("label.url");
+            platformStrip.RefreshTooltip();
             startButton.Text = L("button.start");
             stopAllButton.Text = L("button.stopAll");
             addFavoriteButton.Text = L("button.addFavorite");
@@ -2522,6 +2573,11 @@ namespace ChaturbateRecorderApp
             // seul, pour rester collés au bord plutôt que de s'étirer eux-mêmes.
             grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 75), Size = new Size(660, 272) };
             urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
+            // 103.0 — les plateformes prises en charge, à droite de l'intitulé
+            // du champ : c'est là que se pose la question « qu'est-ce que je
+            // peux coller ici ? ». Posé à x=150, après le libellé le plus long
+            // des deux langues ("URL du live :" / "Stream URL:").
+            platformStrip = new PlatformStrip { Location = new Point(150, 22) };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
             startButton = new ThemedButton { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
             stopAllButton = new ThemedButton { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
@@ -2612,7 +2668,7 @@ namespace ChaturbateRecorderApp
 
             grpRecord.Controls.AddRange(new Control[]
             {
-                urlLabel, urlTextBox, startButton, stopAllButton, addFavoriteButton,
+                urlLabel, platformStrip, urlTextBox, startButton, stopAllButton, addFavoriteButton,
                 advancedOptionsPanel
             });
             urlTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -2722,12 +2778,12 @@ namespace ChaturbateRecorderApp
             watchListView.Columns.Add("Salon", 300);
             watchListView.Columns.Add("État", 140);
 
-            // Hauteur de ligne (39.0) : une ListView sans ImageList colle ses
-            // lignes à la hauteur de la police (~17 px), ce qui donne un pavé
-            // de texte compact là où l'historique, lui, respire déjà grâce à
-            // ses miniatures. WinForms n'expose pas de hauteur de ligne : une
-            // ImageList vide dont seule la HAUTEUR compte est le seul levier.
-            watchListView.SmallImageList = new ImageList { ImageSize = new Size(1, 24) };
+            // 103.0 — l'ImageList porte désormais les pictogrammes de
+            // plateforme, un par ligne surveillée : on voit d'un coup d'œil ce
+            // qu'on surveille et où. Elle continue de fixer la hauteur de ligne
+            // (39.0) — WinForms n'expose pas d'autre levier —, mais avec un
+            // contenu utile plutôt qu'une image vide de 1 px.
+            watchListView.SmallImageList = BuildPlatformImageList();
 
             addWatchButton = new ThemedButton { Text = "+ Surveiller", Location = new Point(482, 22), Size = new Size(160, 26) };
             addWatchButton.Click += OnAddWatchClick;

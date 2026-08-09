@@ -36,6 +36,10 @@ namespace ChaturbateRecorderApp.UI
             // mainteneur), seuls les libellés cessent de désigner une seule
             // plateforme.
             ["label.url"] = ("URL du live :", "Stream URL:"),
+            // 103.0 — infobulle de la rangée de pictogrammes.
+            ["platforms.tooltip"] = (
+                "Plateformes prises en charge : {0}",
+                "Supported platforms: {0}"),
             ["button.start"] = ("Démarrer", "Start"),
             ["button.stopAll"] = ("Tout arrêter", "Stop all"),
             ["button.addFavorite"] = ("+ Favori", "+ Favorite"),

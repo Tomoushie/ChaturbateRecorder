@@ -59,6 +59,40 @@ uniquement, pas de bump) :
   utilisateurs de l'app ne sont de toute facon pas affectes, le verificateur de
   mise a jour lit l'API GitHub et non le site.
 
+**103.0 (2026-08-09) — icônes des plateformes prises en charge** :
+- **Glyphes SIMPLIFIÉS, pas les logos officiels.** IconManager retint chaque
+  icône à la couleur du thème, ce que les chartes de YouTube et Twitch
+  interdisent explicitement sur leur logo ; et un pictogramme sobre indiquant
+  la compatibilité relève de l'usage nominatif, admis. Chaturbate n'ayant pas
+  de marque réductible à un pictogramme, une caméra générique le représente.
+- **Deux emplacements** : une rangée à côté du champ d'URL (c'est là que se
+  pose la question « qu'est-ce que je peux coller ici ? »), et une icône par
+  ligne de la liste de surveillance.
+- **`UI/PlatformStrip.cs` plutôt que quatre PictureBox** : ThemeManager encadre
+  les PictureBox (elles comptent parmi les champs), ce qui aurait dessiné un
+  cadre autour de chaque icône.
+- **PIÈGE `ImageList`, trouvé par l'exécution** : `Images.Add` ne recopie
+  l'image que si le handle de la liste EXISTE DÉJÀ. Une ImageList construite
+  AVANT d'être posée sur la ListView garde la référence — libérer le bitmap
+  (`using`) fait donc planter la réalisation du handle avec
+  « ArgumentException : Parameter is not valid », très loin de sa cause. Le
+  commentaire de la v1.29.0 (« on libère la nôtre aussitôt après l'ajout »)
+  n'était vrai que parce que la liste y était déjà réalisée.
+- **Deux défauts corrigés au passage, vus seulement à la capture** :
+  - la dernière colonne s'étirait AVANT que la ListView ait décidé d'afficher
+    un ascenseur vertical, d'où une colonne trop large de ~17 px et un
+    ascenseur HORIZONTAL parasite. `ThemedListView.Refresh` diffère donc par
+    `BeginInvoke` ;
+  - les ascenseurs d'une ListView restaient BLANCS en thème sombre : ils sont
+    dessinés par Windows en zone non cliente, hors de portée de `BackColor` et
+    de tout dessin par l'application. Corrigé par
+    `SetWindowTheme(handle, "DarkMode_Explorer")`, le thème étant déduit de la
+    clarté du fond pour ne pas basculer d'un coup pendant le fondu clair/sombre.
+- **Méthode de capture** : `Application.DoEvents()` avant le `DrawToBitmap`,
+  sans quoi la capture montre un état transitoire — les réajustements différés
+  par `BeginInvoke` n'ont pas encore eu lieu. C'est ce qui a d'abord fait
+  croire que l'ascenseur horizontal subsistait.
+
 **v1.32.0 (2026-08-09) — 40.0 : Twitch, YouTube et TikTok** :
 - **Tout a été MESURÉ sur le vrai yt-dlp avant d'écrire une ligne d'interface**,
   et c'est la mesure qui a dicté la conception. Les quatre découvertes :

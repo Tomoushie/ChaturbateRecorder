@@ -85,6 +85,34 @@ namespace ChaturbateRecorderApp.Services
             host == domain || host.EndsWith("." + domain, StringComparison.Ordinal);
 
         /// <summary>
+        /// Nom du glyphe IconManager représentant une plateforme (103.0), et
+        /// libellé lisible. Regroupés ici avec la détection : une plateforme
+        /// ajoutée sans son icône afficherait une case vide, ce que la table
+        /// unique rend impossible à oublier.
+        /// </summary>
+        public static (string Icon, string Label) Badge(StreamPlatform platform) => platform switch
+        {
+            StreamPlatform.Twitch => ("twitch", "Twitch"),
+            StreamPlatform.YouTube => ("youtube", "YouTube"),
+            StreamPlatform.TikTok => ("tiktok", "TikTok"),
+            StreamPlatform.Chaturbate => ("camera", "Chaturbate"),
+            _ => ("camera", "Autre"),
+        };
+
+        /// <summary>
+        /// Plateformes réellement annoncées à l'utilisateur, dans l'ordre
+        /// d'affichage. <see cref="StreamPlatform.Unknown"/> en est exclu :
+        /// c'est un cas de repli, pas une plateforme.
+        /// </summary>
+        public static readonly StreamPlatform[] Supported =
+        {
+            StreamPlatform.Chaturbate,
+            StreamPlatform.Twitch,
+            StreamPlatform.YouTube,
+            StreamPlatform.TikTok,
+        };
+
+        /// <summary>
         /// Nom lisible d'une source, utilisé comme libellé ET comme base du nom
         /// de fichier de sortie.
         ///

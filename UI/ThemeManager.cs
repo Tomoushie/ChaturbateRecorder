@@ -308,6 +308,14 @@ namespace ChaturbateRecorderApp.UI
                     tpb.BorderColor = p.Border;
                     break;
 
+                // 103.0 — les pictogrammes de plateforme suivent la couleur des
+                // textes secondaires : ils informent, ils ne réclament pas
+                // l'attention.
+                case PlatformStrip strip:
+                    strip.BackColor = surface;
+                    strip.IconColor = p.FgMuted;
+                    break;
+
                 case Label lbl:
                     lbl.ForeColor = GetTextRole(lbl) == TextRole.Caption ? p.FgMuted : p.Fg;
                     lbl.BackColor = surface;
