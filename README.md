@@ -34,6 +34,7 @@
 
 ## Fonctionnalités
 
+- 📺 **Quatre plateformes** — Chaturbate, **Twitch**, **YouTube** et **TikTok**. Colle l'adresse du live, celle que tu utiliserais dans ton navigateur.
 - 🎬 **Multi-stream** — enregistre plusieurs lives en parallèle sans ouvrir plusieurs instances de l'application.
 - 🎚️ **Qualité & codec au choix** — meilleure qualité, moyenne ou minimale ; réencodage optionnel en H.264/H.265 sans jamais toucher au fichier original.
 - 📼 **Format de sortie** — MP4, MKV (plus robuste face à un arrêt brutal) ou MOV.
@@ -331,7 +332,7 @@ ChaturbateRecorderApp/
 │   └── TutorialForm.cs              (guide de démarrage)
 ├── Assets/
 │   ├── donate_qr.png
-│   ├── logo.png / screenshot.png    (utilisés par ce README)
+│   ├── logo.png / screenshot*.png   (utilisés par ce README)
 │   └── app.ico
 ├── Tools/                           (yt-dlp.exe / ffmpeg.exe — non versionnés, voir Prérequis)
 ├── Tests/

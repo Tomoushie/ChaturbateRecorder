@@ -30,10 +30,11 @@
 
 <br>
 
-![Chaturbate Recorder screenshot](Assets/screenshot.png)
+![Chaturbate Recorder screenshot](Assets/screenshot.en.png)
 
 ## Features
 
+- 📺 **Four platforms** — Chaturbate, **Twitch**, **YouTube** and **TikTok**. Paste the stream address, the same one you would use in your browser.
 - 🎬 **Multi-stream** — records several lives in parallel without opening multiple instances of the app.
 - 🎚️ **Choice of quality & codec** — best, medium, or minimum quality; optional H.264/H.265 re-encoding that never touches the original file.
 - 📼 **Output format** — MP4, MKV (more resilient to an abrupt stop), or MOV.
@@ -325,7 +326,7 @@ ChaturbateRecorderApp/
 │   └── TutorialForm.cs              (getting-started guide)
 ├── Assets/
 │   ├── donate_qr.png
-│   ├── logo.png / screenshot.png    (used by this README)
+│   ├── logo.png / screenshot*.png   (used by this README)
 │   └── app.ico
 ├── Tools/                           (yt-dlp.exe / ffmpeg.exe — not versioned, see Prerequisites)
 ├── Tests/
