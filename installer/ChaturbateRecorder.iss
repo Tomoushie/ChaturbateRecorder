@@ -138,6 +138,12 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchApp}"; Flags: nowait postin
 ; par dirifempty.
 Type: files; Name: "{app}\{#AppExe}"
 Type: files; Name: "{app}\ChaturbateRecorder.pdb"
+; 36.0 : SentinelGuard.dll est EMBARQUEE dans l'exe portable (fichier unique),
+; mais son .pdb reste un fichier a part dans l'archive — verifie en publiant,
+; pas suppose. Sans cette ligne il survivrait a la desinstallation et
+; empecherait dirifempty de nettoyer le dossier, exactement comme le .pdb de
+; l'application l'avait fait.
+Type: files; Name: "{app}\SentinelGuard.pdb"
 Type: files; Name: "{app}\yt-dlp.exe"
 Type: files; Name: "{app}\ffmpeg.exe"
 Type: files; Name: "{app}\donate_qr.png"

@@ -197,7 +197,7 @@ namespace ChaturbateRecorderApp
                     Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
-            LogRotationManager.PurgeOldLogs(AppConfig.LogDir, AppConfig.LogRetentionDays);
+            SentinelGuard.LogFileRotator.PurgeOlderThan(AppConfig.LogDir, AppConfig.LogRetentionDays);
 
             WarnIfBroadWriteAccess(AppConfig.AppDir);
             WarnIfBroadWriteAccess(AppConfig.CaptureDir);

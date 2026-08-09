@@ -1,40 +1,39 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp.Services
 {
     public enum DownloadState { Idle, Running, Completed, Failed, Stopped }
 
     /// <summary>
-    /// Moteur de téléchargement basé sur un vrai System.Diagnostics.Process
-    /// (remplace Start-Job de la version PowerShell, qui tourne dans un
-    /// processus PowerShell séparé et ne tue pas forcément les processus
-    /// enfants natifs). La sortie de yt-dlp est lue ligne par ligne de façon
-    /// asynchrone (OutputDataReceived), écrite dans le fichier log, et le
-    /// pourcentage est extrait en direct via regex.
+    /// Pilote yt-dlp : construit sa ligne de commande, interprète sa sortie et
+    /// tient le journal brut de l'enregistrement.
     ///
-    /// Tous les événements (OnLogLine, OnProgress, OnStateChanged) sont levés
-    /// depuis un thread de pool (celui du Process), PAS depuis le thread UI :
-    /// l'abonné (MainForm) doit impérativement marshaler via Control.Invoke
-    /// avant de toucher un contrôle WinForms.
+    /// **Depuis 36.0, la supervision du processus ne vit plus ici** : lancement,
+    /// capture de sortie, watchdog d'inactivité et arrêt de l'arbre de processus
+    /// sont passés dans <see cref="GuardedProcessRunner"/> (SentinelGuard). Ce
+    /// qui reste est ce qui ne concerne QUE yt-dlp — ses arguments, sa regex de
+    /// progression, son fichier de log — et n'avait donc rien à faire dans une
+    /// bibliothèque destinée à des tiers.
+    ///
+    /// L'API publique n'a pas bougé (<see cref="Start"/>, <see cref="Stop"/>,
+    /// <see cref="State"/> et les trois évènements) : MainForm est inchangé.
+    ///
+    /// Tous les évènements sont levés depuis un thread de pool, PAS depuis le
+    /// thread d'interface : l'abonné doit marshaler via Control.Invoke avant de
+    /// toucher un contrôle WinForms.
     /// </summary>
     public class DownloadEngine
     {
-        private Process? _process;
+        private readonly GuardedProcessRunner _runner = new();
         private StreamWriter? _logWriter;
         private string _logFilePath = "";
         private long _logMaxSizeBytes;
-        private bool _wasStoppedManually;
-        private bool _watchdogTriggered;
-        private DateTime _lastOutputUtc;
-        private CancellationTokenSource? _watchdogCts;
-        private readonly object _sync = new();
 
         public DownloadState State { get; private set; } = DownloadState.Idle;
 
@@ -45,29 +44,55 @@ namespace ChaturbateRecorderApp.Services
         private static readonly Regex ProgressRegex =
             new(@"\[download\]\s+([\d\.]+)%", RegexOptions.Compiled);
 
+        public DownloadEngine()
+        {
+            _runner.OutputLineReceived += HandleLine;
+            _runner.StateChanged += HandleRunnerState;
+            // Le runner ne journalise rien lui-même (c'est la règle du package) :
+            // ses diagnostics — watchdog déclenché, arrêt impossible — arrivent
+            // ici et repartent dans le log de l'application.
+            _runner.Diagnostic += message => Logger.Log(message, LogLevel.ERROR);
+        }
+
         public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120, long logMaxSizeBytes = 0)
         {
-            lock (_sync)
-            {
-                if (State == DownloadState.Running)
-                    throw new InvalidOperationException("Un téléchargement est déjà en cours.");
+            if (State == DownloadState.Running)
+                throw new InvalidOperationException("Un téléchargement est déjà en cours.");
 
-                _wasStoppedManually = false;
-                _watchdogTriggered = false;
+            var arguments = BuildArguments(ffmpegPath, targetUrl, outputTemplate, formatSelector,
+                outputContainer, cookiesFilePath, proxyUrl);
+
+            _logFilePath = logFilePath;
+            _logMaxSizeBytes = logMaxSizeBytes;
+
+            try
+            {
+                _logWriter = new StreamWriter(logFilePath, append: true, Encoding.UTF8) { AutoFlush = true };
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Impossible d'ouvrir le fichier log '{logFilePath}' : {ex.Message}", LogLevel.ERROR);
+                SetState(DownloadState.Failed);
+                return;
             }
 
-            var psi = new ProcessStartInfo
+            if (!_runner.Start(ytDlpPath, arguments, TimeSpan.FromSeconds(watchdogTimeoutSeconds), out var reason))
             {
-                FileName = ytDlpPath,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-            };
+                Logger.Log($"Impossible de démarrer yt-dlp : {reason}", LogLevel.ERROR);
+                SafeCloseLogWriter();
+                SetState(DownloadState.Failed);
+            }
+        }
 
-            foreach (var a in new[]
+        /// <summary>
+        /// Ligne de commande yt-dlp. Isolée pour être lisible d'un bloc — c'est
+        /// la seule partie de cette classe qui décide de ce qui est réellement
+        /// enregistré, et chaque option y répond à un incident précis.
+        /// </summary>
+        private static List<string> BuildArguments(string ffmpegPath, string targetUrl, string outputTemplate,
+            string? formatSelector, string outputContainer, string? cookiesFilePath, string? proxyUrl)
+        {
+            var arguments = new List<string>
             {
                 "--newline",
                 "--retries", "infinite",
@@ -80,112 +105,34 @@ namespace ChaturbateRecorderApp.Services
                 "--ffmpeg-location", ffmpegPath,
                 "-o", outputTemplate,
                 "--progress",
-                targetUrl
-            })
-            {
-                psi.ArgumentList.Add(a);
-            }
+                targetUrl,
+            };
 
             if (!string.IsNullOrWhiteSpace(formatSelector))
             {
-                psi.ArgumentList.Add("-f");
-                psi.ArgumentList.Add(formatSelector);
+                arguments.Add("-f");
+                arguments.Add(formatSelector);
             }
 
             if (!string.IsNullOrWhiteSpace(cookiesFilePath))
             {
-                psi.ArgumentList.Add("--cookies");
-                psi.ArgumentList.Add(cookiesFilePath);
+                arguments.Add("--cookies");
+                arguments.Add(cookiesFilePath);
             }
 
             if (!string.IsNullOrWhiteSpace(proxyUrl))
             {
-                psi.ArgumentList.Add("--proxy");
-                psi.ArgumentList.Add(proxyUrl);
+                arguments.Add("--proxy");
+                arguments.Add(proxyUrl);
             }
 
-            _logFilePath = logFilePath;
-            _logMaxSizeBytes = logMaxSizeBytes;
-
-            try
-            {
-                _logWriter = new StreamWriter(logFilePath, append: true, Encoding.UTF8) { AutoFlush = true };
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Impossible d'ouvrir le fichier log '{logFilePath}' : {ex.Message}", LogLevel.ERROR);
-                State = DownloadState.Failed;
-                OnStateChanged?.Invoke(State);
-                return;
-            }
-
-            _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _process.OutputDataReceived += (s, e) => HandleLine(e.Data);
-            _process.ErrorDataReceived  += (s, e) => HandleLine(e.Data);
-            _process.Exited += (s, e) => HandleExited();
-
-            try
-            {
-                _process.Start();
-                _process.BeginOutputReadLine();
-                _process.BeginErrorReadLine();
-                State = DownloadState.Running;
-                OnStateChanged?.Invoke(State);
-
-                _lastOutputUtc = DateTime.UtcNow;
-                _watchdogCts = new CancellationTokenSource();
-                _ = RunWatchdogAsync(watchdogTimeoutSeconds, _watchdogCts.Token);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Impossible de démarrer yt-dlp : {ex.Message}", LogLevel.ERROR);
-                SafeCloseLogWriter();
-                State = DownloadState.Failed;
-                OnStateChanged?.Invoke(State);
-            }
+            return arguments;
         }
 
-        /// <summary>
-        /// Watchdog anti-freeze : si yt-dlp/ffmpeg ne produisent plus aucune
-        /// ligne de sortie pendant `timeoutSeconds`, on considère le process
-        /// figé et on le tue proprement (arbre complet), avec un log explicite.
-        /// Distinct d'un arrêt manuel (_wasStoppedManually) : le job final
-        /// passe à Failed, pas à Stopped.
-        /// </summary>
-        private async Task RunWatchdogAsync(int timeoutSeconds, CancellationToken token)
+        private void HandleLine(string line)
         {
-            try
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(10), token);
-                    if (State != DownloadState.Running) return;
-
-                    var idleSeconds = (DateTime.UtcNow - _lastOutputUtc).TotalSeconds;
-                    if (idleSeconds >= timeoutSeconds)
-                    {
-                        Logger.Log($"Watchdog : aucune sortie depuis {idleSeconds:F0}s (seuil {timeoutSeconds}s) — process considéré figé, arrêt forcé.", LogLevel.ERROR);
-                        lock (_sync) { _watchdogTriggered = true; }
-                        try { _process?.Kill(entireProcessTree: true); }
-                        catch (Exception ex) { Logger.Log($"Erreur lors de l'arrêt forcé par le watchdog : {ex.Message}", LogLevel.ERROR); }
-                        return;
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Arrêt normal (process terminé ou Stop() appelé) : rien à faire.
-            }
-        }
-
-        private void HandleLine(string? line)
-        {
-            if (string.IsNullOrEmpty(line)) return;
-
-            _lastOutputUtc = DateTime.UtcNow;
-
             try { _logWriter?.WriteLine(line); }
-            catch { /* fichier log verrouillé/inaccessible : on continue quand même, le log UI reste utilisable */ }
+            catch { /* fichier log verrouillé/inaccessible : le log UI reste utilisable */ }
 
             RotateJobLogIfTooLarge();
 
@@ -193,6 +140,37 @@ namespace ChaturbateRecorderApp.Services
 
             if (TryParseProgress(line, out var pct))
                 OnProgress?.Invoke(pct);
+        }
+
+        /// <summary>
+        /// Traduit l'état du superviseur en état métier. La correspondance est
+        /// volontairement explicite plutôt qu'un cast entre deux enums de même
+        /// forme : rien ne garantit que SentinelGuard gardera cet ordre, et un
+        /// décalage silencieux ferait passer un échec pour une réussite.
+        /// </summary>
+        private void HandleRunnerState(SupervisedProcessState state)
+        {
+            if (state == SupervisedProcessState.Running)
+            {
+                SetState(DownloadState.Running);
+                return;
+            }
+
+            if (state == SupervisedProcessState.Idle) return;
+
+            SafeCloseLogWriter();
+            SetState(state switch
+            {
+                SupervisedProcessState.Completed => DownloadState.Completed,
+                SupervisedProcessState.Stopped => DownloadState.Stopped,
+                _ => DownloadState.Failed,
+            });
+        }
+
+        private void SetState(DownloadState state)
+        {
+            State = state;
+            OnStateChanged?.Invoke(state);
         }
 
         /// <summary>
@@ -213,25 +191,6 @@ namespace ChaturbateRecorderApp.Services
             return false;
         }
 
-        private void HandleExited()
-        {
-            _watchdogCts?.Cancel();
-
-            DownloadState finalState;
-            lock (_sync)
-            {
-                finalState = _wasStoppedManually
-                    ? DownloadState.Stopped
-                    : _watchdogTriggered
-                        ? DownloadState.Failed
-                        : (_process!.ExitCode == 0 ? DownloadState.Completed : DownloadState.Failed);
-                State = finalState;
-            }
-
-            SafeCloseLogWriter();
-            OnStateChanged?.Invoke(finalState);
-        }
-
         private void SafeCloseLogWriter()
         {
             try { _logWriter?.Flush(); _logWriter?.Dispose(); }
@@ -241,9 +200,9 @@ namespace ChaturbateRecorderApp.Services
 
         /// <summary>
         /// Rotation (2.4) du log brut de ce job si sa taille dépasse le seuil
-        /// configuré : ferme l'écriture en cours, renomme le fichier plein
-        /// avec un suffixe horodaté, puis rouvre un nouveau fichier vide sous
-        /// le nom d'origine pour la suite de l'enregistrement.
+        /// configuré : ferme l'écriture en cours, laisse LogFileRotator renommer
+        /// le fichier plein, puis rouvre un fichier vide sous le nom d'origine
+        /// pour la suite de l'enregistrement.
         /// </summary>
         private void RotateJobLogIfTooLarge()
         {
@@ -257,7 +216,7 @@ namespace ChaturbateRecorderApp.Services
                 _logWriter.Dispose();
                 _logWriter = null;
 
-                LogRotationManager.RotateIfTooLarge(_logFilePath, _logMaxSizeBytes);
+                LogFileRotator.RotateIfTooLarge(_logFilePath, _logMaxSizeBytes);
 
                 _logWriter = new StreamWriter(_logFilePath, append: true, Encoding.UTF8) { AutoFlush = true };
             }
@@ -268,28 +227,11 @@ namespace ChaturbateRecorderApp.Services
         }
 
         /// <summary>
-        /// Arrête le téléchargement en tuant l'arbre de processus complet
-        /// (yt-dlp ET le ffmpeg qu'il a éventuellement lancé en enfant).
-        /// Equivalent de Stop-Job + Remove-Job, en plus fiable : un Stop-Job
-        /// PowerShell arrête le job mais ne garantit pas la terminaison des
-        /// processus natifs enfants, ce que Process.Kill(true) fait réellement.
+        /// Arrête l'enregistrement en tuant l'arbre de processus complet
+        /// (yt-dlp ET le ffmpeg qu'il a éventuellement lancé en enfant), et
+        /// marque l'arrêt comme MANUEL : l'état final sera Stopped, ce qui
+        /// exclut la reconnexion automatique côté MainForm.
         /// </summary>
-        public void Stop()
-        {
-            lock (_sync)
-            {
-                if (_process == null || _process.HasExited) return;
-                _wasStoppedManually = true;
-            }
-
-            try
-            {
-                _process!.Kill(entireProcessTree: true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Erreur lors de l'arrêt du processus : {ex.Message}", LogLevel.ERROR);
-            }
-        }
+        public void Stop() => _runner.Stop();
     }
 }

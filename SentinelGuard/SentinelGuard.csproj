@@ -29,12 +29,14 @@
     <PackageId>SentinelGuard</PackageId>
     <AssemblyName>SentinelGuard</AssemblyName>
     <RootNamespace>SentinelGuard</RootNamespace>
-    <Version>1.0.0</Version>
+    <!-- 1.1.0 (36.0) : ajout de GuardedProcessRunner et LogFileRotator.
+         Mineure et non majeure — aucune API existante n'a changé. -->
+    <Version>1.1.0</Version>
     <Authors>Tomoushie</Authors>
     <Product>SentinelGuard</Product>
     <Title>SentinelGuard — Windows security guardrails for .NET</Title>
-    <Description>Defensive preflight checks for .NET desktop applications on Windows. Validates file paths (UNC, extended paths, alternate data streams, reserved device names, reparse points), URLs (HTTPS only, domain allow/deny lists), external binaries (SHA-256 hash, Authenticode signature, certificate chain pinning), NTFS ACLs (overly broad write access), remote TLS certificates (explicit pinning and SAN validation) and the process execution location (network share, temporary folder, recycle bin, NTFS-compressed folder). Pure functions: every check returns a boolean, with an optional 'out string? reason' overload giving the exact rejection cause — no logging, no hidden side effects. Battle-tested in a production Windows desktop application that launches third-party executables.</Description>
-    <PackageTags>security;sandbox;hardening;path-validation;url-validation;acl;authenticode;code-signing;tls;certificate-pinning;windows;desktop</PackageTags>
+    <Description>Defensive preflight checks for .NET desktop applications on Windows. Validates file paths (UNC, extended paths, alternate data streams, reserved device names, reparse points), URLs (HTTPS only, domain allow/deny lists), external binaries (SHA-256 hash, Authenticode signature, certificate chain pinning), NTFS ACLs (overly broad write access), remote TLS certificates (explicit pinning and SAN validation) and the process execution location (network share, temporary folder, recycle bin, NTFS-compressed folder). Then supervises what you launch: GuardedProcessRunner captures output line by line, kills a hung process through an inactivity watchdog, and stops the entire process tree instead of just the child you started. Validators are pure functions returning a boolean, with an optional 'out string? reason' overload giving the exact rejection cause — no logging, no hidden side effects. Battle-tested in a production Windows desktop application that launches third-party executables.</Description>
+    <PackageTags>security;sandbox;hardening;path-validation;url-validation;acl;authenticode;code-signing;tls;certificate-pinning;process;watchdog;windows;desktop</PackageTags>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Tomoushie/ChaturbateRecorder</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

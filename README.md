@@ -133,18 +133,24 @@ dotnet add package SentinelGuard
 | `AclValidator` | Dossiers inscriptibles par `Tout le monde` — où un binaire peut être remplacé |
 | `WorkingDirectoryValidator` | Exécution depuis un partage réseau, un dossier temporaire ou la corbeille |
 | `CertificateValidator` | Interception TLS : pinning de certificat et validation du SAN |
+| `GuardedProcessRunner` | Un binaire vérifié qui dérape une fois lancé : processus figé, processus enfants orphelins |
+| `LogFileRotator` | Un fichier de log qui grossit sans limite, et des logs conservés indéfiniment |
 
-Fonctions **pures** : chaque vérification retourne un booléen, avec une
-surcharge `out string? reason` donnant le motif exact du refus. Rien n'est
-journalisé, rien n'est levé dans ton dos — tu décides quoi en faire.
+Les validateurs sont des fonctions **pures** : chaque vérification retourne un
+booléen, avec une surcharge `out string? reason` donnant le motif exact du refus.
+Rien n'est journalisé, rien n'est levé dans ton dos — tu décides quoi en faire.
 
 Cible `net8.0-windows` et `net10.0-windows`, sous double licence MIT ou
 Apache-2.0. Détails et exemples : [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
-**Ce que le package ne contient pas encore** : `Logger` et `DownloadEngine`,
-qui en feraient un véritable « Core SDK » plutôt qu'un ensemble de validateurs.
-Ils vivent aujourd'hui dans l'application et dépendent de son contexte ; les
-extraire demande de les rendre indépendants, ce qui n'est pas fait.
+**Ce qui reste dans l'application, et pourquoi** : `DownloadEngine` et `Logger`.
+La partie réutilisable du moteur — lancer un binaire, capturer sa sortie,
+surveiller son inactivité, tuer tout l'arbre de processus — est passée dans
+`GuardedProcessRunner`, et l'application s'en sert. Ce qui reste ne concerne que
+yt-dlp (ses arguments, sa regex de progression, son fichier de log) ou que cette
+application-ci (le chemin de ses logs) : ça n'aurait aucune valeur pour un
+projet tiers, et un enregistreur de lives n'a rien à faire dans une
+bibliothèque de sécurité généraliste.
 
 ## 🔒 Sécurité — ce qui est en place, et ce qui ne l'est pas
 
@@ -307,7 +313,6 @@ ChaturbateRecorderApp/
 │   └── CertificateValidator.cs      (TLS + SAN serveur distant)
 ├── Services/
 │   ├── Logger.cs                    (logs JSON structurés)
-│   ├── LogRotationManager.cs        (purge + rotation des logs)
 │   ├── FavoritesManager.cs
 │   ├── SettingsManager.cs           (paramètres persistés, settings.json)
 │   ├── RecordingJob.cs              (métadonnées d'un enregistrement)

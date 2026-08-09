@@ -41,6 +41,32 @@ SentinelGuard regroupe les contrôles à faire **avant** de faire confiance.
 | `AclValidator` | Dossiers inscriptibles par `Tout le monde` / `Utilisateurs authentifiés` — là où un binaire peut être remplacé juste avant son exécution |
 | `WorkingDirectoryValidator` | Exécution depuis un partage réseau, un dossier temporaire, la corbeille ou un dossier compressé NTFS |
 | `CertificateValidator` | Interception TLS : pinning explicite de certificat et validation du SAN |
+| `GuardedProcessRunner` | Un binaire vérifié qui dérape une fois lancé : processus figé (watchdog d'inactivité) et processus enfants orphelins (arrêt de l'arbre complet) |
+| `LogFileRotator` | Un fichier de log qui grossit sans limite pendant une capture longue, et des logs conservés indéfiniment |
+
+## Vérifier, puis surveiller
+
+Contrôler l'empreinte d'un exécutable ne couvre que l'instant **avant** de le
+lancer. Deux pannes restent possibles ensuite, et aucune ne lève d'exception :
+le processus **se fige** (vivant, muet, l'attendre revient à attendre
+indéfiniment), ou il **laisse des enfants derrière lui** (tuer celui qu'on a
+lancé ne les arrête pas).
+
+```csharp
+using var runner = new GuardedProcessRunner();
+runner.OutputLineReceived += ligne => Console.WriteLine(ligne);
+
+// Aucune sortie pendant 2 minutes = figé : tué, rapporté en Failed.
+runner.Start(cheminOutil, new[] { "--input", @"C:\un chemin\fichier.mkv" },
+    TimeSpan.FromMinutes(2), out var motif);
+
+runner.Stop();   // tue tout l'arbre, rapporte Stopped — pas Failed
+```
+
+L'état final distingue ce qu'un simple code de retour ne dit pas : `Completed`
+(sorti avec 0), `Failed` (code non nul, ou tué par le watchdog) et `Stopped`
+(arrêt demandé). Les arguments se passent un par élément : un chemin contenant
+des espaces n'a pas besoin d'être échappé et ne peut pas être coupé en deux.
 
 ## Comment ça s'utilise
 
@@ -123,6 +149,31 @@ SentinelGuard gathers the checks worth running **before** trusting any of it.
 | `AclValidator` | Folders writable by `Everyone` / `Authenticated Users` — where a binary can be swapped right before you run it |
 | `WorkingDirectoryValidator` | Running from a network share, a temporary folder, the recycle bin or an NTFS-compressed folder |
 | `CertificateValidator` | TLS interception: explicit certificate pinning and Subject Alternative Name validation |
+| `GuardedProcessRunner` | A verified binary misbehaving once launched: hung processes (inactivity watchdog) and orphaned children (process-tree kill) |
+| `LogFileRotator` | Unbounded log growth during a long capture, and log files kept forever |
+
+## Verify, then supervise
+
+Checking an executable's hash only covers the moment **before** you launch it.
+Two failures remain possible afterwards, and neither raises an exception: the
+process **hangs** (alive, silent — waiting on it waits forever), or it **leaves
+children behind** (killing the one you started does not stop them).
+
+```csharp
+using var runner = new GuardedProcessRunner();
+runner.OutputLineReceived += line => Console.WriteLine(line);
+
+// No output for 2 minutes = hung: killed, reported as Failed.
+runner.Start(toolPath, new[] { "--input", @"C:\some path\file.mkv" },
+    TimeSpan.FromMinutes(2), out var reason);
+
+runner.Stop();   // kills the whole tree, reports Stopped — not Failed
+```
+
+The final state says what a bare exit code cannot: `Completed` (exited 0),
+`Failed` (non-zero exit, or killed by the watchdog) and `Stopped` (you asked for
+it). Arguments are passed one element per argument: a path containing spaces
+needs no escaping and cannot be split in two.
 
 ## How it is used
 

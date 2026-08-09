@@ -39,7 +39,7 @@ namespace ChaturbateRecorderApp.Services
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                LogRotationManager.RotateIfTooLarge(sessionLogFile, Config.AppConfig.LogMaxFileSizeBytes);
+                SentinelGuard.LogFileRotator.RotateIfTooLarge(sessionLogFile, Config.AppConfig.LogMaxFileSizeBytes);
 
                 var entry = new LogEntry
                 {

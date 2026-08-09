@@ -131,18 +131,23 @@ dotnet add package SentinelGuard
 | `AclValidator` | Folders writable by `Everyone` — where a binary you are about to run can be swapped |
 | `WorkingDirectoryValidator` | Running from a network share, a temporary folder or the recycle bin |
 | `CertificateValidator` | TLS interception: certificate pinning and SAN validation |
+| `GuardedProcessRunner` | A verified binary misbehaving once launched: hung processes, orphaned children |
+| `LogFileRotator` | Unbounded log growth, and log files kept forever |
 
-**Pure functions**: every check returns a boolean, with an optional
-`out string? reason` overload giving the exact rejection cause. Nothing is
-logged, nothing is thrown behind your back — you decide what to do with it.
+The validators are **pure functions**: every check returns a boolean, with an
+optional `out string? reason` overload giving the exact rejection cause. Nothing
+is logged, nothing is thrown behind your back — you decide what to do with it.
 
 Targets `net8.0-windows` and `net10.0-windows`, dual-licensed MIT or
 Apache-2.0. Details and examples: [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
-**What the package does not contain yet**: `Logger` and `DownloadEngine`, which
-would make it a real "Core SDK" rather than a set of validators. They currently
-live in the application and depend on its context; extracting them means making
-them standalone first, which has not been done.
+**What stays in the application, and why**: `DownloadEngine` and `Logger`. The
+reusable half of the engine — launching a binary, capturing its output, watching
+it for inactivity, killing the whole process tree — moved into
+`GuardedProcessRunner`, which the application now consumes. What remains is
+specific either to yt-dlp (its arguments, its progress regex, its log file) or to
+this application (where its logs live): worthless to a third-party project, and a
+live recorder has no business inside a general-purpose security library.
 
 ## 🔒 Security — what is in place, and what is not
 
@@ -303,7 +308,6 @@ ChaturbateRecorderApp/
 │   └── CertificateValidator.cs      (TLS + remote server SAN)
 ├── Services/
 │   ├── Logger.cs                    (structured JSON logs)
-│   ├── LogRotationManager.cs        (log purge + rotation)
 │   ├── FavoritesManager.cs
 │   ├── SettingsManager.cs           (persisted settings, settings.json)
 │   ├── RecordingJob.cs              (recording metadata)

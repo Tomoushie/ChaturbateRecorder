@@ -29,11 +29,36 @@
       niveau du code avec des #pragma disséminés.
     -->
     <NoWarn>SYSLIB0057</NoWarn>
+
+    <!--
+      36.0 — n'emporte que le .pdb des projets référencés, pas leur
+      documentation XML. SentinelGuard.xml pèse 33 Ko d'IntelliSense destinée
+      aux développeurs qui CONSOMMENT le package : dans une release, c'est du
+      poids mort livré à des utilisateurs finaux. Le .pdb, lui, est conservé —
+      sans lui, un plantage dans le superviseur de processus arriverait au
+      rapport de crash sans numéro de ligne.
+    -->
+    <AllowedReferenceRelatedFileExtensions>.pdb</AllowedReferenceRelatedFileExtensions>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Rendu SVG -> Bitmap à la volée pour les icônes vectorielles (3.1). -->
     <PackageReference Include="Svg" Version="3.4.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      36.0 — l'application CONSOMME désormais SentinelGuard, au lieu de vivre
+      à côté de lui. Référence de projet et non PackageReference : la version
+      publiée sur nuget.org est toujours en retard d'un correctif sur le
+      source du dépôt, et faire dépendre l'app d'un paquet qu'on publie
+      soi-même imposerait de publier avant de pouvoir corriger.
+
+      N'apporte que GuardedProcessRunner et LogFileRotator : les validateurs
+      restent dupliqués dans Security\ (décision de 30.0), les fusionner est
+      un chantier distinct.
+    -->
+    <ProjectReference Include="SentinelGuard\SentinelGuard.csproj" />
   </ItemGroup>
 
   <ItemGroup>

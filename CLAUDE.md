@@ -39,6 +39,56 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**36.0 traité (2026-08-09) — SentinelGuard 1.1.0, et l'application le CONSOMME**
+(pas de bump applicatif : aucun changement visible, ça part avec la v1.31.0 non
+encore publiée) :
+- **La consigne d'origine était « déplacer `Logger` et `DownloadEngine` dans
+  SentinelGuard ». Elle a été discutée avec l'utilisateur avant d'écrire** : le
+  package annonce « pure functions, no side effects, nothing is logged », et
+  `DownloadEngine` est un pilote yt-dlp. L'y mettre rendait le README faux et
+  remettait un composant d'enregistrement de cams dans le package justement
+  renommé pour ne pas y ressembler. **Choix retenu par l'utilisateur** : extraire
+  ce qui est réellement générique, pas les classes entières.
+- **Ce qui est parti** : `SentinelGuard.GuardedProcessRunner` (lancement d'un
+  binaire, capture ligne à ligne, watchdog d'inactivité, arrêt de l'ARBRE de
+  processus, états Completed/Failed/Stopped) et `SentinelGuard.LogFileRotator`.
+  C'est le pendant runtime de `BinaryVerifier` : vérifier l'empreinte ne couvre
+  que l'instant d'avant le lancement.
+- **Ce qui reste dans l'app, volontairement** : les arguments yt-dlp, la regex de
+  progression, le fichier de log du job, et `Logger` (qui dépend d'`AppConfig`).
+  Sans valeur pour un tiers.
+- **L'app référence désormais le projet SentinelGuard** (`ProjectReference`, pas
+  `PackageReference` : la version publiée est toujours en retard d'un correctif,
+  et dépendre de son propre paquet obligerait à publier avant de pouvoir
+  corriger). `Services/LogRotationManager.cs` est **supprimé**, ses deux
+  appelants pointent sur `LogFileRotator`.
+- **Conséquence sur la distribution, vérifiée en publiant et non supposée** : le
+  ZIP standard gagne `SentinelGuard.dll`, et le portable — pourtant en fichier
+  unique — laisse `SentinelGuard.pdb` À CÔTÉ de l'exe. Ajouté à
+  `[UninstallDelete]` de l'installateur, sinon il survivait à la désinstallation
+  et bloquait `dirifempty`, exactement le piège déjà payé avec le `.pdb` de
+  l'application. Le `.xml` de documentation (33 Ko d'IntelliSense destinée aux
+  consommateurs du package) est exclu de la sortie via
+  `AllowedReferenceRelatedFileExtensions=.pdb`.
+- **Le workflow de release n'a rien demandé** : il zippe `publish/standard/*` en
+  entier, il n'y a pas de liste de fichiers à tenir à jour. L'installateur non
+  plus (il fait `Expand-Archive` de toute l'archive).
+- **Correction apportée au passage** : `Exited` peut se lever AVANT que les
+  dernières lignes de sortie aient été remises aux gestionnaires asynchrones.
+  `GuardedProcessRunner` appelle donc `WaitForExit()` dans `Exited` — la façon
+  documentée d'attendre ce vidage. L'ancien code perdait par intermittence la
+  fin de la sortie, c'est-à-dire souvent le message d'erreur qui explique
+  l'échec.
+- **Tests** : `SentinelGuard.Tests/GuardedProcessRunnerTests.cs` (11) +
+  `LogFileRotatorTests.cs` (8) — **82 par cible**, sur les deux TFM. Ils lancent
+  de VRAIS `cmd.exe` : un superviseur de processus simulé ne ferait que rejouer
+  ce qu'on croit déjà savoir du comportement de Windows. Le watchdog échantillonne
+  à `timeout/4` (borné 250 ms – 10 s), sans quoi un seuil court ne serait
+  constaté qu'au bout de 10 s et le test durerait autant.
+- **Publication du package : NON FAITE.** Elle passe par un tag dédié
+  `sentinelguard-v1.1.0`, distinct des tags applicatifs — à demander à
+  l'utilisateur, comme tout tag.
+
 **v1.31.0 (2026-08-09) — 39.0 : refonte visuelle de la fenêtre principale** :
 - **Périmètre fixé avec l'utilisateur avant d'écrire une ligne** : « toute la
   fenêtre principale », et le défaut à corriger est le **rendu plat/daté** — pas
