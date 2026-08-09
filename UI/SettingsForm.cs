@@ -5,8 +5,8 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.Security;
 using ChaturbateRecorderApp.Services;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp.UI
 {
@@ -119,8 +119,9 @@ namespace ChaturbateRecorderApp.UI
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
             var chosen = dialog.SelectedPath;
-            if (!PathValidator.IsValidPath(chosen))
+            if (!PathValidator.IsValidPath(chosen, mustExist: false, out var folderReason))
             {
+                _appendLog($"Dossier de sauvegarde refusé : {folderReason}");
                 MessageBox.Show(this, Localization.Get("error.invalidFolderSandbox"),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -146,8 +147,9 @@ namespace ChaturbateRecorderApp.UI
 
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
-            if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true))
+            if (!PathValidator.IsValidPath(dialog.FileName, mustExist: true, out var fileReason))
             {
+                _appendLog($"Fichier cookies refusé : {fileReason}");
                 MessageBox.Show(this, Localization.Get("error.invalidFileSandbox"),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;

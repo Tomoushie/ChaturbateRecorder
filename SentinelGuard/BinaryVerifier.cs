@@ -44,18 +44,57 @@ namespace SentinelGuard
                 return false;
             }
 
+            var actualHex = ComputeSha256(filePath, out reason);
+            if (actualHex == null) return false;
+
+            if (!string.Equals(actualHex, expectedHashHex.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                reason = $"Hash inattendu pour '{filePath}' : {actualHex} au lieu de {expectedHashHex.Trim()}.";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Computes the SHA-256 of a file, without comparing it to anything.
+        /// </summary>
+        /// <param name="filePath">Path to the file to hash.</param>
+        /// <returns>
+        /// The hash as an uppercase hex string, or <see langword="null"/> if the
+        /// file could not be read.
+        /// </returns>
+        /// <remarks>
+        /// Needed for trust-on-first-use: pinning a hash is only possible once
+        /// you can read the current one. Without it, an application that pins a
+        /// fixed hash blocks its own users the day the tool they rely on ships a
+        /// new build — the exact failure this method was added to fix.
+        /// </remarks>
+        public static string? ComputeSha256(string filePath) => ComputeSha256(filePath, out _);
+
+        /// <summary>
+        /// Same as <see cref="ComputeSha256(string)"/>, but also reports why the
+        /// file could not be hashed.
+        /// </summary>
+        /// <param name="filePath">Path to the file to hash.</param>
+        /// <param name="reason">
+        /// On failure, a human-readable explanation; <see langword="null"/> on success.
+        /// </param>
+        /// <returns>The hash as an uppercase hex string, or <see langword="null"/>.</returns>
+        public static string? ComputeSha256(string filePath, out string? reason)
+        {
+            reason = null;
+
             try
             {
                 using var sha256 = SHA256.Create();
                 using var stream = File.OpenRead(filePath);
-                var hashBytes = sha256.ComputeHash(stream);
-                var actualHex = Convert.ToHexString(hashBytes);
-                return string.Equals(actualHex, expectedHashHex.Trim(), StringComparison.OrdinalIgnoreCase);
+                return Convert.ToHexString(sha256.ComputeHash(stream));
             }
             catch (Exception ex)
             {
                 reason = $"Erreur lors du calcul du hash du fichier : {ex.Message}";
-                return false;
+                return null;
             }
         }
 

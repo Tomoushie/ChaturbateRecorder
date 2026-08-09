@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -10,13 +10,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.Security;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp.UI
 {
     /// <summary>
     /// Panneau de diagnostic (2.3) : réutilise directement les validateurs de
-    /// Security/ (hash des binaires, ACL, dossier d'exécution) plutôt que de
+    /// SentinelGuard (hash des binaires, ACL, dossier d'exécution) plutôt que de
     /// dupliquer leur logique, et ajoute les informations non déjà exposées
     /// ailleurs (versions .NET/app/yt-dlp/ffmpeg, joignabilité réseau).
     ///

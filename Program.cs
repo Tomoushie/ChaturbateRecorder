@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.Security;
 using ChaturbateRecorderApp.Services;
 using ChaturbateRecorderApp.UI;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp
 {
@@ -29,8 +29,13 @@ namespace ChaturbateRecorderApp
                     ? AppLanguage.French
                     : AppLanguage.English;
 
-            if (!WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir))
+            // Le motif du refus est journalisé ICI depuis la fusion (36.0 suite) :
+            // les validateurs de SentinelGuard ne journalisent rien eux-mêmes,
+            // ils rendent la raison à l'appelant. Sans cette ligne, un refus de
+            // démarrage ne laisserait aucune trace exploitable.
+            if (!WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir, out var locationReason))
             {
+                Logger.Log($"Emplacement d'exécution refusé : {locationReason}", LogLevel.ERROR);
                 MessageBox.Show(
                     Localization.Get("error.unauthorizedLocation"),
                     Localization.Get("error.unauthorizedLocation.title"),

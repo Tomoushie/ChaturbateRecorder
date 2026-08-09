@@ -143,14 +143,20 @@ Rien n'est journalisé, rien n'est levé dans ton dos — tu décides quoi en fa
 Cible `net8.0-windows` et `net10.0-windows`, sous double licence MIT ou
 Apache-2.0. Détails et exemples : [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
+**L'application utilise ce package, elle n'en garde pas de copie.** Les six
+validateurs vivaient en double, dans `Security/` et dans le package : le
+correctif de l'issue #16 (`ComputeSha256`, confiance à la première utilisation)
+n'a jamais atteint la copie publiée, et rien ne l'a signalé — les deux
+compilaient, les deux suites de tests passaient. Il n'y a plus qu'un exemplaire.
+
 **Ce qui reste dans l'application, et pourquoi** : `DownloadEngine` et `Logger`.
 La partie réutilisable du moteur — lancer un binaire, capturer sa sortie,
 surveiller son inactivité, tuer tout l'arbre de processus — est passée dans
-`GuardedProcessRunner`, et l'application s'en sert. Ce qui reste ne concerne que
-yt-dlp (ses arguments, sa regex de progression, son fichier de log) ou que cette
-application-ci (le chemin de ses logs) : ça n'aurait aucune valeur pour un
-projet tiers, et un enregistreur de lives n'a rien à faire dans une
-bibliothèque de sécurité généraliste.
+`GuardedProcessRunner`. Ce qui reste ne concerne que yt-dlp (ses arguments, sa
+regex de progression, son fichier de log) ou que cette application-ci (le chemin
+de ses logs) : ça n'aurait aucune valeur pour un projet tiers, et un
+enregistreur de lives n'a rien à faire dans une bibliothèque de sécurité
+généraliste.
 
 ## 🔒 Sécurité — ce qui est en place, et ce qui ne l'est pas
 
@@ -304,13 +310,9 @@ ChaturbateRecorderApp/
 ├── Config/
 │   ├── AppConfig.cs                 (config centralisée, équiv. $Config PS1)
 │   └── Changelog.cs                 (historique de versions, affiché en local)
-├── Security/
-│   ├── BinaryVerifier.cs            (hash, Authenticode, pinning CA)
-│   ├── UrlValidator.cs              (sandbox URL)
-│   ├── PathValidator.cs             (sandbox dossier)
-│   ├── WorkingDirectoryValidator.cs (dossier d'exécution : réseau/temp/compressé)
-│   ├── AclValidator.cs              (détection d'ACL permissives)
-│   └── CertificateValidator.cs      (TLS + SAN serveur distant)
+│                                    (les validateurs de sécurité vivent
+│                                     désormais dans SentinelGuard/, que
+│                                     l'application référence)
 ├── Services/
 │   ├── Logger.cs                    (logs JSON structurés)
 │   ├── FavoritesManager.cs

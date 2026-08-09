@@ -141,6 +141,12 @@ is logged, nothing is thrown behind your back — you decide what to do with it.
 Targets `net8.0-windows` and `net10.0-windows`, dual-licensed MIT or
 Apache-2.0. Details and examples: [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
+**The application uses this package, it keeps no copy of it.** The six
+validators used to live twice, in `Security/` and in the package: the fix for
+issue #16 (`ComputeSha256`, trust-on-first-use) never reached the published copy,
+and nothing flagged it — both compiled, both test suites passed. There is only
+one copy left.
+
 **What stays in the application, and why**: `DownloadEngine` and `Logger`. The
 reusable half of the engine — launching a binary, capturing its output, watching
 it for inactivity, killing the whole process tree — moved into
@@ -299,13 +305,8 @@ ChaturbateRecorderApp/
 ├── Config/
 │   ├── AppConfig.cs                 (centralized config, equiv. of $Config in PS1)
 │   └── Changelog.cs                 (version history, shown locally)
-├── Security/
-│   ├── BinaryVerifier.cs            (hash, Authenticode, CA pinning)
-│   ├── UrlValidator.cs              (URL sandbox)
-│   ├── PathValidator.cs             (folder sandbox)
-│   ├── WorkingDirectoryValidator.cs (execution directory: network/temp/compressed)
-│   ├── AclValidator.cs              (permissive ACL detection)
-│   └── CertificateValidator.cs      (TLS + remote server SAN)
+│                                    (the security validators now live in
+│                                     SentinelGuard/, referenced by the app)
 ├── Services/
 │   ├── Logger.cs                    (structured JSON logs)
 │   ├── FavoritesManager.cs

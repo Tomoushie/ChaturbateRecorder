@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.Security;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp.Services
 {
@@ -31,10 +31,18 @@ namespace ChaturbateRecorderApp.Services
                 var items = JsonSerializer.Deserialize<List<string>>(raw) ?? new List<string>();
                 foreach (var item in items)
                 {
-                    if (!string.IsNullOrWhiteSpace(item) &&
-                        UrlValidator.IsSafeUrl(item, AppConfig.Whitelist, AppConfig.Blacklist))
+                    if (string.IsNullOrWhiteSpace(item)) continue;
+
+                    if (UrlValidator.IsSafeUrl(item, AppConfig.Whitelist, AppConfig.Blacklist, out var reason))
                     {
                         Favorites.Add(item);
+                    }
+                    else
+                    {
+                        // Un favori écarté silencieusement donnait une liste
+                        // amputée sans explication — le cas se produit dès que
+                        // quelqu'un édite le fichier à la main.
+                        Logger.Log($"Favori ignoré ({item}) : {reason}", LogLevel.WARN);
                     }
                 }
             }
@@ -66,8 +74,11 @@ namespace ChaturbateRecorderApp.Services
         /// </summary>
         public bool AddFavorite(string url)
         {
-            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist))
+            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist, out var reason))
+            {
+                Logger.Log($"Favori refusé ({url}) : {reason}", LogLevel.ERROR);
                 return false;
+            }
 
             var uri = new Uri(url);
             Logger.Log($"Ajout favori pour l'hôte : {uri.Host}");

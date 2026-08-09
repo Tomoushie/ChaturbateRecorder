@@ -54,9 +54,9 @@
       source du dépôt, et faire dépendre l'app d'un paquet qu'on publie
       soi-même imposerait de publier avant de pouvoir corriger.
 
-      N'apporte que GuardedProcessRunner et LogFileRotator : les validateurs
-      restent dupliqués dans Security\ (décision de 30.0), les fusionner est
-      un chantier distinct.
+      Apporte aussi les six validateurs, qui vivaient en double depuis 30.0 :
+      Security\ a été supprimé. La duplication avait déjà coûté un correctif —
+      celui de l'issue #16 n'a jamais atteint la copie publiée.
     -->
     <ProjectReference Include="SentinelGuard\SentinelGuard.csproj" />
   </ItemGroup>

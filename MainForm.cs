@@ -7,9 +7,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.Security;
 using ChaturbateRecorderApp.Services;
 using ChaturbateRecorderApp.UI;
+using SentinelGuard;
 
 namespace ChaturbateRecorderApp
 {
@@ -156,8 +156,13 @@ namespace ChaturbateRecorderApp
             // Réaligne sur le réglage persisté la valeur provisoire posée par
             // Program.Main depuis la langue de l'OS (24.0).
             Localization.Current = _currentLanguage;
-            if (!string.IsNullOrWhiteSpace(_settings.CaptureDir) && PathValidator.IsValidPath(_settings.CaptureDir))
-                AppConfig.CaptureDir = _settings.CaptureDir;
+            if (!string.IsNullOrWhiteSpace(_settings.CaptureDir))
+            {
+                if (PathValidator.IsValidPath(_settings.CaptureDir, mustExist: false, out var savedDirReason))
+                    AppConfig.CaptureDir = _settings.CaptureDir;
+                else
+                    Logger.Log($"Dossier de capture enregistré ignoré ({_settings.CaptureDir}) : {savedDirReason}", LogLevel.WARN);
+            }
             if (!string.IsNullOrWhiteSpace(_settings.CookiesFilePath) && File.Exists(_settings.CookiesFilePath))
                 AppConfig.CookiesFilePath = _settings.CookiesFilePath;
             if (!string.IsNullOrWhiteSpace(_settings.ProxyUrl))
@@ -167,8 +172,15 @@ namespace ChaturbateRecorderApp
 
             Logger.Log("Application démarrée.");
 
-            if (!PathValidator.IsValidPath(AppConfig.CaptureDir) || !PathValidator.IsValidPath(AppConfig.LogDir))
+            // Le motif est journalisé au point d'appel depuis la fusion avec
+            // SentinelGuard : ses validateurs ne journalisent rien eux-mêmes.
+            // Ça compte particulièrement ici — l'application s'arrête, et sans
+            // la raison exacte l'utilisateur n'a qu'une boîte de dialogue
+            // générique pour comprendre lequel des deux dossiers pose problème.
+            if (!PathValidator.IsValidPath(AppConfig.CaptureDir, mustExist: false, out var captureReason) ||
+                !PathValidator.IsValidPath(AppConfig.LogDir, mustExist: false, out captureReason))
             {
+                Logger.Log($"Dossier de capture ou de logs refusé : {captureReason}", LogLevel.ERROR);
                 MessageBox.Show(
                     Localization.Get("error.invalidCaptureOrLogDir"),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1383,8 +1395,9 @@ namespace ChaturbateRecorderApp
             // Meme controle que pour un enregistrement : une URL refusee par le
             // sandbox ne doit pas entrer dans une liste qui la rappellera toutes
             // les deux minutes.
-            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist))
+            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist, out var watchUrlReason))
             {
+                Logger.Log($"URL refusée pour la surveillance ({url}) : {watchUrlReason}", LogLevel.ERROR);
                 MessageBox.Show(this, Localization.Get("error.urlRejected"),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -1551,8 +1564,9 @@ namespace ChaturbateRecorderApp
         private void StartRecording(string urlInput, bool interactive)
         {
 
-            if (!UrlValidator.IsSafeUrl(urlInput, AppConfig.Whitelist, AppConfig.Blacklist))
+            if (!UrlValidator.IsSafeUrl(urlInput, AppConfig.Whitelist, AppConfig.Blacklist, out var urlReason))
             {
+                Logger.Log($"URL refusée ({urlInput}) : {urlReason}", LogLevel.ERROR);
                 RefuseStart(interactive, Localization.Get("error.urlRejected"), Localization.Get("dialog.error"));
                 return;
             }
@@ -1586,8 +1600,9 @@ namespace ChaturbateRecorderApp
 
             // Sandbox dossier : re-validation défensive à chaque lancement (protège aussi
             // contre un remplacement du dossier par un lien symbolique entre-temps).
-            if (!PathValidator.IsValidPath(AppConfig.CaptureDir))
+            if (!PathValidator.IsValidPath(AppConfig.CaptureDir, mustExist: false, out var outputDirReason))
             {
+                Logger.Log($"Dossier de capture refusé au lancement : {outputDirReason}", LogLevel.ERROR);
                 RefuseStart(interactive, Localization.Format("error.invalidOutputDir", AppConfig.CaptureDir), Localization.Get("dialog.error"));
                 return;
             }
@@ -1596,8 +1611,13 @@ namespace ChaturbateRecorderApp
 
             if (AppConfig.EnableTlsServerPinning)
             {
-                if (!CertificateValidator.VerifyRemoteCertificate(uri.Host, 443, AppConfig.ServerExpectedThumbprint, AppConfig.ServerExpectedIssuer))
+                if (!CertificateValidator.VerifyRemoteCertificate(uri.Host, 443, AppConfig.ServerExpectedThumbprint,
+                        AppConfig.ServerExpectedIssuer, out var tlsReason))
                 {
+                    // Motif indispensable ici : « vérification TLS échouée »
+                    // recouvre aussi bien une interception qu'une empreinte
+                    // devenue obsolète après un renouvellement de certificat.
+                    Logger.Log($"Vérification TLS refusée pour {uri.Host} : {tlsReason}", LogLevel.ERROR);
                     RefuseStart(interactive, Localization.Format("error.tlsVerificationFailed", uri.Host), Localization.Get("dialog.error"));
                     return;
                 }
@@ -1633,8 +1653,10 @@ namespace ChaturbateRecorderApp
             // Chemin de log seulement validé une fois ici : seul l'horodatage
             // change entre tentatives, ce qui ne peut pas rendre un chemin déjà
             // valide invalide.
-            if (!PathValidator.IsValidPath(Path.Combine(AppConfig.LogDir, $"{roomName}-test.log")))
+            if (!PathValidator.IsValidPath(Path.Combine(AppConfig.LogDir, $"{roomName}-test.log"),
+                    mustExist: false, out var logPathReason))
             {
+                Logger.Log($"Chemin de log refusé : {logPathReason}", LogLevel.ERROR);
                 RefuseStart(interactive, Localization.Get("error.invalidLogPath"), Localization.Get("dialog.error"));
                 return;
             }

@@ -39,6 +39,42 @@ uniquement, pas de bump) :
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
 
+**Fusion Security/ ↔ SentinelGuard (2026-08-09, suite immédiate de 36.0)** — pas
+de bump applicatif, rien de visible ne change :
+- **La duplication de 30.0 avait DÉJÀ coûté un correctif, c'est ce qui a décidé
+  la fusion.** `20e00ef` (2026-08-03, 12h36) ajoute `ComputeSha256` à
+  `Security/BinaryVerifier.cs` pour l'issue #16 (utilisateur bloqué par un hash
+  yt-dlp périmé). `b5c9707` crée le package **sept heures plus tard**, à partir
+  d'un état antérieur : la méthode n'y a jamais figuré, et personne ne l'a vu
+  pendant six jours — les deux compilaient, les deux suites de tests passaient.
+- **Constat avant d'agir** : hors `ComputeSha256`, les six validateurs ne
+  différaient QUE par les surcharges `out string? reason`, les commentaires XML
+  et le namespace. Vérifié fichier par fichier (`git diff --no-index`), pas
+  supposé. La fusion était donc sans risque de régression fonctionnelle.
+- **`Security/` supprimé** (6 fichiers), `ComputeSha256` ajouté au package,
+  `VerifyFileHash` réécrite par-dessus. Le motif de refus nomme désormais les
+  DEUX empreintes : sans elles, l'appelant doit recalculer à la main pour savoir
+  s'il tient une mise à jour légitime ou un fichier remplacé.
+- **Les 22 sites d'appel journalisent maintenant le motif eux-mêmes** : les
+  validateurs du package ne journalisent rien (c'est leur règle). Sans ce
+  travail, tous les refus seraient devenus muets — le pire endroit étant
+  `Program.Main`, où l'application s'arrête avant même d'ouvrir sa fenêtre.
+- **Gain non anticipé** : l'application n'avait AUCUN motif de refus dans ses
+  logs (ses copies journalisaient un message figé). Elle a maintenant la cause
+  exacte, ce qui compte pour une app qui produit des rapports de bug pré-remplis.
+- **Tests** : les 4 fichiers dupliqués de `Tests/` sont supprimés (54 cas), leur
+  couverture existait déjà côté package. Seuls les deux tests de `ComputeSha256`
+  étaient propres à l'app : portés. **172 côté app, 85 par cible côté package.**
+- **Vérifié en exécution réelle** : les validateurs sont sur le chemin de
+  démarrage (`WorkingDirectoryValidator` dans `Program.Main`, `PathValidator`
+  dans le constructeur de `MainForm`) — une régression aurait empêché l'app de
+  s'ouvrir. Lancée pour de vrai : démarre, tourne, aucun rapport de crash, et
+  l'avertissement d'ACL permissive prouve que les validateurs du package
+  s'exécutent.
+- **Reste en français** : les motifs de refus du package. Incohérent pour un
+  package dont tout le reste (README, docs XML, description nuget.org) est en
+  anglais — **à trancher avant de publier 1.1.0**.
+
 **36.0 traité (2026-08-09) — SentinelGuard 1.1.0, et l'application le CONSOMME**
 (pas de bump applicatif : aucun changement visible, ça part avec la v1.31.0 non
 encore publiée) :
