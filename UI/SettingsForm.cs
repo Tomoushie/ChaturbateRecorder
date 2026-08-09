@@ -29,25 +29,25 @@ namespace ChaturbateRecorderApp.UI
         private AppLanguage _language;
 
         private Label themeLabel = null!;
-        private ComboBox themeCombo = null!;
+        private ThemedComboBox themeCombo = null!;
         private Label languageLabel = null!;
-        private ComboBox languageCombo = null!;
+        private ThemedComboBox languageCombo = null!;
         private Label saveDirLabel = null!;
         private TextBox saveDirTextBox = null!;
-        private Button browseDirButton = null!;
+        private ThemedButton browseDirButton = null!;
         private Label cookiesLabel = null!;
         private TextBox cookiesTextBox = null!;
-        private Button browseCookiesButton = null!;
+        private ThemedButton browseCookiesButton = null!;
         private Label proxyLabel = null!;
         private TextBox proxyTextBox = null!;
         private CheckBox autoReconnectCheckbox = null!;
         private CheckBox autoUpdateCheckbox = null!;
         private Label watchIntervalLabel = null!;
-        private ComboBox watchIntervalCombo = null!;
+        private ThemedComboBox watchIntervalCombo = null!;
         // 29.0 / 2.2 : un interrupteur par composant, dans l'ordre de l'enum.
         private Label safeSectionLabel = null!;
         private readonly Dictionary<SafeComponent, CheckBox> _safeBoxes = new();
-        private Button closeButton = null!;
+        private ThemedButton closeButton = null!;
 
         public SettingsForm(UserSettings settings, AppTheme theme, AppLanguage language,
             Action<AppTheme> onThemeChanged, Action<AppLanguage> onLanguageChanged, Action<string> appendLog)
@@ -262,7 +262,7 @@ namespace ChaturbateRecorderApp.UI
             Font = new Font("Segoe UI", 10F);
 
             themeLabel = new Label { Text = "Thème :", Location = new Point(12, 15), AutoSize = true };
-            themeCombo = new ComboBox
+            themeCombo = new ThemedComboBox
             {
                 Location = new Point(90, 12),
                 Size = new Size(110, 24),
@@ -271,7 +271,7 @@ namespace ChaturbateRecorderApp.UI
             themeCombo.SelectedIndexChanged += OnThemeComboChanged;
 
             languageLabel = new Label { Text = "Langue :", Location = new Point(230, 15), AutoSize = true };
-            languageCombo = new ComboBox
+            languageCombo = new ThemedComboBox
             {
                 Location = new Point(300, 12),
                 Size = new Size(118, 24),
@@ -294,7 +294,7 @@ namespace ChaturbateRecorderApp.UI
             // Largeur 126 (pas 98) : valeur reprise telle quelle de l'ancien
             // bouton "Parcourir..." dans MainForm — plus étroit, le Padding
             // horizontal des boutons (8.4/9.2) tronque le texte avec l'icône.
-            browseDirButton = new Button { Text = "Parcourir...", Location = new Point(342, 73), Size = new Size(126, 24) };
+            browseDirButton = new ThemedButton { Text = "Parcourir...", Location = new Point(342, 73), Size = new Size(126, 24) };
             browseDirButton.Image = IconManager.Render("folder", 16, Color.White);
             browseDirButton.TextImageRelation = TextImageRelation.ImageBeforeText;
             // ImageAlign et TextAlign sur le même côté (Left) : les mettre sur des
@@ -313,7 +313,7 @@ namespace ChaturbateRecorderApp.UI
                 ReadOnly = true,
                 Text = AppConfig.CookiesFilePath
             };
-            browseCookiesButton = new Button { Text = "...", Location = new Point(408, 130), Size = new Size(40, 24) };
+            browseCookiesButton = new ThemedButton { Text = "...", Location = new Point(408, 130), Size = new Size(40, 24) };
             browseCookiesButton.Click += OnBrowseCookiesClick;
 
             proxyLabel = new Label { Text = "Proxy SOCKS5/HTTP (optionnel) :", Location = new Point(12, 169), AutoSize = true };
@@ -353,7 +353,7 @@ namespace ChaturbateRecorderApp.UI
             // plancher a 60 — descendre plus bas multiplierait les requetes vers
             // le site sans rien apporter, un live ne demarre pas a la seconde.
             watchIntervalLabel = new Label { Text = "Verifier les salons surveilles toutes les :", Location = new Point(12, 336), AutoSize = true };
-            watchIntervalCombo = new ComboBox
+            watchIntervalCombo = new ThemedComboBox
             {
                 Location = new Point(330, 332),
                 Size = new Size(138, 24),
@@ -393,7 +393,8 @@ namespace ChaturbateRecorderApp.UI
                 _safeBoxes[component] = box;
             }
 
-            closeButton = new Button { Text = "Fermer", Location = new Point(368, 496), Size = new Size(100, 26) };
+            closeButton = new ThemedButton { Text = "Fermer", Location = new Point(368, 496), Size = new Size(100, 26) };
+            closeButton.Role = ButtonRole.Primary; // seul accent de la fenêtre (39.0)
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[]

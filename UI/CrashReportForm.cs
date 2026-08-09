@@ -62,7 +62,7 @@ namespace ChaturbateRecorderApp.UI
                            : "Le rapport détaillé n'a pas pu être enregistré sur disque."),
             };
 
-            var openFolderButton = new Button
+            var openFolderButton = new ThemedButton
             {
                 Text = "Ouvrir le dossier des logs",
                 Location = new Point(12, 246),
@@ -71,15 +71,18 @@ namespace ChaturbateRecorderApp.UI
             };
             openFolderButton.Click += (s, e) => OnOpenFolderClick();
 
-            var restartButton = new Button
+            var restartButton = new ThemedButton
             {
                 Text = "Redémarrer",
                 Location = new Point(200, 246),
                 Size = new Size(120, 30),
             };
+            // Seul accent de cette fenêtre (39.0) : après un plantage, l'action
+            // attendue est de relancer, pas de fermer.
+            restartButton.Role = ButtonRole.Primary;
             restartButton.Click += (s, e) => CrashReporter.RestartApplication();
 
-            var closeButton = new Button
+            var closeButton = new ThemedButton
             {
                 Text = isTerminating ? "Fermer" : "Continuer",
                 Location = new Point(368, 246),

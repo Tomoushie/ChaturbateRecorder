@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.CompilerServices;
@@ -10,12 +9,30 @@ namespace ChaturbateRecorderApp.UI
     public enum AppTheme { Light, Dark }
 
     /// <summary>
+    /// Niveau de lecture d'un libellé (39.0). Sans lui, tous les textes de la
+    /// fenêtre avaient exactement le même poids : rien ne distinguait un
+    /// intitulé de champ (« Qualité source : ») de la donnée qu'il annonce, et
+    /// l'œil n'avait aucun repère pour parcourir l'écran.
+    /// </summary>
+    public enum TextRole
+    {
+        /// <summary>Contenu : couleur de texte pleine.</summary>
+        Body,
+        /// <summary>Intitulé, légende, unité — atténué d'un cran.</summary>
+        Caption,
+    }
+
+    /// <summary>
     /// Applique un thème clair/sombre en parcourant récursivement tous les
-    /// contrôles du formulaire, y compris ceux imbriqués dans des
-    /// RoundedGroupPanel (8.1, remplace les anciens GroupBox). Palette
-    /// "Windows 11" (7.5) : boutons en couleur d'accent, texte clair dessus
-    /// dans les deux thèmes. Boutons sans bordure, coins arrondis, états
-    /// survol/appui animés en douceur (7.1/9.2) façon "Fluent".
+    /// contrôles du formulaire.
+    ///
+    /// **Modèle de surfaces (39.0)** : la fenêtre est un fond (<c>Bg</c>) sur
+    /// lequel sont posées des cartes (<c>Card</c>), qui portent elles-mêmes des
+    /// zones de saisie et des listes (<c>Input</c>). Auparavant les cartes
+    /// prenaient la couleur du fond : elles n'existaient visuellement que par un
+    /// liseré de 1 px, d'où un écran entièrement plat. La récursion transporte
+    /// donc la surface courante, ce qui permet à un panneau imbriqué de prendre
+    /// la couleur de la carte qui le contient plutôt que celle de la fenêtre.
     /// </summary>
     public static class ThemeManager
     {
@@ -24,36 +41,78 @@ namespace ChaturbateRecorderApp.UI
         /// pour permettre à MainForm d'interpoler entre deux palettes lors d'une
         /// transition animée clair/sombre (9.2), sans dupliquer les valeurs.
         /// </summary>
-        public readonly record struct Palette(Color Bg, Color Panel, Color Fg, Color Btn, Color BtnFg, Color Border, Color Shadow);
+        public readonly record struct Palette(
+            Color Bg,
+            Color Card,
+            Color Input,
+            Color Fg,
+            Color FgMuted,
+            Color Accent,
+            Color AccentFg,
+            Color Neutral,
+            Color Danger,
+            Color Border,
+            Color Shadow);
 
         public static Palette GetPalette(AppTheme theme) => theme == AppTheme.Dark
             ? new Palette(
-                Bg: Color.FromArgb(0x1E, 0x1E, 0x1E),
-                Panel: Color.FromArgb(0x2D, 0x2D, 0x2D),
-                Fg: Color.FromArgb(0xE6, 0xE6, 0xE6),
-                Btn: Color.FromArgb(0x3A, 0x96, 0xDD),
-                // Les boutons sont en couleur d'accent (bleu) dans les deux thèmes :
-                // leur texte doit donc toujours être clair pour rester lisible,
-                // indépendamment du texte général (Fg) qui lui varie clair/sombre.
-                BtnFg: Color.White,
-                Border: Color.FromArgb(0x45, 0x45, 0x45),
-                Shadow: Color.FromArgb(60, 0, 0, 0))
+                Bg: Color.FromArgb(0x1B, 0x1B, 0x1B),
+                Card: Color.FromArgb(0x26, 0x26, 0x26),
+                Input: Color.FromArgb(0x2B, 0x2B, 0x2B),
+                Fg: Color.FromArgb(0xE8, 0xE8, 0xE8),
+                FgMuted: Color.FromArgb(0xA8, 0xA8, 0xA8),
+                Accent: Color.FromArgb(0x3A, 0x96, 0xDD),
+                // Texte SOMBRE sur l'accent en thème sombre, comme Windows 11
+                // lui-même : l'accent y est un bleu clair, sur lequel du blanc
+                // ne donne qu'un contraste de 3,2 — sous le seuil de lisibilité
+                // (mesuré par ThemeHierarchyTests, qui a trouvé le défaut).
+                AccentFg: Color.FromArgb(0x10, 0x14, 0x18),
+                Neutral: Color.FromArgb(0x33, 0x33, 0x33),
+                // Rouge nettement éclairci pour le fond sombre : posé en TEXTE
+                // sur le gris des boutons secondaires, un rouge franc ne
+                // dépasse pas 3,5 de contraste (mesuré). Il faut monter jusque
+                // dans les tons saumon pour repasser le seuil de 4,5.
+                Danger: Color.FromArgb(0xFF, 0xA7, 0x9A),
+                Border: Color.FromArgb(0x3D, 0x3D, 0x3D),
+                Shadow: Color.FromArgb(90, 0, 0, 0))
             : new Palette(
-                Bg: Color.FromArgb(0xF3, 0xF3, 0xF3),
-                Panel: Color.White,
+                Bg: Color.FromArgb(0xEF, 0xEF, 0xEF),
+                Card: Color.FromArgb(0xFB, 0xFB, 0xFB),
+                Input: Color.White,
                 Fg: Color.FromArgb(0x1A, 0x1A, 0x1A),
-                Btn: Color.FromArgb(0x00, 0x78, 0xD4),
-                BtnFg: Color.White,
-                Border: Color.FromArgb(0xD9, 0xD9, 0xD9),
-                Shadow: Color.FromArgb(28, 0, 0, 0));
+                FgMuted: Color.FromArgb(0x5D, 0x5D, 0x5D),
+                Accent: Color.FromArgb(0x00, 0x78, 0xD4),
+                AccentFg: Color.White,
+                Neutral: Color.White,
+                // Assombri par rapport au rouge « erreur » de Windows
+                // (#C42B1C) : ce rouge-ci sert de TEXTE, et il reste lisible
+                // une fois le fond du bouton teinté au survol et à l'appui.
+                Danger: Color.FromArgb(0xB0, 0x1F, 0x12),
+                Border: Color.FromArgb(0xE0, 0xE0, 0xE0),
+                Shadow: Color.FromArgb(24, 0, 0, 0));
 
         public static void Apply(Control root, AppTheme theme) => ApplyPalette(root, GetPalette(theme));
 
         public static void ApplyPalette(Control root, Palette p)
         {
-            root.BackColor = p.Bg;
-            root.ForeColor = p.Fg;
-            ApplyRecursive(root, p);
+            // La surface de départ est celle du parent quand on ne repeint
+            // qu'un sous-arbre (BuildJobRow applique le thème à une ligne déjà
+            // posée dans une carte) : sans ça, la ligne reprendrait le fond de
+            // la fenêtre et trancherait sur la carte qui la porte.
+            var surface = root.Parent != null && IsInsideCard(root) ? p.Card : p.Bg;
+            if (root is not RoundedGroupPanel)
+            {
+                root.BackColor = surface;
+                root.ForeColor = p.Fg;
+            }
+            ApplyRecursive(root, p, surface);
+        }
+
+        private static bool IsInsideCard(Control control)
+        {
+            for (var c = control.Parent; c != null; c = c.Parent)
+                if (c is RoundedGroupPanel) return true;
+            return false;
         }
 
         /// <summary>
@@ -61,201 +120,222 @@ namespace ChaturbateRecorderApp.UI
         /// la transition clair/sombre au lieu d'un saut instantané de couleurs.
         /// </summary>
         public static Palette LerpPalette(Palette a, Palette b, float t) => new(
-            Lerp(a.Bg, b.Bg, t), Lerp(a.Panel, b.Panel, t), Lerp(a.Fg, b.Fg, t), Lerp(a.Btn, b.Btn, t),
-            Lerp(a.BtnFg, b.BtnFg, t), Lerp(a.Border, b.Border, t), Lerp(a.Shadow, b.Shadow, t));
+            Lerp(a.Bg, b.Bg, t), Lerp(a.Card, b.Card, t), Lerp(a.Input, b.Input, t),
+            Lerp(a.Fg, b.Fg, t), Lerp(a.FgMuted, b.FgMuted, t),
+            Lerp(a.Accent, b.Accent, t), Lerp(a.AccentFg, b.AccentFg, t),
+            Lerp(a.Neutral, b.Neutral, t), Lerp(a.Danger, b.Danger, t),
+            Lerp(a.Border, b.Border, t), Lerp(a.Shadow, b.Shadow, t));
 
-        private static void ApplyRecursive(Control control, Palette p)
+        // --- Rôles de texte -------------------------------------------------
+
+        private static readonly ConditionalWeakTable<Control, object> _textRoles = new();
+
+        /// <summary>
+        /// Marque un libellé comme secondaire. Stocké à côté du contrôle plutôt
+        /// que dans sa couleur : une couleur posée au point d'appel serait
+        /// écrasée au premier changement de thème, et un thème ne peut pas
+        /// deviner qu'un texte donné est une légende.
+        /// </summary>
+        public static void SetTextRole(Control control, TextRole role)
         {
+            _textRoles.Remove(control);
+            _textRoles.Add(control, role);
+        }
+
+        internal static TextRole GetTextRole(Control control) =>
+            _textRoles.TryGetValue(control, out var role) && role is TextRole r ? r : TextRole.Body;
+
+        // --- Couleurs de bouton par rôle ------------------------------------
+
+        /// <summary>
+        /// Traduit un rôle en jeu de couleurs. Isolé (et internal plutôt que
+        /// private) pour être vérifiable par les tests sans instancier de
+        /// fenêtre : c'est ici que se joue la hiérarchie visuelle de 39.0.
+        ///
+        /// <see cref="ButtonRole.Danger"/> ne remplit PAS le bouton de rouge :
+        /// « Stop », « Tout arrêter », « Supprimer favori » et « Ne plus
+        /// surveiller » sont visibles en même temps, et quatre aplats rouges
+        /// crieraient à l'écran en permanence. Le rouge ne porte donc que le
+        /// texte, la bordure et la teinte de survol.
+        /// </summary>
+        internal static (Color Fill, Color Hover, Color Pressed, Color Border, Color Fg)
+            ResolveButtonColors(ButtonRole role, Palette p) => role switch
+        {
+            // Survol et appui s'éloignent de la couleur du TEXTE, ils ne
+            // s'éclaircissent pas systématiquement : sur l'accent clair du
+            // thème sombre, éclaircir encore effacerait le libellé. Éloigner
+            // garantit que le contraste ne peut que s'améliorer d'un état à
+            // l'autre — c'est aussi ce que fait Windows 11 (accent assombri au
+            // survol en thème clair, éclairci en thème sombre).
+            ButtonRole.Primary => (p.Accent,
+                                   ShiftAwayFrom(p.Accent, p.AccentFg, 14),
+                                   ShiftAwayFrom(p.Accent, p.AccentFg, 28),
+                                   Color.Empty, p.AccentFg),
+            ButtonRole.Danger => (p.Neutral, Lerp(p.Neutral, p.Danger, 0.10f), Lerp(p.Neutral, p.Danger, 0.18f),
+                                  Lerp(p.Border, p.Danger, 0.45f), p.Danger),
+            _ => (p.Neutral, Lerp(p.Neutral, p.Fg, 0.06f), Lerp(p.Neutral, p.Fg, 0.12f), p.Border, p.Fg),
+        };
+
+        private static void ApplyRecursive(Control control, Palette p, Color surface)
+        {
+            // Surface transmise aux enfants : une carte devient la surface de
+            // tout ce qu'elle contient, y compris à travers les panneaux
+            // intermédiaires (advancedOptionsPanel, jobsListPanel, lignes de job).
+            var childSurface = surface;
+
             switch (control)
             {
                 case RoundedGroupPanel rgp:
                     rgp.ForeColor = p.Fg;
-                    rgp.BackColor = p.Bg;
+                    rgp.BackColor = p.Card;
                     rgp.TitleColor = p.Fg;
                     rgp.BorderColor = p.Border;
                     rgp.ShadowColor = p.Shadow;
-                    rgp.Font = new Font(rgp.Font.FontFamily, rgp.Font.Size, FontStyle.Bold);
+                    rgp.SurfaceColor = surface;
+                    rgp.FrameColor = p.Border;
+                    childSurface = p.Card;
                     rgp.Invalidate();
                     break;
-                case Panel pnl:
-                    // Panels génériques (contentPanel, advancedOptionsPanel, lignes
-                    // de job) : même fond que le reste, sinon leur BackColor par
-                    // défaut (gris clair système) reste visible même en thème sombre.
-                    pnl.BackColor = p.Bg;
+
+                // ThemedButton avant Button : il en dérive, et c'est le cas
+                // dérivé qui doit gagner.
+                case ThemedButton tb:
+                {
+                    var (fill, hover, pressed, border, fg) = ResolveButtonColors(tb.Role, p);
+                    tb.SurfaceColor = surface;
+                    tb.DisabledFillColor = Lerp(surface, p.Fg, 0.06f);
+                    tb.DisabledForeColor = p.FgMuted;
+                    tb.SetColors(fill, hover, pressed, border, fg);
                     break;
+                }
+
+                case Panel pnl:
+                    // Panneaux génériques (contentPanel, advancedOptionsPanel,
+                    // lignes de job) : ils prennent la surface qui les porte,
+                    // sans quoi leur fond système gris resterait visible et une
+                    // ligne d'enregistrement trancherait sur sa carte.
+                    pnl.BackColor = surface;
+                    break;
+
                 case Button b:
-                    b.ForeColor = p.BtnFg;
+                    // Filet pour un éventuel bouton natif restant : au moins la
+                    // couleur d'accent, sans les états animés du ThemedButton.
+                    b.ForeColor = p.AccentFg;
+                    b.BackColor = p.Accent;
                     b.FlatStyle = FlatStyle.Flat;
                     b.FlatAppearance.BorderSize = 0;
-                    b.Padding = new Padding(8, 0, 8, 0);
-                    b.Cursor = Cursors.Hand;
-                    ApplyRoundedRegion(b, 6);
-                    // États survol/appui animés (9.2) : transition douce de couleur
-                    // au lieu du changement instantané natif de FlatAppearance.
-                    ConfigureButtonColors(b, p.Btn, Lighten(p.Btn, 24), Darken(p.Btn, 24));
                     break;
-                case TextBox tb:
-                    tb.BackColor = p.Panel;
-                    tb.ForeColor = p.Fg;
+
+                case TextBox tb2:
+                    tb2.BackColor = p.Input;
+                    tb2.ForeColor = p.Fg;
+                    tb2.BorderStyle = BorderStyle.None;
+                    InputFrame.Attach(tb2, p.Border);
                     break;
+
                 // RichTextBox ne dérive pas de TextBox (tous deux dérivent de
                 // TextBoxBase) : sans ce cas, le corps du dialogue "Nouveautés"
                 // resterait blanc sur blanc en thème sombre.
                 case RichTextBox rtb:
-                    rtb.BackColor = p.Panel;
+                    rtb.BackColor = p.Input;
                     rtb.ForeColor = p.Fg;
+                    rtb.BorderStyle = BorderStyle.None;
                     break;
+
                 case ListBox lb:
-                    lb.BackColor = p.Panel;
+                    lb.BackColor = p.Input;
                     lb.ForeColor = p.Fg;
+                    lb.BorderStyle = BorderStyle.None;
+                    InputFrame.Attach(lb, p.Border);
                     break;
+
                 case ListView lv:
-                    lv.BackColor = p.Panel;
+                    lv.BackColor = p.Input;
                     lv.ForeColor = p.Fg;
+                    lv.BorderStyle = BorderStyle.None;
+                    ThemedListView.Attach(lv, p);
+                    InputFrame.Attach(lv, p.Border);
                     break;
+
+                // ThemedComboBox avant ComboBox, même raison que pour les
+                // boutons : le cas dérivé doit gagner.
+                case ThemedComboBox tcb:
+                    tcb.BackColor = p.Input;
+                    tcb.ForeColor = p.Fg;
+                    tcb.BorderColor = p.Border;
+                    tcb.ArrowColor = p.FgMuted;
+                    tcb.SurfaceColor = surface;
+                    tcb.SelectionColor = Lerp(p.Input, p.Accent, 0.25f);
+                    tcb.Invalidate();
+                    break;
+
                 case ComboBox cb:
-                    cb.BackColor = p.Panel;
+                    cb.BackColor = p.Input;
                     cb.ForeColor = p.Fg;
+                    cb.FlatStyle = FlatStyle.Flat;
                     break;
+
                 case CheckBox cbx:
                     cbx.ForeColor = p.Fg;
+                    cbx.BackColor = surface;
                     break;
+
                 case PictureBox pb:
-                    pb.BackColor = p.Panel;
+                    pb.BackColor = p.Input;
+                    pb.BorderStyle = BorderStyle.None;
+                    InputFrame.Attach(pb, p.Border);
                     break;
+
                 // Couleurs dérivées de la palette plutôt qu'ajoutées à Palette :
                 // un curseur d'ascenseur n'est ni du texte ni un fond, c'est un
                 // intermédiaire entre les deux, et l'interpolation le donne
                 // juste dans les deux thèmes sans deux champs de plus à animer
                 // pendant la transition clair/sombre.
                 case ThemedScrollBar tsb:
-                    tsb.TrackColor = p.Panel;
-                    tsb.ThumbColor = Lerp(p.Panel, p.Fg, 0.35f);
-                    tsb.ThumbHoverColor = Lerp(p.Panel, p.Fg, 0.55f);
+                    tsb.TrackColor = p.Input;
+                    tsb.ThumbColor = Lerp(p.Input, p.Fg, 0.35f);
+                    tsb.ThumbHoverColor = Lerp(p.Input, p.Fg, 0.55f);
                     tsb.Invalidate();
                     break;
+
                 // Même raisonnement pour la barre de progression, à une réserve
                 // près : seules la piste et la bordure suivent le thème.
                 // BarColor encode l'état du job (en cours / terminé / erreur /
                 // arrêté) et n'appartient donc pas à la palette — la réappliquer
                 // ici repeindrait en bleu une barre passée au rouge ou au vert.
                 case ThemedProgressBar tpb:
-                    tpb.TrackColor = Lerp(p.Bg, p.Fg, 0.10f);
+                    tpb.TrackColor = Lerp(surface, p.Fg, 0.10f);
                     tpb.BorderColor = p.Border;
                     break;
+
                 case Label lbl:
-                    lbl.ForeColor = p.Fg;
+                    lbl.ForeColor = GetTextRole(lbl) == TextRole.Caption ? p.FgMuted : p.Fg;
+                    lbl.BackColor = surface;
                     break;
             }
 
             foreach (Control child in control.Controls)
-                ApplyRecursive(child, p);
+                ApplyRecursive(child, p, childSurface);
         }
 
-        private sealed class ButtonColorState
-        {
-            public Color Base, Hover, Pressed;
-            public bool Hovering;
-            public bool Pressing;
-            public System.Windows.Forms.Timer? Timer;
-        }
-
-        // ConditionalWeakTable plutôt qu'un Dictionary classique : les lignes
-        // d'enregistrement (BuildJobRow dans MainForm) créent et détruisent des
-        // boutons dynamiquement — ça évite une fuite mémoire en laissant le GC
-        // récupérer l'entrée en même temps que le bouton.
-        private static readonly ConditionalWeakTable<Button, ButtonColorState> _buttonColors = new();
-
-        /// <summary>
-        /// (Ré)enregistre les couleurs cibles d'un bouton pour l'animation
-        /// survol/appui, et câble les gestionnaires de souris une seule fois
-        /// par bouton (rappelé à chaque Apply/ApplyPalette, y compris pendant
-        /// une transition de thème animée — donc jusqu'à plusieurs fois par
-        /// seconde, d'où l'utilisation d'un Timer par état plutôt qu'un cablage
-        /// répété des événements).
-        /// </summary>
-        private static void ConfigureButtonColors(Button b, Color baseColor, Color hoverColor, Color pressedColor)
-        {
-            if (!_buttonColors.TryGetValue(b, out var state))
-            {
-                state = new ButtonColorState();
-                _buttonColors.Add(b, state);
-
-                b.MouseEnter += (s, e) => { state.Hovering = true; AnimateButtonColor(b, state, state.Pressing ? state.Pressed : state.Hover); };
-                b.MouseLeave += (s, e) => { state.Hovering = false; AnimateButtonColor(b, state, state.Base); };
-                b.MouseDown += (s, e) => { state.Pressing = true; AnimateButtonColor(b, state, state.Pressed); };
-                b.MouseUp += (s, e) => { state.Pressing = false; AnimateButtonColor(b, state, state.Hovering ? state.Hover : state.Base); };
-            }
-
-            state.Base = baseColor;
-            state.Hover = hoverColor;
-            state.Pressed = pressedColor;
-
-            // En dehors de toute interaction en cours, le repos suit directement
-            // la couleur de thème — c'est ce qui produit la transition fluide
-            // quand cette méthode est rappelée en boucle par une animation de
-            // changement de thème (MainForm.AnimateThemeTransition).
-            if (!state.Hovering && !state.Pressing && state.Timer == null)
-                b.BackColor = baseColor;
-        }
-
-        private static void AnimateButtonColor(Button b, ButtonColorState state, Color target)
-        {
-            state.Timer?.Stop();
-            state.Timer?.Dispose();
-
-            var start = b.BackColor;
-            var sw = Stopwatch.StartNew();
-            const int durationMs = 120;
-            var timer = new System.Windows.Forms.Timer { Interval = 15 };
-            state.Timer = timer;
-            timer.Tick += (s, e) =>
-            {
-                if (b.IsDisposed) { timer.Stop(); timer.Dispose(); state.Timer = null; return; }
-
-                var t = Math.Min(1f, (float)sw.ElapsedMilliseconds / durationMs);
-                b.BackColor = Lerp(start, target, t);
-                if (t >= 1f)
-                {
-                    timer.Stop();
-                    timer.Dispose();
-                    state.Timer = null;
-                }
-            };
-            timer.Start();
-        }
-
-        private static Color Lerp(Color a, Color b, float t) => Color.FromArgb(
+        internal static Color Lerp(Color a, Color b, float t) => Color.FromArgb(
+            (int)(a.A + (b.A - a.A) * t),
             (int)(a.R + (b.R - a.R) * t),
             (int)(a.G + (b.G - a.G) * t),
             (int)(a.B + (b.B - a.B) * t));
+
+        /// <summary>
+        /// Décale <paramref name="color"/> dans la direction opposée à
+        /// <paramref name="text"/> : plus sombre sous un texte clair, plus
+        /// claire sous un texte sombre. Le contraste ne peut donc qu'augmenter.
+        /// </summary>
+        private static Color ShiftAwayFrom(Color color, Color text, int amount) =>
+            text.R + text.G + text.B > 384 ? Darken(color, amount) : Lighten(color, amount);
 
         private static Color Lighten(Color c, int amount) => Color.FromArgb(
             Math.Min(255, c.R + amount), Math.Min(255, c.G + amount), Math.Min(255, c.B + amount));
 
         private static Color Darken(Color c, int amount) => Color.FromArgb(
             Math.Max(0, c.R - amount), Math.Max(0, c.G - amount), Math.Max(0, c.B - amount));
-
-        /// <summary>
-        /// Coins arrondis (7.1) via une Region calculée sur la taille actuelle
-        /// du contrôle — appelée à chaque Apply (démarrage + changement de
-        /// thème), donc toujours à jour même si la taille du bouton a changé.
-        /// </summary>
-        private static void ApplyRoundedRegion(Control control, int radius)
-        {
-            if (control.Width <= 0 || control.Height <= 0) return;
-
-            var d = radius * 2;
-            var rect = new Rectangle(0, 0, control.Width, control.Height);
-            using var path = new GraphicsPath();
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-
-            control.Region?.Dispose();
-            control.Region = new Region(path);
-        }
     }
 }

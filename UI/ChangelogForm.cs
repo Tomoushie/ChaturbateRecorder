@@ -32,7 +32,7 @@ namespace ChaturbateRecorderApp.UI
         private Panel _viewport = null!;
         private RichTextBox _body = null!;
         private ThemedScrollBar _scrollBar = null!;
-        private Button _closeButton = null!;
+        private ThemedButton _closeButton = null!;
         private Font? _headerFont;
         private int _contentHeight;
         private bool _updatingExtent;
@@ -141,12 +141,13 @@ namespace ChaturbateRecorderApp.UI
             _viewport.Controls.AddRange(new Control[] { _body, _scrollBar });
             _viewport.Resize += (s, e) => UpdateScrollExtent();
 
-            _closeButton = new Button
+            _closeButton = new ThemedButton
             {
                 Text = Localization.Get("button.close"),
                 Location = new Point(434, 372),
                 Size = new Size(110, 32),
             };
+            _closeButton.Role = ButtonRole.Primary; // seul accent de la fenêtre (39.0)
             _closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[] { _viewport, _closeButton });

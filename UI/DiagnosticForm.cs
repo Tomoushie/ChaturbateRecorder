@@ -29,7 +29,7 @@ namespace ChaturbateRecorderApp.UI
     public class DiagnosticForm : Form
     {
         private TextBox _reportBox = null!;
-        private Button _refreshButton = null!;
+        private ThemedButton _refreshButton = null!;
 
         public DiagnosticForm()
         {
@@ -58,16 +58,17 @@ namespace ChaturbateRecorderApp.UI
                 Font = new Font("Consolas", 9F),
             };
 
-            var copyButton = new Button { Text = "Copier", Location = new Point(12, 418), Size = new Size(100, 30) };
+            var copyButton = new ThemedButton { Text = "Copier", Location = new Point(12, 418), Size = new Size(100, 30) };
             copyButton.Click += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(_reportBox.Text)) Clipboard.SetText(_reportBox.Text);
             };
 
-            _refreshButton = new Button { Text = "Actualiser", Location = new Point(120, 418), Size = new Size(100, 30) };
+            _refreshButton = new ThemedButton { Text = "Actualiser", Location = new Point(120, 418), Size = new Size(100, 30) };
             _refreshButton.Click += (s, e) => _ = RefreshReportAsync();
 
-            var closeButton = new Button { Text = "Fermer", Location = new Point(408, 418), Size = new Size(100, 30) };
+            var closeButton = new ThemedButton { Text = "Fermer", Location = new Point(408, 418), Size = new Size(100, 30) };
+            closeButton.Role = ButtonRole.Primary; // seul accent de la fenêtre (39.0)
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[] { _reportBox, copyButton, _refreshButton, closeButton });

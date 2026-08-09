@@ -17,56 +17,56 @@ namespace ChaturbateRecorderApp
     {
         // --- Contrôles ---
         private Panel contentPanel = null!;
-        private Button paramsButton = null!;
-        private Button checkUpdateButton = null!;
-        private Button tutorialButton = null!;
-        private Button reportBugButton = null!;
-        private Button diagnosticButton = null!;
-        private Button modeToggleButton = null!;
+        private ThemedButton paramsButton = null!;
+        private ThemedButton checkUpdateButton = null!;
+        private ThemedButton tutorialButton = null!;
+        private ThemedButton reportBugButton = null!;
+        private ThemedButton diagnosticButton = null!;
+        private ThemedButton modeToggleButton = null!;
         private Label urlLabel = null!;
         private TextBox urlTextBox = null!;
-        private Button startButton = null!;
-        private Button stopAllButton = null!;
-        private Button addFavoriteButton = null!;
+        private ThemedButton startButton = null!;
+        private ThemedButton stopAllButton = null!;
+        private ThemedButton addFavoriteButton = null!;
         private FlowLayoutPanel jobsListPanel = null!;
         private Panel advancedOptionsPanel = null!;
         private RoundedGroupPanel grpRecord = null!;
         private RoundedGroupPanel grpProgress = null!;
         private RoundedGroupPanel grpHistory = null!;
         private ListView historyListView = null!;
-        private Button refreshHistoryButton = null!;
-        private Button openHistoryFolderButton = null!;
+        private ThemedButton refreshHistoryButton = null!;
+        private ThemedButton openHistoryFolderButton = null!;
         // 4.1 : ouverture directe de la vidéo, et miniatures dans la liste.
-        private Button openHistoryFileButton = null!;
+        private ThemedButton openHistoryFileButton = null!;
         private ImageList historyThumbnails = null!;
         private RoundedGroupPanel grpFavorites = null!;
         private RoundedGroupPanel grpDonate = null!;
         private RoundedGroupPanel grpLogs = null!;
         private Label qualityLabel = null!;
-        private ComboBox qualityCombo = null!;
+        private ThemedComboBox qualityCombo = null!;
         private Label codecLabel = null!;
-        private ComboBox codecCombo = null!;
+        private ThemedComboBox codecCombo = null!;
         private Label formatLabel = null!;
-        private ComboBox formatCombo = null!;
+        private ThemedComboBox formatCombo = null!;
         private Label durationLabel = null!;
-        private ComboBox durationCombo = null!;
+        private ThemedComboBox durationCombo = null!;
         private ListBox favoritesListBox = null!;
         // 88.0 : surveillance automatique.
         private RoundedGroupPanel grpWatch = null!;
         private ListView watchListView = null!;
-        private Button addWatchButton = null!;
-        private Button removeWatchButton = null!;
-        private Button loadFavoriteButton = null!;
-        private Button removeFavoriteButton = null!;
-        private Button sponsorButton = null!;
-        private Button donateButton = null!;
-        private Button websiteButton = null!;
+        private ThemedButton addWatchButton = null!;
+        private ThemedButton removeWatchButton = null!;
+        private ThemedButton loadFavoriteButton = null!;
+        private ThemedButton removeFavoriteButton = null!;
+        private ThemedButton sponsorButton = null!;
+        private ThemedButton donateButton = null!;
+        private ThemedButton websiteButton = null!;
         // 98.0 : note de legalite, rangee 1 donc visible dans les deux modes.
-        private Button legalButton = null!;
+        private ThemedButton legalButton = null!;
         // 50.0 : réseaux sociaux (partage X/Reddit + dépôt GitHub).
-        private Button shareXButton = null!;
-        private Button shareRedditButton = null!;
-        private Button githubButton = null!;
+        private ThemedButton shareXButton = null!;
+        private ThemedButton shareRedditButton = null!;
+        private ThemedButton githubButton = null!;
         private PictureBox qrPictureBox = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
@@ -92,8 +92,8 @@ namespace ChaturbateRecorderApp
             public Label NameLabel = null!;
             public ThemedProgressBar ProgressBar = null!;
             public Label StatusLabel = null!;
-            public Button StopButton = null!;
-            public Button OpenButton = null!;
+            public ThemedButton StopButton = null!;
+            public ThemedButton OpenButton = null!;
             public Action RestartEngine = null!;
             public System.Windows.Forms.Timer? PendingReconnectTimer;
 
@@ -385,6 +385,7 @@ namespace ChaturbateRecorderApp
             tutorial.ShowDialog(this);
         }
 
+
         /// <summary>
         /// Marshale l'exécution sur le thread UI si nécessaire — indispensable
         /// puisque les événements de DownloadEngine sont levés depuis les
@@ -496,15 +497,25 @@ namespace ChaturbateRecorderApp
                 TextAlign = ContentAlignment.MiddleRight,
                 Visible = false
             };
-            var openButton = new Button { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
+            var openButton = new ThemedButton { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
             var progressBar = new ThemedProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100, BarColor = RunningColor };
             var statusLabel = new Label { Location = new Point(358, secondRowY + 4), Size = new Size(130, 18), AutoSize = false };
-            var stopButton = new Button { Location = new Point(buttonX, secondRowY), Size = new Size(buttonWidth, buttonHeight) };
+            var stopButton = new ThemedButton { Location = new Point(buttonX, secondRowY), Size = new Size(buttonWidth, buttonHeight) };
 
-            openButton.Image = IconManager.Render("open", 14, IconColor);
-            openButton.TextImageRelation = TextImageRelation.ImageBeforeText;
-            stopButton.Image = IconManager.Render("stop", 14, IconColor);
-            stopButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+            // Minuteur et état sont des informations d'accompagnement : le nom
+            // du salon reste le seul texte plein de la ligne.
+            ThemeManager.SetTextRole(timerLabel, TextRole.Caption);
+            ThemeManager.SetTextRole(statusLabel, TextRole.Caption);
+
+            openButton.IconName = "open";
+            openButton.IconSize = 14;
+            // Danger, et non Primary : ce bouton interrompt une capture en
+            // cours. Il reste discret (texte et bordure rouges sur fond neutre)
+            // parce qu'il est visible en permanence, une ligne par
+            // enregistrement — autant d'aplats rouges crieraient à l'écran.
+            stopButton.Role = ButtonRole.Danger;
+            stopButton.IconName = "stop";
+            stopButton.IconSize = 14;
 
             openButton.Click += (s, e) =>
             {
@@ -520,6 +531,13 @@ namespace ChaturbateRecorderApp
             };
 
             container.Controls.AddRange(new Control[] { nameLabel, timerLabel, openButton, progressBar, statusLabel, stopButton });
+
+            // Parentée ICI, avant l'application du thème (39.0) : depuis que
+            // les cartes ont leur propre couleur de surface, ThemeManager
+            // remonte la chaîne des parents pour savoir sur quoi il peint. Une
+            // ligne encore orpheline recevait donc le fond de la FENÊTRE, et
+            // apparaissait comme un rectangle plus sombre au milieu de la carte.
+            jobsListPanel.Controls.Add(container);
 
             var row = new JobRow
             {
@@ -724,8 +742,18 @@ namespace ChaturbateRecorderApp
             row.CountdownTimer = null;
         }
 
-        private static string FormatProgressPct(double pct) =>
-            $"{pct.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
+        /// <summary>
+        /// Pourcentage affiché à côté de la barre. Entier depuis 39.0 : la
+        /// décimale changeait plusieurs fois par seconde sans rien apprendre à
+        /// personne, ce qui faisait « bouger » en permanence une zone de texte
+        /// que l'œil ne peut pas suivre. L'espace avant le signe est une règle
+        /// typographique française, que l'anglais ne partage pas.
+        /// </summary>
+        private static string FormatProgressPct(double pct)
+        {
+            var rounded = Math.Round(pct).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+            return Localization.Current == AppLanguage.English ? $"{rounded}%" : $"{rounded} %";
+        }
 
         private void UpdateJobProgress(JobRow row, double pct)
         {
@@ -1066,6 +1094,8 @@ namespace ChaturbateRecorderApp
 
                         historyListView.Items.Add(item);
                     }
+
+                    ThemedListView.Refresh(historyListView);
                 });
             });
         }
@@ -1330,6 +1360,9 @@ namespace ChaturbateRecorderApp
             var item = new ListViewItem(RoomNameFromUrl(url)) { Tag = url, Name = "watch.state.pending" };
             item.SubItems.Add(Localization.Get("watch.state.pending"));
             watchListView.Items.Add(item);
+            // L'ascenseur vertical apparaît sans redimensionner le contrôle :
+            // la dernière colonne doit se réajuster à la largeur utile.
+            ThemedListView.Refresh(watchListView);
         }
 
         private static string RoomNameFromUrl(string url)
@@ -1659,8 +1692,9 @@ namespace ChaturbateRecorderApp
             }
             row.RestartEngine = StartEngine;
 
+            // La ligne est déjà posée dans le panneau par BuildJobRow (elle doit
+            // connaître son parent avant que le thème lui soit appliqué).
             _jobRows.Add(row);
-            jobsListPanel.Controls.Add(row.Container);
 
             AppendJobLog(job, "Démarrage de l'enregistrement...");
 
@@ -1973,62 +2007,27 @@ namespace ChaturbateRecorderApp
         }
 
         /// <summary>
-        /// Couleur des icônes (3.1) : les boutons sont désormais en couleur
-        /// d'accent bleue dans les deux thèmes (7.5), donc un blanc fixe reste
-        /// lisible quel que soit le thème actif.
-        /// </summary>
-        private static Color IconColor => Color.White;
-
-        /// <summary>
-        /// (Ré)assigne les icônes vectorielles de tous les boutons fixes, ainsi
-        /// que des lignes d'enregistrement déjà créées (les nouvelles lignes se
-        /// colorent elles-mêmes à la création dans BuildJobRow).
+        /// Désigne l'icône de chaque bouton (3.1). Depuis 39.0 elle n'est plus
+        /// rendue ici : ThemedButton connaît son nom d'icône et la redessine
+        /// lui-même à la couleur de son texte courant. Ça règle un problème que
+        /// l'ancien code ne pouvait pas avoir — tant que TOUS les boutons
+        /// étaient bleus, un blanc fixe convenait ; avec des boutons secondaires
+        /// à texte sombre, une icône blanche serait invisible.
+        ///
+        /// Appelé une fois au démarrage : les couleurs, elles, sont réappliquées
+        /// par ThemeManager à chaque changement de thème.
         /// </summary>
         private void ApplyIcons()
         {
-            var color = IconColor;
-
-            void SetIcon(Button button, string icon, int size = 16)
-            {
-                button.Image = IconManager.Render(icon, size, color);
-                button.TextImageRelation = TextImageRelation.ImageBeforeText;
-                button.ImageAlign = ContentAlignment.MiddleLeft;
-                button.TextAlign = ContentAlignment.MiddleRight;
-            }
-
-            SetIcon(startButton, "play");
-            SetIcon(stopAllButton, "stop");
-            SetIcon(paramsButton, "sliders");
-            SetIcon(checkUpdateButton, "update");
-            SetIcon(tutorialButton, "book");
-            SetIcon(reportBugButton, "alert");
-            SetIcon(diagnosticButton, "pulse");
-            SetIcon(sponsorButton, "heart");
-            SetIcon(websiteButton, "globe");
-
-            // 94.0 — "Site web" paraissait désaligné par rapport à "Faire un don
-            // (PayPal)" (seul bouton du panneau sans icône, donc centré par
-            // défaut). Cause : avec un TextImageRelation autre qu'Overlay,
-            // WinForms découpe le bouton en deux zones et n'aligne le texte que
-            // dans SA zone — proportionnelle à sa largeur préférée. Sur un
-            // libellé long ("Sponsoriser (GitHub)") la zone remplit le bouton et
-            // le rendu paraît centré ; sur un libellé court elle est étroite et
-            // collée à l'icône. Passer TextAlign de MiddleRight à MiddleCenter
-            // ne change donc RIEN — vérifié par capture avant/après.
-            // Overlay place image et texte indépendamment sur tout le bouton :
-            // icône à gauche, texte réellement centré. Réservé à ce bouton, où
-            // les 220 px de large excluent tout chevauchement — les boutons de
-            // la barre du haut (130 px, "Guide de démarrage") s'y exposeraient.
-            websiteButton.TextImageRelation = TextImageRelation.Overlay;
-            websiteButton.TextAlign = ContentAlignment.MiddleCenter;
-
-            foreach (var row in _jobRows)
-            {
-                row.StopButton.Image = IconManager.Render("stop", 14, color);
-                row.OpenButton.Image = IconManager.Render("open", 14, color);
-                row.StopButton.TextImageRelation = TextImageRelation.ImageBeforeText;
-                row.OpenButton.TextImageRelation = TextImageRelation.ImageBeforeText;
-            }
+            startButton.IconName = "play";
+            stopAllButton.IconName = "stop";
+            paramsButton.IconName = "sliders";
+            checkUpdateButton.IconName = "update";
+            tutorialButton.IconName = "book";
+            reportBugButton.IconName = "alert";
+            diagnosticButton.IconName = "pulse";
+            sponsorButton.IconName = "heart";
+            websiteButton.IconName = "globe";
         }
 
         /// <summary>
@@ -2456,16 +2455,16 @@ namespace ChaturbateRecorderApp
             const int topBarRow2Y = topBarRow1Y + topBarButtonHeight + 6;
             const int topBarRow3Y = topBarRow2Y + topBarButtonHeight + 6;
 
-            paramsButton = new Button { Location = new Point(12, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
+            paramsButton = new ThemedButton { Location = new Point(12, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
             paramsButton.Click += (s, e) => ShowSettingsDialog();
 
-            modeToggleButton = new Button { Location = new Point(152, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
+            modeToggleButton = new ThemedButton { Location = new Point(152, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
 
             // 98.0 — rangee 1 (toujours visible), et non rangee 3 avec
             // Diagnostic : la confusion que ce texte dissipe concerne
             // l'utilisateur au moment ou il enregistre, pas seulement celui qui
             // explore le mode avance.
-            legalButton = new Button { Location = new Point(292, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
+            legalButton = new ThemedButton { Location = new Point(292, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
             legalButton.Click += (s, e) =>
             {
                 using var dialog = new LegalForm(_currentTheme, _currentLanguage);
@@ -2473,16 +2472,16 @@ namespace ChaturbateRecorderApp
             };
             modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
-            tutorialButton = new Button { Text = "Guide de démarrage", Location = new Point(12, topBarRow2Y), Size = new Size(190, topBarButtonHeight) };
+            tutorialButton = new ThemedButton { Text = "Guide de démarrage", Location = new Point(12, topBarRow2Y), Size = new Size(190, topBarButtonHeight) };
             tutorialButton.Click += (s, e) => ShowTutorial();
 
-            checkUpdateButton = new Button { Text = "Rechercher une mise à jour", Location = new Point(212, topBarRow2Y), Size = new Size(215, topBarButtonHeight) };
+            checkUpdateButton = new ThemedButton { Text = "Rechercher une mise à jour", Location = new Point(212, topBarRow2Y), Size = new Size(215, topBarButtonHeight) };
             checkUpdateButton.Click += OnCheckUpdateClick;
 
-            reportBugButton = new Button { Location = new Point(437, topBarRow2Y), Size = new Size(160, topBarButtonHeight) };
+            reportBugButton = new ThemedButton { Location = new Point(437, topBarRow2Y), Size = new Size(160, topBarButtonHeight) };
             reportBugButton.Click += OnReportBugClick;
 
-            diagnosticButton = new Button { Location = new Point(12, topBarRow3Y), Size = new Size(160, topBarButtonHeight) };
+            diagnosticButton = new ThemedButton { Location = new Point(12, topBarRow3Y), Size = new Size(160, topBarButtonHeight) };
             diagnosticButton.Click += (s, e) => new DiagnosticForm().ShowDialog(this);
 
             // --- Panel : Enregistrement ---
@@ -2494,9 +2493,9 @@ namespace ChaturbateRecorderApp
             grpRecord = new RoundedGroupPanel { Title = "Enregistrement", Location = new Point(12, 75), Size = new Size(660, 272) };
             urlLabel = new Label { Text = "URL Chaturbate :", Location = new Point(12, 25), AutoSize = true };
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
-            startButton = new Button { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
-            stopAllButton = new Button { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
-            addFavoriteButton = new Button { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
+            startButton = new ThemedButton { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
+            stopAllButton = new ThemedButton { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
+            addFavoriteButton = new ThemedButton { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
 
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
             // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
@@ -2506,7 +2505,7 @@ namespace ChaturbateRecorderApp
             advancedOptionsPanel = new Panel { Location = new Point(0, 100), Size = new Size(660, 112) };
 
             qualityLabel = new Label { Text = "Qualité source :", Location = new Point(12, 12), AutoSize = true };
-            qualityCombo = new ComboBox
+            qualityCombo = new ThemedComboBox
             {
                 Location = new Point(12, 30),
                 Size = new Size(190, 24),
@@ -2521,7 +2520,7 @@ namespace ChaturbateRecorderApp
             qualityCombo.SelectedIndex = 0;
 
             codecLabel = new Label { Text = "Codec de sortie :", Location = new Point(214, 12), AutoSize = true };
-            codecCombo = new ComboBox
+            codecCombo = new ThemedComboBox
             {
                 Location = new Point(214, 30),
                 Size = new Size(260, 24),
@@ -2536,7 +2535,7 @@ namespace ChaturbateRecorderApp
             codecCombo.SelectedIndex = 0;
 
             formatLabel = new Label { Text = "Format de sortie :", Location = new Point(486, 12), AutoSize = true };
-            formatCombo = new ComboBox
+            formatCombo = new ThemedComboBox
             {
                 Location = new Point(486, 30),
                 Size = new Size(150, 24),
@@ -2555,7 +2554,7 @@ namespace ChaturbateRecorderApp
             // dans le RecordingJob, changer le menu ensuite n'affecte donc pas
             // les enregistrements déjà lancés.
             durationLabel = new Label { Text = "Durée maximale :", Location = new Point(12, 58), AutoSize = true };
-            durationCombo = new ComboBox
+            durationCombo = new ThemedComboBox
             {
                 Location = new Point(12, 76),
                 Size = new Size(190, 24),
@@ -2652,9 +2651,9 @@ namespace ChaturbateRecorderApp
             // Largeur 150 (au lieu de 120) : le Padding horizontal des boutons
             // (8.4/9.2) ne laissait plus assez de place pour "Ouvrir dossier",
             // tronqué en "Ouvrir".
-            refreshHistoryButton = new Button { Text = "Actualiser", Location = new Point(492, 22), Size = new Size(150, 26) };
-            openHistoryFolderButton = new Button { Text = "Ouvrir dossier", Location = new Point(492, 54), Size = new Size(150, 26) };
-            openHistoryFileButton = new Button { Text = "Ouvrir fichier", Location = new Point(492, 86), Size = new Size(150, 26) };
+            refreshHistoryButton = new ThemedButton { Text = "Actualiser", Location = new Point(492, 22), Size = new Size(150, 26) };
+            openHistoryFolderButton = new ThemedButton { Text = "Ouvrir dossier", Location = new Point(492, 54), Size = new Size(150, 26) };
+            openHistoryFileButton = new ThemedButton { Text = "Ouvrir fichier", Location = new Point(492, 86), Size = new Size(150, 26) };
 
             refreshHistoryButton.Click += (s, e) => RefreshHistoryAsync();
             openHistoryFolderButton.Click += OnOpenHistoryFolderClick;
@@ -2671,8 +2670,8 @@ namespace ChaturbateRecorderApp
             favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(460, 98) };
             // Largeur 160 (au lieu de 140) : même correctif que ci-dessus,
             // "Supprimer favori" était tronqué en "Supprimer".
-            loadFavoriteButton = new Button { Text = "Charger", Location = new Point(482, 22), Size = new Size(160, 26) };
-            removeFavoriteButton = new Button { Text = "Supprimer favori", Location = new Point(482, 54), Size = new Size(160, 26) };
+            loadFavoriteButton = new ThemedButton { Text = "Charger", Location = new Point(482, 22), Size = new Size(160, 26) };
+            removeFavoriteButton = new ThemedButton { Text = "Supprimer favori", Location = new Point(482, 54), Size = new Size(160, 26) };
 
             loadFavoriteButton.Click += OnLoadFavoriteClick;
             removeFavoriteButton.Click += OnRemoveFavoriteClick;
@@ -2693,9 +2692,16 @@ namespace ChaturbateRecorderApp
             watchListView.Columns.Add("Salon", 300);
             watchListView.Columns.Add("État", 140);
 
-            addWatchButton = new Button { Text = "+ Surveiller", Location = new Point(482, 22), Size = new Size(160, 26) };
+            // Hauteur de ligne (39.0) : une ListView sans ImageList colle ses
+            // lignes à la hauteur de la police (~17 px), ce qui donne un pavé
+            // de texte compact là où l'historique, lui, respire déjà grâce à
+            // ses miniatures. WinForms n'expose pas de hauteur de ligne : une
+            // ImageList vide dont seule la HAUTEUR compte est le seul levier.
+            watchListView.SmallImageList = new ImageList { ImageSize = new Size(1, 24) };
+
+            addWatchButton = new ThemedButton { Text = "+ Surveiller", Location = new Point(482, 22), Size = new Size(160, 26) };
             addWatchButton.Click += OnAddWatchClick;
-            removeWatchButton = new Button { Text = "Ne plus surveiller", Location = new Point(482, 54), Size = new Size(160, 26) };
+            removeWatchButton = new ThemedButton { Text = "Ne plus surveiller", Location = new Point(482, 54), Size = new Size(160, 26) };
             removeWatchButton.Click += OnRemoveWatchClick;
 
             grpWatch.Controls.AddRange(new Control[] { watchListView, addWatchButton, removeWatchButton });
@@ -2726,9 +2732,9 @@ namespace ChaturbateRecorderApp
             // La position de grpLogs est recalculée à partir de
             // grpDonate.Bottom dans ApplyUiMode, elle suit automatiquement.
             grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 144) };
-            sponsorButton = new Button { Text = "Sponsoriser (GitHub)", Location = new Point(12, 34), Size = new Size(220, 32) };
-            donateButton = new Button { Text = "Faire un don (PayPal)", Location = new Point(12, 70), Size = new Size(220, 32) };
-            websiteButton = new Button { Text = "Site web", Location = new Point(12, 106), Size = new Size(220, 24) };
+            sponsorButton = new ThemedButton { Text = "Sponsoriser (GitHub)", Location = new Point(12, 34), Size = new Size(220, 32) };
+            donateButton = new ThemedButton { Text = "Faire un don (PayPal)", Location = new Point(12, 70), Size = new Size(220, 32) };
+            websiteButton = new ThemedButton { Text = "Site web", Location = new Point(12, 106), Size = new Size(220, 24) };
             qrPictureBox = new PictureBox
             {
                 Location = new Point(250, 12),
@@ -2751,9 +2757,9 @@ namespace ChaturbateRecorderApp
             // projet n'en a pas, et un bouton menant à un compte inexistant
             // vaudrait moins que rien. Le jour où un compte existe, il suffit
             // de remplacer l'URL ici.
-            shareXButton = new Button { Text = "X", Location = new Point(340, 96), Size = new Size(100, 26) };
-            shareRedditButton = new Button { Text = "Reddit", Location = new Point(448, 96), Size = new Size(100, 26) };
-            githubButton = new Button { Text = "GitHub", Location = new Point(556, 96), Size = new Size(100, 26) };
+            shareXButton = new ThemedButton { Text = "X", Location = new Point(340, 96), Size = new Size(100, 26) };
+            shareRedditButton = new ThemedButton { Text = "Reddit", Location = new Point(448, 96), Size = new Size(100, 26) };
+            githubButton = new ThemedButton { Text = "GitHub", Location = new Point(556, 96), Size = new Size(100, 26) };
 
             const string repoUrl = "https://github.com/Tomoushie/ChaturbateRecorder";
             var shareText = Uri.EscapeDataString("Chaturbate Recorder — enregistreur de lives open source pour Windows");
@@ -2782,6 +2788,30 @@ namespace ChaturbateRecorderApp
             };
             grpLogs.Controls.Add(logListBox);
             logListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+
+            // --- Hiérarchie visuelle (39.0) ---
+            // UN seul bouton d'accent par zone de l'écran, et rien d'autre :
+            // « Démarrer » dans la carte Enregistrement, « Sponsoriser » dans la
+            // carte Soutenir le projet. Tout le reste est secondaire par défaut
+            // (voir ButtonRole.Secondary). Avant, les 18 boutons de la fenêtre
+            // étaient bleus : l'action principale ne se distinguait donc en rien
+            // d'un lien de partage, et l'écran n'offrait aucun point d'entrée.
+            startButton.Role = ButtonRole.Primary;
+            sponsorButton.Role = ButtonRole.Primary;
+
+            // Ce qui interrompt ou supprime. Rouge en texte et bordure
+            // seulement : ces quatre boutons sont visibles simultanément en
+            // mode avancé, quatre aplats rouges donneraient une fenêtre en
+            // alerte permanente alors que rien ne va mal.
+            stopAllButton.Role = ButtonRole.Danger;
+            removeFavoriteButton.Role = ButtonRole.Danger;
+            removeWatchButton.Role = ButtonRole.Danger;
+
+            // Intitulés de champ : un cran en dessous du contenu qu'ils
+            // annoncent. Sans ça « Qualité source : » pèse autant que la valeur
+            // choisie, et l'œil n'a aucun ordre de lecture.
+            foreach (var caption in new Control[] { urlLabel, qualityLabel, codecLabel, formatLabel, durationLabel, donateLabel })
+                ThemeManager.SetTextRole(caption, TextRole.Caption);
 
             contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, legalButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpWatch, grpDonate, grpLogs });
             Controls.Add(contentPanel);

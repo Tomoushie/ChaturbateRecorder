@@ -34,8 +34,8 @@ namespace ChaturbateRecorderApp.UI
         private Label titleLabel = null!;
         private Label bodyLabel = null!;
         private Label progressLabel = null!;
-        private Button backButton = null!;
-        private Button nextButton = null!;
+        private ThemedButton backButton = null!;
+        private ThemedButton nextButton = null!;
 
         public TutorialForm()
         {
@@ -77,8 +77,11 @@ namespace ChaturbateRecorderApp.UI
                 AutoSize = true,
             };
 
-            backButton = new Button { Text = Localization.Get("tutorial.back"), Location = new Point(220, 264), Size = new Size(110, 28) };
-            nextButton = new Button { Text = Localization.Get("tutorial.next"), Location = new Point(336, 264), Size = new Size(124, 28) };
+            backButton = new ThemedButton { Text = Localization.Get("tutorial.back"), Location = new Point(220, 264), Size = new Size(110, 28) };
+            nextButton = new ThemedButton { Text = Localization.Get("tutorial.next"), Location = new Point(336, 264), Size = new Size(124, 28) };
+            // Un seul accent par fenêtre (39.0) : c'est « Suivant » qui fait
+            // avancer, « Précédent » n'est qu'un repli.
+            nextButton.Role = ButtonRole.Primary;
 
             backButton.Click += (s, e) => { if (_stepIndex > 0) { _stepIndex--; RenderStep(); } };
             nextButton.Click += (s, e) =>

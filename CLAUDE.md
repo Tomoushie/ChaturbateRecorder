@@ -4,7 +4,12 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-04 — version courante : v1.23.2 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-09 — version courante : v1.31.0 (app), SentinelGuard 1.0.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+
+**Dernier tag PUBLIÉ : v1.28.1.** Les v1.29.0, v1.30.0 et v1.31.0 vivent sur
+`main` sans tag, à la demande de l'utilisateur (il voulait 39.0 puis 36.0
+avant de publier). Vérifier avec lui avant de taguer quoi que ce soit :
+`git tag` + push déclenche la publication d'une release publique.
 
 (Cet en-tête a déjà été laissé en retard trois fois : v1.15.0 Crash Reporter,
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
@@ -33,6 +38,81 @@ uniquement, pas de bump) :
 - **Ne pas signaler a GitHub en l'etat** : rien ne prouve un defaut de leur
   cote, et un rapport sur un incident unique sans logs serait clos comme
   invalide. Les logs de workflow expirent d'ailleurs a 90 jours.
+
+**v1.31.0 (2026-08-09) — 39.0 : refonte visuelle de la fenêtre principale** :
+- **Périmètre fixé avec l'utilisateur avant d'écrire une ligne** : « toute la
+  fenêtre principale », et le défaut à corriger est le **rendu plat/daté** — pas
+  la disposition, pas la lisibilité. Les positions et tailles des contrôles sont
+  donc restées telles quelles ; **ne pas les remanier sans nouvelle demande**.
+- **Le diagnostic est venu d'une capture, pas d'une intuition.** Cinq causes
+  identifiées à l'écran : 18 boutons bleus de poids égal, des cartes de la même
+  couleur que le fond (donc invisibles autrement que par un liseré de 1 px),
+  un titre qui coupe la bordure façon GroupBox de Windows 95, un seul niveau
+  typographique, et des contrôles Win32 bruts (en-têtes de ListView clairs en
+  thème sombre, bordures blanches).
+- **Décision structurante, tranchée par l'utilisateur** : un seul bouton
+  d'accent par zone. `UI/ThemedButton.cs` + `ButtonRole` (Primary / Secondary /
+  Danger). Le rôle vit sur le contrôle, la couleur est dérivée par
+  `ThemeManager.ResolveButtonColors` — aucun formulaire ne code de couleur.
+- **Danger ne remplit PAS le bouton de rouge** : « Stop », « Tout arrêter »,
+  « Supprimer favori » et « Ne plus surveiller » sont visibles en même temps ;
+  quatre aplats rouges donneraient une fenêtre en alerte permanente. Rouge sur
+  le texte, la bordure et la teinte de survol seulement.
+- **Trois contrôles dessinés par l'application** (même veine que
+  `ThemedProgressBar`) : `ThemedButton`, `ThemedComboBox`, `ThemedListView`
+  (statique, s'attache à une ListView existante), plus `InputFrame` qui fait
+  encadrer les champs par leur PARENT — une ListView/ListBox/TextBox ne sait pas
+  porter une bordure de couleur choisie, la sienne vient du système.
+- **`Palette` passe de 7 à 11 champs** : `Bg` / `Card` / `Input` séparés, plus
+  `FgMuted`, `Accent`, `AccentFg`, `Neutral`, `Danger`. La récursion de
+  `ApplyPalette` transporte la **surface courante**, ce qui permet à un panneau
+  imbriqué de prendre la couleur de la carte qui le porte.
+- **Trois pièges rencontrés, tous invisibles à la compilation** :
+  - **`ImageList.Images[i]` CONSTRUIT un Bitmap à chaque appel.** Utilisé dans
+    la boucle de dessin des miniatures, il épuisait les handles GDI en quelques
+    secondes, et le symptôme ne ressemblait en rien à la cause :
+    `ArgumentNullException('dc')` dans `Control.WmPaint` d'un tout autre
+    contrôle, parce que `BeginPaint` finissait par rendre un DC nul. **Utiliser
+    `ImageList.Draw`.** Ne se manifestait qu'avec de vraies miniatures — d'où
+    des captures qui passaient et un plantage au démarrage réel.
+  - **`DrawToBitmap` envoie `WM_PRINT`, pas `WM_PAINT`.** Un contrôle natif
+    repeint après coup (`ThemedComboBox`) doit traiter les deux, sinon la
+    capture montre le rendu SYSTÈME et laisse croire que le correctif ne
+    fonctionne pas. Bordure blanche « persistante » diagnostiquée en peignant la
+    nôtre en rouge : la native se dessine 1 px À L'INTÉRIEUR, il faut couvrir
+    l'anneau avant de tracer.
+  - **`DrawListViewItemEventArgs.State` n'est pas fiable en vue Details** :
+    toutes les lignes se dessinaient sélectionnées. Lire `e.Item.Selected`.
+- **La zone d'en-tête à droite de la dernière colonne n'est traversée par aucun
+  évènement de dessin** — le contrôle natif la remplit en clair, d'où un bloc
+  blanc en thème sombre. Corrigé en étirant la dernière colonne
+  (`ThemedListView.StretchLastColumn`, rappelé après remplissage : c'est
+  l'ascenseur qui change la largeur utile, sans lever `Resize`).
+- **Défaut d'accessibilité PRÉEXISTANT trouvé par les tests, pas par l'œil** :
+  le blanc sur le bleu d'accent ne donne que 3,2 de contraste en thème sombre
+  (seuil WCAG : 4,5). Corrigé comme Windows 11 le fait — texte **sombre** sur
+  l'accent en thème sombre — et survol/appui s'éloignent désormais de la couleur
+  du texte au lieu d'éclaircir systématiquement. Le rouge « danger » du thème
+  sombre a dû monter dans les tons saumon (#FFA79A) pour la même raison : sur le
+  gris des boutons secondaires, un rouge franc plafonne à 3,5.
+- **Effet de bord bénéfique** : `ThemeManager` ne force plus la police des
+  cartes en gras — elle était héritée par TOUS leurs enfants, ce qui expliquait
+  l'aspect lourd de l'écran.
+- **Piège de parentage introduit puis refermé** : `BuildJobRow` appliquait le
+  thème à une ligne pas encore ajoutée à son panneau ; avec des surfaces
+  distinctes, elle prenait le fond de la FENÊTRE et formait un rectangle plus
+  sombre au milieu de la carte. La ligne est désormais parentée dans
+  `BuildJobRow`, avant `ThemeManager.Apply`.
+- **Tests** : `Tests/ThemeHierarchyTests.cs` (23, **226 au total**), éprouvés en
+  les cassant volontairement (7 échecs). Ils ne vérifient pas « c'est joli »
+  mais ce qu'une retouche de palette peut casser en silence : contraste WCAG de
+  chaque rôle dans ses trois états, accent distinct du neutre, carte distincte
+  du fond, survol distinct du repos.
+- **Vérification de rendu** : `DrawToBitmap` sur `contentPanel` en clair et
+  sombre, plus `SettingsForm`. **Piège de méthode à retenir** : la première
+  capture montrait le mode SIMPLE alors qu'elle était nommée « avancé » — une
+  exécution précédente avait persisté `AdvancedMode = false` dans
+  `settings.json`. Forcer `ApplyUiMode(true)` au début de la capture.
 
 **v1.30.0 (2026-08-08) — 29.0 / 2.2 : Safe Mode** :
 - **Principe qui gouverne tout** : aucune de ces defaillances ne justifie de

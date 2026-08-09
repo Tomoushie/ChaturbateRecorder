@@ -259,6 +259,16 @@ namespace ChaturbateRecorderApp.Config
                 "Nouvelle section \"Fonctionnalités\" dans les Paramètres : tu peux désactiver toi-même le réencodage, les cookies, le proxy, les enregistrements simultanés ou la surveillance — utile pour isoler un problème.",
                 "Réactiver une fonctionnalité à la main annule aussi la désactivation automatique : la vérification sera refaite au prochain démarrage.",
             }),
+
+            ("1.31.0", new[]
+            {
+                "Interface repensée : les panneaux deviennent de vraies cartes posées sur le fond de la fenêtre, avec une ombre douce et leur titre à l'intérieur — au lieu d'un simple liseré qui donnait un écran tout plat.",
+                "Un seul bouton coloré par zone : « Démarrer » et « Sponsoriser » ressortent, tout le reste passe en bouton neutre. Avant, dix-huit boutons bleus se disputaient l'attention.",
+                "Ce qui interrompt ou supprime (Stop, Tout arrêter, Supprimer favori, Ne plus surveiller) se reconnaît désormais à son rouge discret.",
+                "Listes et champs suivent enfin le thème sombre : plus d'en-tête de colonnes blanc au-dessus d'une liste noire, ni de bordure claire autour des zones de saisie et des menus déroulants.",
+                "Les intitulés de champ passent au second plan et le pourcentage d'un enregistrement s'affiche en nombre entier : la décimale changeait plusieurs fois par seconde sans rien apprendre à personne.",
+                "Les libellés de boutons sont réellement centrés avec leur icône, quel que soit leur largeur.",
+            }),
         };
 
         /// <summary>
@@ -398,6 +408,15 @@ namespace ChaturbateRecorderApp.Config
                 "In practice: a missing ffmpeg no longer prevents recording (only re-encoding and thumbnails are suspended), and an unreadable cookies file is ignored instead of silently making every capture fail.",
                 "New \"Features\" section in Settings: you can turn off re-encoding, cookies, proxy, simultaneous recordings or monitoring yourself — handy to isolate a problem.",
                 "Re-enabling a feature by hand also clears the automatic shutdown: the check will run again on next startup.",
+            },
+            ["1.31.0"] = new[]
+            {
+                "Redesigned interface: panels are now real cards sitting on the window background, with a soft shadow and their title inside — instead of a thin outline that made the whole screen look flat.",
+                "One coloured button per area: \"Start\" and \"Sponsor\" stand out, everything else becomes a neutral button. Before, eighteen blue buttons competed for attention.",
+                "Anything that interrupts or deletes (Stop, Stop all, Remove favorite, Stop monitoring) is now recognisable by its discreet red.",
+                "Lists and fields finally follow the dark theme: no more white column header above a black list, and no more light border around text fields and drop-down menus.",
+                "Field labels step back visually, and a recording's percentage is shown as a whole number: the decimal changed several times a second without telling anyone anything.",
+                "Button labels are genuinely centred together with their icon, whatever the button width.",
             },
         };
 

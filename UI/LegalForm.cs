@@ -21,7 +21,7 @@ namespace ChaturbateRecorderApp.UI
     public class LegalForm : Form
     {
         private TextBox bodyTextBox = null!;
-        private Button closeButton = null!;
+        private ThemedButton closeButton = null!;
 
         public LegalForm(AppTheme theme, AppLanguage language)
         {
@@ -68,12 +68,13 @@ namespace ChaturbateRecorderApp.UI
                 Text = L("legal.body").Replace("\n", Environment.NewLine),
             };
 
-            closeButton = new Button
+            closeButton = new ThemedButton
             {
                 Text = L("button.close"),
                 Location = new Point(528, 420),
                 Size = new Size(100, 28),
             };
+            closeButton.Role = ButtonRole.Primary; // seul accent de la fenêtre (39.0)
             closeButton.Click += (s, e) => Close();
 
             Controls.AddRange(new Control[] { bodyTextBox, closeButton });
