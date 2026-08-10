@@ -28,11 +28,16 @@ namespace ChaturbateRecorderApp
         private TextBox urlTextBox = null!;
         private ThemedButton startButton = null!;
         private ThemedButton stopAllButton = null!;
-        private ThemedButton addFavoriteButton = null!;
-        private FlowLayoutPanel jobsListPanel = null!;
+        private ThemedButton addRoomButton = null!;
+        private FlowLayoutPanel roomsListPanel = null!;
+        private Label roomsEmptyLabel = null!;
+        // Une seule instance pour toutes les cartes : un ToolTip par bouton
+        // ferait autant de fenêtres natives que de salons.
+        private readonly ToolTip _cardTips = new();
         private Panel advancedOptionsPanel = null!;
         private RoundedGroupPanel grpRecord = null!;
-        private RoundedGroupPanel grpProgress = null!;
+        // 97.0 étape 2c — remplace grpProgress + grpFavorites + grpWatch.
+        private RoundedGroupPanel grpRooms = null!;
         private RoundedGroupPanel grpHistory = null!;
         private ListView historyListView = null!;
         private ThemedButton refreshHistoryButton = null!;
@@ -40,7 +45,6 @@ namespace ChaturbateRecorderApp
         // 4.1 : ouverture directe de la vidéo, et miniatures dans la liste.
         private ThemedButton openHistoryFileButton = null!;
         private ImageList historyThumbnails = null!;
-        private RoundedGroupPanel grpFavorites = null!;
         private RoundedGroupPanel grpDonate = null!;
         private RoundedGroupPanel grpLogs = null!;
         private Label qualityLabel = null!;
@@ -51,14 +55,6 @@ namespace ChaturbateRecorderApp
         private ThemedComboBox formatCombo = null!;
         private Label durationLabel = null!;
         private ThemedComboBox durationCombo = null!;
-        private ListBox favoritesListBox = null!;
-        // 88.0 : surveillance automatique.
-        private RoundedGroupPanel grpWatch = null!;
-        private ListView watchListView = null!;
-        private ThemedButton addWatchButton = null!;
-        private ThemedButton removeWatchButton = null!;
-        private ThemedButton loadFavoriteButton = null!;
-        private ThemedButton removeFavoriteButton = null!;
         private ThemedButton sponsorButton = null!;
         private ThemedButton donateButton = null!;
         private ThemedButton websiteButton = null!;
@@ -94,39 +90,69 @@ namespace ChaturbateRecorderApp
         /// process yt-dlp — c'est ce qui permet d'enregistrer plusieurs lives
         /// à la fois sans ouvrir plusieurs instances de l'application.
         /// </summary>
-        private sealed class JobRow
+        private sealed class RoomRow
         {
-            public RecordingJob Job = null!;
-            public Panel Container = null!;
-            public Label NameLabel = null!;
-            public ThemedProgressBar ProgressBar = null!;
-            public Label StatusLabel = null!;
-            public ThemedButton StopButton = null!;
+            /// <summary>Adresse du salon. C'est elle qui identifie la ligne, pas le nom
+            /// affiché : deux plateformes peuvent donner le même nom lisible.</summary>
+            public string Url = "";
+            public RoomCard Card = null!;
+            public ThemedButton PrimaryButton = null!;
             public ThemedButton OpenButton = null!;
-            public Action RestartEngine = null!;
+            public ThemedButton RemoveButton = null!;
+
+            /// <summary>
+            /// **Le salon existe sans enregistrement, et c'est tout le
+            /// changement de 97.0.** Une carte représente un salon connu ; le
+            /// job n'est qu'un locataire, présent pendant la capture et son
+            /// résultat. Les trois anciens panneaux décrivaient au contraire
+            /// trois objets distincts pour un même salon.
+            /// </summary>
+            public RecordingJob? Job;
+            public Action? RestartEngine;
             public System.Windows.Forms.Timer? PendingReconnectTimer;
 
-            public JobRowStatus Status = JobRowStatus.Preparing;
+            /// <summary>Dernier sondage. Sert à Resolve, qui fait primer le job dessus.</summary>
+            public RoomStatus PollStatus = RoomStatus.Unknown;
+
+            /// <summary>
+            /// Salon absent de la liste persistée : une adresse collée puis
+            /// enregistrée sans être ajoutée. Sa carte vit le temps de la
+            /// capture, exactement comme l'ancienne ligne de job — l'enregistrer
+            /// d'office ferait grossir la liste de quelqu'un sans qu'il l'ait
+            /// demandé.
+            /// </summary>
+            public bool Ephemeral;
+
+            /// <summary>
+            /// Miroir de <see cref="RoomEntry.AutoRecord"/>, tenu à jour ici
+            /// parce qu'une carte éphémère n'a pas d'entrée persistée à
+            /// interroger.
+            /// </summary>
+            public bool AutoRecordFlag;
+
+            public JobRowStatus JobStatus = JobRowStatus.Preparing;
             public DownloadState? FinishedState;
             public int ReconnectDelaySeconds;
             public bool HasProgressPct;
             public double LastProgressPct;
 
-            // Minuteur (87.0) : libellé du temps restant, à droite du nom, et
-            // le timer d'affichage qui le rafraîchit chaque seconde. Ce même
-            // timer déclenche l'arrêt à l'échéance — un seul objet à arrêter.
-            public Label TimerLabel = null!;
+            // Minuteur (87.0). Le temps restant s'affiche désormais sur la
+            // ligne de détail de la carte ; ce timer déclenche toujours l'arrêt
+            // à l'échéance — un seul objet à arrêter.
             public System.Windows.Forms.Timer? CountdownTimer;
+            public string Countdown = "";
         }
 
         // --- État ---
-        private readonly FavoritesManager _favorites = new();
-        private readonly WatchListManager _watchList = new();
+        // 97.0 — une seule liste de salons remplace FavoritesManager et
+        // WatchListManager. Les deux anciens fichiers sont lus une dernière
+        // fois par RoomStore.Load(), qui migre puis les laisse en place.
+        private readonly RoomStore _rooms = new();
         private System.Windows.Forms.Timer? _watchTimer;
         // Empêche deux passages de se chevaucher : un contrôle prend quelques
         // secondes par salon, une liste fournie peut dépasser l'intervalle.
         private bool _watchTickRunning;
-        private readonly List<JobRow> _jobRows = new();
+        private readonly List<RoomRow> _roomRows = new();
         private bool _advancedMode = true;
         private AppTheme _currentTheme = AppTheme.Light;
         private AppLanguage _currentLanguage = AppLanguage.French;
@@ -226,13 +252,19 @@ namespace ChaturbateRecorderApp
 
             ApplySafeMode();
 
-            _favorites.Load();
-            foreach (var fav in _favorites.Favorites)
-                favoritesListBox.Items.Add(fav);
-
-            _watchList.Load();
-            foreach (var room in _watchList.Rooms)
-                AddWatchRow(room);
+            // 97.0 — un seul chargement pour les deux anciennes listes. Load()
+            // migre favorites.json + watchlist.json vers rooms.json au premier
+            // lancement, et NE SUPPRIME PAS les anciens fichiers : revenir à une
+            // version antérieure doit rester possible.
+            _rooms.Load();
+            foreach (var salon in _rooms.Rooms)
+            {
+                var ligne = BuildRoomRow(salon.Url, ephemeral: false);
+                ligne.AutoRecordFlag = salon.AutoRecord;
+                RefreshCard(ligne);
+                _roomRows.Add(ligne);
+            }
+            UpdateRoomsEmptyState();
 
             LoadQrImage();
             ThemeManager.Apply(this, _currentTheme);
@@ -493,149 +525,188 @@ namespace ChaturbateRecorderApp
         }
 
         /// <summary>
-        /// Construit la ligne d'UI (nom, barre marquee, statut, bouton) pour un
-        /// nouveau job et câble ses événements DownloadEngine. Le bouton sert de
-        /// Stop tant que l'enregistrement tourne, puis de "Retirer" une fois
-        /// terminé (évite d'accumuler indéfiniment des lignes mortes).
+        /// Largeur réservée aux trois boutons d'action, à droite de
+        /// l'interrupteur. La carte s'en sert pour placer son interrupteur sans
+        /// jamais passer dessous — d'où une constante partagée plutôt que deux
+        /// nombres à garder d'accord.
         /// </summary>
-        private JobRow BuildJobRow(RecordingJob job)
+        private const int CardActionsWidth = 180;
+
+        /// <summary>
+        /// Crée la carte d'un salon et la pose dans la liste.
+        ///
+        /// **Une carte existe dès que le salon est connu**, bien avant qu'un
+        /// enregistrement ne commence, et lui survit. C'est tout l'écart avec
+        /// l'ancienne ligne de job, qui naissait et mourait avec sa capture :
+        /// un même salon pouvait alors figurer à trois endroits à la fois
+        /// (favoris, surveillance, enregistrement en cours), chacun avec sa
+        /// propre vérité sur ce qu'il faisait.
+        /// </summary>
+        private RoomRow BuildRoomRow(string url, bool ephemeral)
         {
-            // Hauteur 26 (et non 20/22) : en dessous de 24 le bas des lettres est
-            // rogné, jambages compris ("p" de Stop/Open, "y" éventuel d'un futur
-            // libellé) — l'icône de 14 px posée en ImageBeforeText ne laissait pas
-            // assez de place à la police. 24 est le premier palier propre, 26 est
-            // retenu pour la marge et par cohérence avec les autres boutons de
-            // l'app (Actualiser / Ouvrir dossier sont déjà en 26).
-            // Largeur 105 (et non 95) : une fois le thème appliqué aux lignes, le
-            // Padding(8,0,8,0) des boutons thématisés ne laissait plus la place à
-            // "Remove", tronqué en "Remov" (l'anglais est le cas le plus long).
-            const int buttonWidth = 105;
-            const int buttonHeight = 26;
-            const int buttonX = 495; // 495 + 105 = 600, même bord droit qu'avant.
-            const int secondRowY = 30;
+            var (icone, _) = Platforms.Badge(Platforms.Detect(url));
 
-            var container = new Panel { Size = new Size(605, 56), Margin = new Padding(2) };
-            // Largeur bornée (et non AutoSize) depuis l'ajout du minuteur (87.0) :
-            // le libellé du temps restant occupe la droite de cette rangée, un nom
-            // de salon inhabituellement long viendrait sinon se superposer à lui.
-            // AutoEllipsis coupe proprement avec "..." plutôt que de déborder.
-            var nameLabel = new Label
+            var card = new RoomCard
             {
-                Text = job.RoomName,
-                Location = new Point(2, 5),
-                Size = new Size(335, 18),
-                AutoSize = false,
-                AutoEllipsis = true,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font(Font, FontStyle.Bold)
+                RoomName = Platforms.DisplayName(url),
+                PlatformIcon = icone,
+                ActionsWidth = CardActionsWidth,
+                Palette = ThemeManager.GetPalette(_currentTheme),
+                Width = Math.Max(320, roomsListPanel.ClientSize.Width - 8),
             };
-            // Minuteur (87.0) : entre le nom et le bouton Ouvrir, sur la rangée du
-            // haut restée libre. Se termine à x=490, juste avant buttonX (495).
-            // Masqué tant qu'aucun minuteur n'est actif, pour ne rien changer à
-            // l'apparence des enregistrements illimités.
-            var timerLabel = new Label
+
+            // Icône seule pour « ouvrir » et « retirer » : ThemedButton centre
+            // le groupe icône+texte, un texte vide laisse donc l'icône au
+            // milieu. Trois libellés complets ne tiendraient pas dans les
+            // 180 px réservés sans réduire la carte à sa zone de boutons.
+            var primary = new ThemedButton { Size = new Size(104, 26), IconSize = 14 };
+            var open = new ThemedButton { Size = new Size(30, 26), IconName = "open", IconSize = 14 };
+            var remove = new ThemedButton { Size = new Size(30, 26), IconName = "trash", IconSize = 14, Role = ButtonRole.Danger };
+
+            _cardTips.SetToolTip(open, Localization.Get("job.open", _currentLanguage));
+            _cardTips.SetToolTip(remove, Localization.Get("job.remove", _currentLanguage));
+
+            card.Controls.AddRange(new Control[] { primary, open, remove });
+
+            var row = new RoomRow
             {
-                Location = new Point(345, 5),
-                Size = new Size(145, 18),
-                AutoSize = false,
-                TextAlign = ContentAlignment.MiddleRight,
-                Visible = false
+                Url = url,
+                Card = card,
+                PrimaryButton = primary,
+                OpenButton = open,
+                RemoveButton = remove,
+                Ephemeral = ephemeral,
+                AutoRecordFlag = false,
             };
-            var openButton = new ThemedButton { Location = new Point(buttonX, 0), Size = new Size(buttonWidth, buttonHeight) };
-            var progressBar = new ThemedProgressBar { Location = new Point(2, secondRowY + 4), Size = new Size(350, 18), Minimum = 0, Maximum = 100, BarColor = RunningColor };
-            var statusLabel = new Label { Location = new Point(358, secondRowY + 4), Size = new Size(130, 18), AutoSize = false };
-            var stopButton = new ThemedButton { Location = new Point(buttonX, secondRowY), Size = new Size(buttonWidth, buttonHeight) };
 
-            // Minuteur et état sont des informations d'accompagnement : le nom
-            // du salon reste le seul texte plein de la ligne.
-            ThemeManager.SetTextRole(timerLabel, TextRole.Caption);
-            ThemeManager.SetTextRole(statusLabel, TextRole.Caption);
+            open.Click += (s, e) => OpenRoomPage(row);
+            remove.Click += (s, e) => RemoveRoomRow(row);
+            primary.Click += (s, e) => OnCardPrimaryClick(row);
 
-            openButton.IconName = "open";
-            openButton.IconSize = 14;
-            // Danger, et non Primary : ce bouton interrompt une capture en
-            // cours. Il reste discret (texte et bordure rouges sur fond neutre)
-            // parce qu'il est visible en permanence, une ligne par
-            // enregistrement — autant d'aplats rouges crieraient à l'écran.
-            stopButton.Role = ButtonRole.Danger;
-            stopButton.IconName = "stop";
-            stopButton.IconSize = 14;
-
-            openButton.Click += (s, e) =>
+            // L'interrupteur est dessiné par la carte, pas par un contrôle :
+            // c'est elle qui prévient quand il bascule.
+            card.AutoRecordToggled += (s, e) =>
             {
-                try
+                row.AutoRecordFlag = card.AutoRecord;
+
+                // Surveiller un salon éphémère revient à demander à le garder :
+                // sans ça, l'interrupteur s'oublierait à la fermeture et rien
+                // ne l'aurait dit.
+                if (row.Ephemeral && card.AutoRecord)
                 {
-                    Process.Start(new ProcessStartInfo(job.SourceUrl) { UseShellExecute = true });
+                    _rooms.Add(row.Url, autoRecord: true);
+                    row.Ephemeral = false;
+                    AppendLog($"[{DateTime.Now:HH:mm:ss}] {card.RoomName} ajouté à la liste (surveillance activée).");
                 }
-                catch (Exception ex)
+                else if (!row.Ephemeral)
                 {
-                    MessageBox.Show(Localization.Format("error.cannotOpenPage", ex.Message),
-                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _rooms.SetAutoRecord(row.Url, card.AutoRecord);
                 }
             };
 
-            container.Controls.AddRange(new Control[] { nameLabel, timerLabel, openButton, progressBar, statusLabel, stopButton });
+            // Parentée AVANT l'application du thème (39.0) : ThemeManager
+            // remonte la chaîne des parents pour savoir sur quelle surface il
+            // peint. Une carte encore orpheline recevrait le fond de la FENÊTRE.
+            roomsListPanel.Controls.Add(card);
+            LayoutCardActions(row);
+            RefreshCard(row);
+            ThemeManager.Apply(card, _currentTheme);
+            return row;
+        }
 
-            // Parentée ICI, avant l'application du thème (39.0) : depuis que
-            // les cartes ont leur propre couleur de surface, ThemeManager
-            // remonte la chaîne des parents pour savoir sur quoi il peint. Une
-            // ligne encore orpheline recevait donc le fond de la FENÊTRE, et
-            // apparaissait comme un rectangle plus sombre au milieu de la carte.
-            jobsListPanel.Controls.Add(container);
+        /// <summary>
+        /// Place les trois boutons contre le bord droit de la carte. Rappelé à
+        /// chaque redimensionnement : la carte suit la largeur de la liste, et
+        /// des boutons ancrés à droite par Anchor se poseraient d'après une
+        /// largeur pas encore établie — le piège d'Anchor documenté en bas de
+        /// CLAUDE.md, déjà payé deux fois.
+        /// </summary>
+        private static void LayoutCardActions(RoomRow row)
+        {
+            const int marge = 14;
+            const int ecart = 6;
+            var y = (RoomCard.CompactHeight - row.PrimaryButton.Height) / 2;
 
-            var row = new JobRow
+            var x = row.Card.Width - marge - row.RemoveButton.Width;
+            row.RemoveButton.Location = new Point(x, y);
+
+            x -= ecart + row.OpenButton.Width;
+            row.OpenButton.Location = new Point(x, y);
+
+            x -= ecart + row.PrimaryButton.Width;
+            row.PrimaryButton.Location = new Point(x, y);
+        }
+
+        private void OpenRoomPage(RoomRow row)
+        {
+            try
             {
-                Job = job,
-                Container = container,
-                NameLabel = nameLabel,
-                ProgressBar = progressBar,
-                StatusLabel = statusLabel,
-                StopButton = stopButton,
-                OpenButton = openButton,
-                TimerLabel = timerLabel,
-            };
-
-            stopButton.Click += (s, e) =>
+                Process.Start(new ProcessStartInfo(row.Url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
             {
-                if (job.Engine.State == DownloadState.Running)
+                MessageBox.Show(Localization.Format("error.cannotOpenPage", ex.Message),
+                    Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Le bouton principal change de rôle avec l'état de la carte : démarrer
+        /// quand rien ne tourne, arrêter pendant la capture, annuler pendant
+        /// l'attente d'une reconnexion. Un seul bouton, parce qu'à tout instant
+        /// une seule de ces actions a un sens.
+        /// </summary>
+        private void OnCardPrimaryClick(RoomRow row)
+        {
+            if (row.Job is { } job && job.Engine.State == DownloadState.Running)
+            {
+                job.Engine.Stop();
+                return;
+            }
+
+            if (row.PendingReconnectTimer != null)
+            {
+                row.PendingReconnectTimer.Stop();
+                row.PendingReconnectTimer.Dispose();
+                row.PendingReconnectTimer = null;
+                if (row.Job != null)
                 {
-                    job.Engine.Stop();
+                    row.Job.AutoReconnectEnabled = false;
+                    AppendJobLog(row.Job, "Reconnexion automatique annulée.");
                 }
-                else if (row.PendingReconnectTimer != null)
-                {
-                    row.PendingReconnectTimer.Stop();
-                    row.PendingReconnectTimer.Dispose();
-                    row.PendingReconnectTimer = null;
-                    job.AutoReconnectEnabled = false;
-                    AppendJobLog(job, "Reconnexion automatique annulée.");
-                    row.Status = JobRowStatus.Cancelled;
-                    RefreshJobRowLabels(row);
-                }
-                else
-                {
-                    RemoveJobRow(row);
-                }
-            };
+                row.JobStatus = JobRowStatus.Cancelled;
+                RefreshCard(row);
+                return;
+            }
+
+            StartRecording(row.Url, interactive: true);
+        }
+
+        /// <summary>
+        /// Câble un enregistrement sur la carte d'un salon. Les gestionnaires du
+        /// moteur pointent la LIGNE et non le job : la ligne survit à la capture
+        /// et en accueillera une autre.
+        /// </summary>
+        private void AttachJob(RoomRow row, RecordingJob job)
+        {
+            row.Job = job;
+            row.JobStatus = JobRowStatus.Preparing;
+            row.FinishedState = null;
+            row.HasProgressPct = false;
+            row.LastProgressPct = 0;
+            row.Countdown = "";
 
             job.Engine.OnLogLine      += line => SafeInvoke(() => AppendJobLog(job, line));
             job.Engine.OnProgress     += pct  => SafeInvoke(() => UpdateJobProgress(row, pct));
             job.Engine.OnStateChanged += state => SafeInvoke(() => HandleJobStateChanged(row, state));
 
-            RefreshJobRowLabels(row);
+            RefreshCard(row);
+        }
 
-            // ThemeManager.Apply n'est appelé qu'une fois dans le constructeur,
-            // donc avant qu'aucune ligne n'existe : sans cet appel les contrôles
-            // créés ici gardent leur rendu système (boutons gris clair à bordure,
-            // texte noir) au lieu du bleu d'accent, et une ligne créée en thème
-            // sombre reste claire jusqu'au prochain changement de thème (seul
-            // AnimateThemeTransition repasse récursivement sur tout le
-            // formulaire). N'écrase aucune couleur d'état : le cas
-            // ThemedProgressBar de ThemeManager ne touche que la piste et la
-            // bordure, jamais BarColor (posée juste au-dessus à RunningColor,
-            // puis pilotée par HandleJobStateChanged/PulseProgressBar), et les
-            // icônes sont déjà rendues en IconColor, fixe dans les deux thèmes.
-            ThemeManager.Apply(container, _currentTheme);
-            return row;
+        private RoomRow? FindRoomRow(string url)
+        {
+            var cle = RoomStore.Normalize(url);
+            return _roomRows.FirstOrDefault(r => string.Equals(RoomStore.Normalize(r.Url), cle, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -650,30 +721,59 @@ namespace ChaturbateRecorderApp
         /// du bouton "Retirer", qui appartient justement à la ligne détruite —
         /// il doit avoir fini de s'exécuter avant que son bouton disparaisse.
         /// </summary>
-        private void RemoveJobRow(JobRow row)
+        private void RemoveRoomRow(RoomRow row)
         {
-            // Même raison pour le minuteur d'arrêt (87.0) : c'est aussi un Timer,
-            // que rien n'arrêterait si la ligne disparaissait sans passer ici.
+            // Confirmation demandée par le mainteneur : retirer un salon coupe
+            // sa capture, et c'est la seule action de cette liste qui détruise
+            // quelque chose qu'on ne peut pas refaire — le direct, lui, ne se
+            // rejoue pas.
+            if (row.Job is { } enCours && enCours.Engine.State == DownloadState.Running)
+            {
+                var reponse = MessageBox.Show(this,
+                    Localization.Format("room.removeRecording", row.Card.RoomName),
+                    Localization.Get("dialog.confirm"),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                if (reponse != DialogResult.Yes) return;
+            }
+
+            StopJobMachinery(row);
+
+            if (!row.Ephemeral) _rooms.Remove(row.Url);
+
+            roomsListPanel.Controls.Remove(row.Card);
+            _roomRows.Remove(row);
+            UpdateRoomsEmptyState();
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] {Localization.Format("room.removed", row.Card.RoomName)}");
+
+            // Dispose différé : l'un des appelants est le gestionnaire Click du
+            // bouton de la carte détruite, qui doit avoir fini de s'exécuter
+            // avant que son bouton disparaisse.
+            BeginInvoke(() => row.Card.Dispose());
+        }
+
+        /// <summary>
+        /// Coupe tout ce qu'un enregistrement laisse tourner : les deux minuteurs
+        /// et le moteur.
+        ///
+        /// **Les timers comptent** (95.0) : sans ça, retirer une carte pendant
+        /// une tentative de reconnexion laissait yt-dlp tourner et rejouer le
+        /// cycle Running/Failed dans le vide. `AutoReconnectEnabled` est coupé
+        /// AVANT `Stop()`, pour que l'état final ne reprogramme rien.
+        /// </summary>
+        private static void StopJobMachinery(RoomRow row)
+        {
             StopRecordingTimer(row);
 
-            // 95.0 — même raison, pour les deux choses que le retrait laissait
-            // vivantes : le minuteur de reconnexion en attente, et le moteur
-            // lui-même. Sans ça, retirer une ligne pendant une tentative de
-            // reconnexion laissait yt-dlp tourner et relancer le cycle
-            // Running/Failed dans le vide. AutoReconnectEnabled est coupé avant
-            // Stop() pour que l'état final ne reprogramme rien.
             if (row.PendingReconnectTimer != null)
             {
                 row.PendingReconnectTimer.Stop();
                 row.PendingReconnectTimer.Dispose();
                 row.PendingReconnectTimer = null;
             }
+
+            if (row.Job == null) return;
             row.Job.AutoReconnectEnabled = false;
             row.Job.Engine.Stop();
-
-            jobsListPanel.Controls.Remove(row.Container);
-            _jobRows.Remove(row);
-            BeginInvoke(() => row.Container.Dispose());
         }
 
         /// <summary>
@@ -683,42 +783,66 @@ namespace ChaturbateRecorderApp
         /// sans perdre leur état courant (ex : ne pas remplacer un pourcentage
         /// en cours par "En cours...").
         /// </summary>
-        private void RefreshJobRowLabels(JobRow row)
+        private void RefreshCard(RoomRow row)
         {
             string L(string key) => Localization.Get(key, _currentLanguage);
 
-            row.OpenButton.Text = L("job.open");
+            // L'état affiché est DÉRIVÉ, jamais stocké : Resolve croise le
+            // dernier sondage, l'état du moteur et l'attente d'une reconnexion,
+            // en faisant primer l'enregistrement sur le sondage. Un sondage peut
+            // échouer pendant que la capture, elle, reçoit des données.
+            var etat = RoomStore.Resolve(row.PollStatus, row.Job?.Engine.State, row.PendingReconnectTimer != null);
+            row.Card.State = etat;
+            row.Card.AutoRecord = row.AutoRecordFlag;
 
-            switch (row.Status)
+            var enregistre = etat == RoomRowState.Recording;
+            var attente = etat == RoomRowState.Reconnecting;
+
+            // Les libellés viennent des deux anciens panneaux : la surveillance
+            // disait déjà « en ligne / hors ligne / introuvable », la ligne de
+            // job « terminé / échec ». En créer des doublons ferait diverger les
+            // deux jeux dès la première reformulation.
+            row.Card.StateLabel = row.JobStatus == JobRowStatus.Cancelled && !enregistre && !attente
+                ? L("job.cancelled")
+                : etat switch
+                {
+                    RoomRowState.Recording => L("watch.state.recording"),
+                    RoomRowState.Reconnecting => string.Format(L("job.reconnectIn"), row.ReconnectDelaySeconds),
+                    RoomRowState.Live => L("watch.state.online"),
+                    RoomRowState.NotFound => L("watch.state.notfound"),
+                    RoomRowState.Unknown => L("watch.state.unknown"),
+                    RoomRowState.Failed => L("job.state.failed"),
+                    RoomRowState.Finished => row.FinishedState == DownloadState.Completed
+                        ? L("job.state.completed")
+                        : L("job.state.stopped"),
+                    _ => L("watch.state.offline"),
+                };
+
+            // Ligne de détail, visible seulement quand la carte est étendue :
+            // ce qui se MESURE, par opposition à l'état qui se nomme.
+            var morceaux = new List<string>();
+            if (enregistre)
             {
-                case JobRowStatus.Preparing:
-                case JobRowStatus.Running:
-                    row.StopButton.Text = L("job.stop");
-                    row.StatusLabel.Text = row.HasProgressPct
-                        ? FormatProgressPct(row.LastProgressPct)
-                        : L(row.Status == JobRowStatus.Running ? "job.running" : "job.preparing");
-                    break;
-
-                case JobRowStatus.ReconnectPending:
-                    row.StopButton.Text = L("job.cancel");
-                    row.StatusLabel.Text = string.Format(L("job.reconnectIn"), row.ReconnectDelaySeconds);
-                    break;
-
-                case JobRowStatus.Cancelled:
-                    row.StopButton.Text = L("job.remove");
-                    row.StatusLabel.Text = L("job.cancelled");
-                    break;
-
-                case JobRowStatus.Finished:
-                    row.StopButton.Text = L("job.remove");
-                    row.StatusLabel.Text = row.FinishedState switch
-                    {
-                        DownloadState.Completed => L("job.state.completed"),
-                        DownloadState.Failed => L("job.state.failed"),
-                        _ => L("job.state.stopped"),
-                    };
-                    break;
+                morceaux.Add(row.HasProgressPct
+                    ? FormatProgressPct(row.LastProgressPct)
+                    : L(row.JobStatus == JobRowStatus.Preparing ? "job.preparing" : "job.running"));
             }
+            if (row.Countdown.Length > 0) morceaux.Add("⏱ " + row.Countdown);
+            row.Card.Detail = string.Join("   ·   ", morceaux);
+
+            // Un direct n'annonce pas de pourcentage : sa durée n'est pas connue
+            // d'avance. Sans barre indéterminée, une capture bien vivante
+            // s'afficherait figée à 0 %.
+            row.Card.Indeterminate = (enregistre || attente) && !row.HasProgressPct;
+            row.Card.Progress = row.HasProgressPct ? (int)Math.Round(row.LastProgressPct) : 0;
+
+            row.PrimaryButton.Text = enregistre ? L("job.stop") : attente ? L("job.cancel") : L("button.start");
+            row.PrimaryButton.IconName = enregistre ? "stop" : attente ? null : "play";
+            // Secondary et non Primary pour « Démarrer » : la règle de 39.0 veut
+            // un seul bouton d'accent par zone, et une liste de vingt salons en
+            // afficherait vingt. Danger reste discret (texte et bordure rouges
+            // sur fond neutre) pour la même raison.
+            row.PrimaryButton.Role = enregistre || attente ? ButtonRole.Danger : ButtonRole.Secondary;
         }
 
         /// <summary>
@@ -729,12 +853,11 @@ namespace ChaturbateRecorderApp
         /// automatique repasse par Running, mais ne doit pas repousser l'arrêt,
         /// sinon une room instable enregistrerait indéfiniment.
         /// </summary>
-        private void StartRecordingTimer(JobRow row)
+        private void StartRecordingTimer(RoomRow row)
         {
-            if (row.Job.TimerMinutes <= 0) return;
+            if (row.Job is not { } job || job.TimerMinutes <= 0) return;
 
-            row.Job.StopAtUtc ??= DateTime.UtcNow.AddMinutes(row.Job.TimerMinutes);
-            row.TimerLabel.Visible = true;
+            job.StopAtUtc ??= DateTime.UtcNow.AddMinutes(job.TimerMinutes);
             UpdateCountdown(row);
 
             if (row.CountdownTimer != null) return;
@@ -748,37 +871,38 @@ namespace ChaturbateRecorderApp
         /// <summary>
         /// Rafraîchit le temps restant et déclenche l'arrêt à l'échéance.
         /// </summary>
-        private void UpdateCountdown(JobRow row)
+        private void UpdateCountdown(RoomRow row)
         {
-            if (row.Job.StopAtUtc is not { } echeance) return;
+            if (row.Job is not { } job || job.StopAtUtc is not { } echeance) return;
 
             var restant = echeance - DateTime.UtcNow;
             if (restant > TimeSpan.Zero)
             {
-                row.TimerLabel.Text = "⏱ " + RecordingTimer.FormatRemaining(restant);
+                row.Countdown = RecordingTimer.FormatRemaining(restant);
+                RefreshCard(row);
                 return;
             }
 
             // Échéance atteinte : on coupe le timer AVANT d'arrêter le moteur,
             // pour ne pas re-déclencher l'arrêt à chaque tick suivant.
             StopRecordingTimer(row);
-            row.TimerLabel.Visible = false;
+            row.Countdown = "";
 
-            AppendJobLog(row.Job, $"Durée maximale atteinte ({row.Job.TimerMinutes} min) : arrêt de l'enregistrement.");
+            AppendJobLog(job, $"Durée maximale atteinte ({job.TimerMinutes} min) : arrêt de l'enregistrement.");
 
             // Engine.Stop() marque l'arrêt comme manuel, donc l'état final sera
             // Stopped — ce qui exclut la reconnexion automatique dans
             // HandleJobStateChanged. Un minuteur qui relancerait aussitôt
             // l'enregistrement n'aurait aucun sens.
-            if (row.Job.Engine.State == DownloadState.Running)
-                row.Job.Engine.Stop();
+            if (job.Engine.State == DownloadState.Running)
+                job.Engine.Stop();
         }
 
         /// <summary>
         /// Arrête et libère le minuteur d'une ligne. Sans effet s'il n'y en a
         /// pas — appelable depuis tous les chemins de sortie sans condition.
         /// </summary>
-        private static void StopRecordingTimer(JobRow row)
+        private static void StopRecordingTimer(RoomRow row)
         {
             if (row.CountdownTimer == null) return;
             row.CountdownTimer.Stop();
@@ -799,26 +923,26 @@ namespace ChaturbateRecorderApp
             return Localization.Current == AppLanguage.English ? $"{rounded}%" : $"{rounded} %";
         }
 
-        private void UpdateJobProgress(JobRow row, double pct)
+        private void UpdateJobProgress(RoomRow row, double pct)
         {
-            var clamped = Math.Min(100, Math.Max(0, (int)Math.Round(pct)));
-            row.ProgressBar.Value = clamped;
+            if (row.Job is not { } job) return;
+
             row.HasProgressPct = true;
             row.LastProgressPct = pct;
-            row.StatusLabel.Text = FormatProgressPct(pct);
+            RefreshCard(row);
             // 95.0 : c'est ICI que le compteur de reconnexions se remet à zéro.
             // Recevoir une progression est la seule preuve que le flux existe
             // vraiment ; l'état Running ne prouve que le démarrage du processus.
-            row.Job.ReconnectAttempt = 0;
+            job.ReconnectAttempt = 0;
         }
 
-        private void HandleJobStateChanged(JobRow row, DownloadState state)
+        private void HandleJobStateChanged(RoomRow row, DownloadState state)
         {
-            // 95.0 : une ligne retirée n'a plus rien à afficher ni à notifier.
+            // 95.0 : une carte retirée n'a plus rien à afficher ni à notifier.
             // Le moteur peut encore lever un changement d'état après le retrait
             // (processus yt-dlp en cours de fin), ce qui produisait une
             // notification d'erreur pour un enregistrement disparu de l'écran.
-            if (!_jobRows.Contains(row)) return;
+            if (!_roomRows.Contains(row) || row.Job is not { } job) return;
 
             switch (state)
             {
@@ -832,36 +956,24 @@ namespace ChaturbateRecorderApp
                     // notification d'erreur toutes les 30 s, indéfiniment.
                     // La remise à zéro vit désormais dans UpdateJobProgress :
                     // seule une progression réelle prouve que le flux existe.
-                    row.Status = JobRowStatus.Running;
+                    row.JobStatus = JobRowStatus.Running;
                     row.HasProgressPct = false;
-                    RefreshJobRowLabels(row);
-                    row.StopButton.Enabled = true;
-                    row.ProgressBar.Style = ProgressBarStyle.Marquee;
-                    row.ProgressBar.MarqueeAnimationSpeed = 30;
-                    PulseProgressBar(row.ProgressBar, RunningColor);
+                    RefreshCard(row);
                     StartRecordingTimer(row);
                     break;
 
                 case DownloadState.Completed:
                 case DownloadState.Failed:
                 case DownloadState.Stopped:
-                    row.Status = JobRowStatus.Finished;
+                    row.JobStatus = JobRowStatus.Finished;
                     row.FinishedState = state;
-                    RefreshJobRowLabels(row);
                     // Le minuteur n'a plus lieu d'etre, quelle que soit la raison de
                     // la fin. Si l'enregistrement reprend (reconnexion automatique),
                     // StartRecordingTimer le relancera sur l'echeance initiale.
                     StopRecordingTimer(row);
-                    row.TimerLabel.Visible = false;
-                    row.ProgressBar.Style = ProgressBarStyle.Blocks;
-                    AnimateProgressBarFill(row.ProgressBar, state == DownloadState.Completed ? 100 : 0);
-                    row.ProgressBar.BarColor = state switch
-                    {
-                        DownloadState.Completed => CompletedColor,
-                        DownloadState.Failed => FailedColor,
-                        _ => StoppedColor,
-                    };
-                    AppendJobLog(row.Job, $"Job terminé (état : {state}).");
+                    row.Countdown = "";
+                    RefreshCard(row);
+                    AppendJobLog(job, $"Job terminé (état : {state}).");
                     RefreshHistoryAsync();
 
                     // Finaliser le .part, quelle que soit la façon dont ça s'est
@@ -870,24 +982,24 @@ namespace ChaturbateRecorderApp
                     // temporaire lui-même : sans ça l'enregistrement reste un
                     // « X.mp4.part » que rien ne lit, absent de l'historique et
                     // sans miniature. Signalé en usage réel.
-                    FinalizeCaptureAsync(row.Job, avecMiniature: state != DownloadState.Failed);
+                    FinalizeCaptureAsync(job, avecMiniature: state != DownloadState.Failed);
 
                     if (state == DownloadState.Stopped)
                     {
-                        AppendJobLog(row.Job, "Téléchargement interrompu.");
+                        AppendJobLog(job, "Téléchargement interrompu.");
                     }
                     else
                     {
                         if (state == DownloadState.Completed)
-                            ShowNotification(Localization.Get("notify.recordingDone.title"), row.Job.RoomName);
+                            ShowNotification(Localization.Get("notify.recordingDone.title"), job.RoomName);
                         else
                             ShowNotification(Localization.Get("notify.recordingError.title"),
-                                Localization.Format("notify.recordingError.body", row.Job.RoomName), ToolTipIcon.Error);
+                                Localization.Format("notify.recordingError.body", job.RoomName), ToolTipIcon.Error);
 
                         // Reconnexion automatique (4.2) : uniquement si le job ne s'est
                         // PAS arrêté manuellement (cas déjà exclu ci-dessus) et que
                         // l'utilisateur a coché l'option pour cet enregistrement.
-                        if (row.Job.AutoReconnectEnabled && row.Job.ReconnectAttempt < AppConfig.AutoReconnectMaxAttempts)
+                        if (job.AutoReconnectEnabled && job.ReconnectAttempt < AppConfig.AutoReconnectMaxAttempts)
                             ScheduleReconnect(row);
                     }
 
@@ -896,9 +1008,9 @@ namespace ChaturbateRecorderApp
                     // la fin normale d'un téléchargement, or un live s'arrête toujours
                     // par un Kill du process (STOP ou fermeture du formulaire), qui ne
                     // laisse jamais ce post-traitement interne s'exécuter.
-                    if (row.Job.CodecChoice != "copy" && state != DownloadState.Failed
+                    if (job.CodecChoice != "copy" && state != DownloadState.Failed
                         && SafeMode.IsEnabled(SafeComponent.Ffmpeg))
-                        ReencodeCaptureAsync(row.Job);
+                        ReencodeCaptureAsync(job);
                     break;
             }
         }
@@ -908,28 +1020,33 @@ namespace ChaturbateRecorderApp
         /// après le délai configuré. Le bouton Stop de la ligne devient
         /// "Annuler" tant que la reconnexion est en attente.
         /// </summary>
-        private void ScheduleReconnect(JobRow row)
+        private void ScheduleReconnect(RoomRow row)
         {
-            row.Job.ReconnectAttempt++;
-            var attempt = row.Job.ReconnectAttempt;
+            if (row.Job is not { } job) return;
+
+            job.ReconnectAttempt++;
+            var attempt = job.ReconnectAttempt;
             var delaySeconds = AppConfig.AutoReconnectDelaySeconds;
 
-            AppendJobLog(row.Job, $"Reconnexion automatique dans {delaySeconds}s (tentative {attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
-            row.Status = JobRowStatus.ReconnectPending;
+            AppendJobLog(job, $"Reconnexion automatique dans {delaySeconds}s (tentative {attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
+            row.JobStatus = JobRowStatus.ReconnectPending;
             row.ReconnectDelaySeconds = delaySeconds;
-            RefreshJobRowLabels(row);
 
             var timer = new System.Windows.Forms.Timer { Interval = delaySeconds * 1000 };
             row.PendingReconnectTimer = timer;
+            // Posé AVANT le rafraîchissement : c'est la présence de ce minuteur
+            // que Resolve lit pour décider de l'état « reconnexion ».
+            RefreshCard(row);
+
             timer.Tick += (s, e) =>
             {
                 timer.Stop();
                 timer.Dispose();
                 row.PendingReconnectTimer = null;
-                if (!_jobRows.Contains(row)) return;
+                if (!_roomRows.Contains(row)) return;
 
-                AppendJobLog(row.Job, $"Nouvelle tentative de connexion ({attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
-                row.RestartEngine();
+                AppendJobLog(job, $"Nouvelle tentative de connexion ({attempt}/{AppConfig.AutoReconnectMaxAttempts})...");
+                row.RestartEngine?.Invoke();
             };
             timer.Start();
         }
@@ -1534,69 +1651,12 @@ namespace ChaturbateRecorderApp
         // Surveillance automatique (88.0 / 4.3)
         // ==================================================================
 
-        /// <summary>
-        /// Ajoute une ligne a la liste surveillee. Le nom du salon est extrait
-        /// de l'URL pour l'affichage ; l'URL complete reste dans le Tag, c'est
-        /// elle qui sert a interroger et a enregistrer.
-        /// </summary>
-        /// <summary>
-        /// Pictogrammes de plateforme pour la liste de surveillance (103.0),
-        /// dans l'ordre de <see cref="Platforms.Supported"/> — c'est cet ordre
-        /// qui donne l'ImageIndex de chaque ligne.
-        ///
-        /// Rendus une fois pour toutes en gris moyen plutôt qu'à la couleur du
-        /// thème : une ImageList ne se retinte pas, il faudrait la reconstruire
-        /// à chaque changement de thème et réassigner tous les index. Ce gris
-        /// se lit correctement sur les deux fonds.
-        /// </summary>
-        private static ImageList BuildPlatformImageList()
-        {
-            var images = new ImageList { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
-
-            foreach (var platform in Platforms.Supported)
-            {
-                var (icon, _) = Platforms.Badge(platform);
-                try
-                {
-                    // PAS de `using` ici, contrairement aux miniatures de
-                    // l'historique (v1.29.0) : là-bas l'ImageList était déjà
-                    // réalisée, donc elle recopiait l'image immédiatement. Ici
-                    // la liste est construite AVANT d'être posée sur la
-                    // ListView : son handle n'existe pas encore, elle garde
-                    // donc la référence, et libérer le bitmap faisait planter
-                    // la réalisation du handle sur une image détruite —
-                    // ArgumentException « Parameter is not valid », très loin
-                    // de sa cause. Constaté à l'exécution.
-                    images.Images.Add(IconManager.Render(icon, 20, Color.FromArgb(0x8A, 0x8A, 0x8A)));
-                }
-                catch (Exception ex)
-                {
-                    // Une icône manquante ne doit pas vider la liste : sans
-                    // image à cet index, toutes les suivantes se décaleraient.
-                    Logger.Log($"Icône de plateforme '{icon}' indisponible : {ex.Message}", LogLevel.WARN);
-                    images.Images.Add(new Bitmap(20, 20));
-                }
-            }
-
-            return images;
-        }
-
-        private void AddWatchRow(string url)
-        {
-            var item = new ListViewItem(RoomNameFromUrl(url))
-            {
-                Tag = url,
-                Name = "watch.state.pending",
-                // 103.0 — l'index suit l'ordre de Platforms.Supported, celui
-                // dans lequel BuildPlatformImageList a rempli la liste.
-                ImageIndex = Array.IndexOf(Platforms.Supported, Platforms.Detect(url)),
-            };
-            item.SubItems.Add(Localization.Get("watch.state.pending"));
-            watchListView.Items.Add(item);
-            // L'ascenseur vertical apparaît sans redimensionner le contrôle :
-            // la dernière colonne doit se réajuster à la largeur utile.
-            ThemedListView.Refresh(watchListView);
-        }
+        // BuildPlatformImageList a disparu avec la ListView de surveillance
+        // (97.0 étape 2c). Son ImageList existait pour porter un pictogramme
+        // par ligne (103.0) ET pour fixer la hauteur de ligne, faute d'autre
+        // levier en WinForms. La carte de salon dessine son pictogramme
+        // elle-même, à la couleur du thème — ce que l'ImageList ne savait pas
+        // faire, d'où le gris fixe de compromis — et choisit sa hauteur.
 
         private static string RoomNameFromUrl(string url)
         {
@@ -1607,69 +1667,72 @@ namespace ChaturbateRecorderApp
             return Platforms.DisplayName(url);
         }
 
-        private void OnAddWatchClick(object? sender, EventArgs e)
+        /// <summary>
+        /// « + Ajouter » : fait entrer l'adresse saisie dans la liste des salons.
+        /// Remplace à la fois « + Favori » et « + Surveiller », qui ajoutaient le
+        /// même salon à deux endroits différents. La surveillance s'active
+        /// ensuite d'un clic sur l'interrupteur de la carte — c'est la
+        /// distinction que le mainteneur avait établie et que RoomEntry.AutoRecord
+        /// préserve : figurer dans la liste ne suffit PAS à être surveillé.
+        /// </summary>
+        private void OnAddRoomClick(object? sender, EventArgs e)
         {
             var url = urlTextBox.Text.Trim();
 
             // Meme controle que pour un enregistrement : une URL refusee par le
             // sandbox ne doit pas entrer dans une liste qui la rappellera toutes
             // les deux minutes.
-            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist, out var watchUrlReason))
+            if (!UrlValidator.IsSafeUrl(url, AppConfig.Whitelist, AppConfig.Blacklist, out var motif))
             {
-                Logger.Log($"URL refusée pour la surveillance ({url}) : {watchUrlReason}", LogLevel.ERROR);
+                Logger.Log($"URL refusée pour la liste des salons ({url}) : {motif}", LogLevel.ERROR);
                 MessageBox.Show(this, Localization.Get("error.urlRejected"),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (!_watchList.Add(url))
+            // Une carte éphémère existe déjà (enregistrement lancé sans ajout) :
+            // on la PROMEUT au lieu d'en créer une seconde pour le même salon.
+            if (FindRoomRow(url) is { } existante)
             {
-                MessageBox.Show(this, Localization.Format("watch.alreadyWatched", RoomNameFromUrl(url)),
+                if (!existante.Ephemeral)
+                {
+                    MessageBox.Show(this, Localization.Format("room.alreadyKnown", RoomNameFromUrl(url)),
+                        Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                _rooms.Add(existante.Url);
+                existante.Ephemeral = false;
+                AppendLog($"[{DateTime.Now:HH:mm:ss}] {Localization.Format("room.added", RoomNameFromUrl(url))}");
+                return;
+            }
+
+            if (!_rooms.Add(url))
+            {
+                MessageBox.Show(this, Localization.Format("room.alreadyKnown", RoomNameFromUrl(url)),
                     Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            _watchList.Save();
-            AddWatchRow(url);
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance activee pour {RoomNameFromUrl(url)}.");
-        }
-
-        private void OnRemoveWatchClick(object? sender, EventArgs e)
-        {
-            if (watchListView.SelectedItems.Count == 0) return;
-
-            var item = watchListView.SelectedItems[0];
-            var url = item.Tag as string ?? "";
-            _watchList.Remove(url);
-            _watchList.Save();
-            watchListView.Items.Remove(item);
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance desactivee pour {RoomNameFromUrl(url)}.");
+            var ligne = BuildRoomRow(url, ephemeral: false);
+            _roomRows.Add(ligne);
+            UpdateRoomsEmptyState();
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] {Localization.Format("room.added", RoomNameFromUrl(url))}");
         }
 
         /// <summary>
-        /// Retraduit la colonne d'etat sans relancer de controle. La cle de
-        /// l'etat courant vit dans ListViewItem.Name, pas dans le texte affiche
-        /// : sinon changer de langue en cours de session perdrait l'etat.
+        /// Le message « aucun salon » n'est visible que quand la liste est vide.
+        /// Une liste vide sans un mot est un écran cassé : rien ne dit s'il n'y a
+        /// rien à montrer ou si le chargement a échoué.
         /// </summary>
-        private void RefreshWatchStates()
+        private void UpdateRoomsEmptyState()
         {
-            foreach (ListViewItem item in watchListView.Items)
-            {
-                var key = string.IsNullOrEmpty(item.Name) ? "watch.state.pending" : item.Name;
-                item.SubItems[1].Text = Localization.Get(key);
-            }
+            roomsEmptyLabel.Visible = _roomRows.Count == 0;
         }
 
         private bool IsRecording(string url)
         {
-            var room = RoomNameFromUrl(url);
-            return _jobRows.Any(r => r.Job.RoomName == room && r.Job.Engine.State == DownloadState.Running);
-        }
-
-        private void SetWatchState(ListViewItem item, string key)
-        {
-            item.Name = key;
-            item.SubItems[1].Text = Localization.Get(key);
+            return FindRoomRow(url) is { Job: { } job } && job.Engine.State == DownloadState.Running;
         }
 
         private void StartWatchLoop()
@@ -1702,57 +1765,60 @@ namespace ChaturbateRecorderApp
         private async Task RunWatchPassAsync()
         {
             if (!SafeMode.IsEnabled(SafeComponent.Watch)) return;
-            if (_watchTickRunning || watchListView.Items.Count == 0) return;
+            if (_watchTickRunning) return;
+
+            // 97.0 — SEULS les salons dont l'interrupteur est armé sont sondés.
+            // C'est la décision d'origine du mainteneur, préservée telle quelle :
+            // figurer dans la liste ne suffit pas à être surveillé, sinon trente
+            // favoris déclencheraient trente appels réseau toutes les deux
+            // minutes. La copie est prise ici : la liste peut changer pendant le
+            // passage, qui dure plusieurs secondes par salon.
+            var aSonder = _roomRows.Where(r => r.AutoRecordFlag).ToList();
+            if (aSonder.Count == 0) return;
+
             _watchTickRunning = true;
             try
             {
-                foreach (var item in watchListView.Items.Cast<ListViewItem>().ToList())
+                foreach (var row in aSonder)
                 {
                     if (IsDisposed || _watchTimer == null) return;
-                    if (item.Tag is not string url) continue;
+                    // Retirée entre-temps : sa carte n'existe plus.
+                    if (!_roomRows.Contains(row)) continue;
 
                     // Deja en cours d'enregistrement : rien a controler, et
                     // surtout rien a redemarrer.
-                    if (IsRecording(url))
-                    {
-                        SetWatchState(item, "watch.state.recording");
-                        continue;
-                    }
+                    if (row.Job is { } encours && encours.Engine.State == DownloadState.Running) continue;
+
+                    // L'enregistrement précédent est fini : on détache son
+                    // résultat avant de sonder, sans quoi Resolve continuerait
+                    // d'afficher « terminé » par-dessus un salon revenu en ligne
+                    // — l'enregistrement prime sur le sondage, par conception.
+                    if (row.Job != null) row.Job = null;
 
                     var status = await RoomStatusChecker.CheckAsync(
-                        AppConfig.YtDlpPath, url,
+                        AppConfig.YtDlpPath, row.Url,
                         SafeMode.IsEnabled(SafeComponent.Cookies) ? AppConfig.CookiesFilePath : "",
                         SafeMode.IsEnabled(SafeComponent.Proxy) ? AppConfig.ProxyUrl : "");
 
                     // L'appel dure plusieurs secondes : la fenetre a pu etre
                     // fermee entre-temps.
                     if (IsDisposed || _watchTimer == null) return;
+                    if (!_roomRows.Contains(row)) continue;
 
-                    var key = status switch
-                    {
-                        RoomStatus.Online => "watch.state.online",
-                        RoomStatus.Offline => "watch.state.offline",
-                        // 40.0 — état distinct : une source inexistante ne
-                        // diffusera jamais. La confondre avec « hors ligne »
-                        // fait attendre indéfiniment une faute de frappe, et
-                        // c'est le seul cas où l'utilisateur doit agir.
-                        RoomStatus.NotFound => "watch.state.notfound",
-                        _ => "watch.state.unknown",
-                    };
-                    SetWatchState(item, key);
+                    row.PollStatus = status;
+                    RefreshCard(row);
 
                     if (status == RoomStatus.NotFound)
-                        AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(url)} n'existe pas — vérifie l'adresse.");
+                        AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(row.Url)} n'existe pas — vérifie l'adresse.");
 
                     // SEUL Online declenche. Unknown (reseau coupe, salon banni)
                     // ne doit jamais lancer un enregistrement dans le vide.
                     if (status != RoomStatus.Online) continue;
 
-                    AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(url)} est en ligne, demarrage.");
+                    AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(row.Url)} est en ligne, demarrage.");
                     ShowNotification(Localization.Get("watch.started.title"),
-                        Localization.Format("watch.started.body", RoomNameFromUrl(url)));
-                    StartRecording(url, interactive: false);
-                    SetWatchState(item, "watch.state.recording");
+                        Localization.Format("watch.started.body", RoomNameFromUrl(row.Url)));
+                    StartRecording(row.Url, interactive: false);
                 }
             }
             finally
@@ -1863,13 +1929,13 @@ namespace ChaturbateRecorderApp
             // Safe Mode : un seul enregistrement a la fois quand le
             // multi-stream est desactive. Refus explicite plutot que silencieux.
             if (!SafeMode.IsEnabled(SafeComponent.MultiStream)
-                && _jobRows.Any(r => r.Job.Engine.State == DownloadState.Running))
+                && _roomRows.Any(r => r.Job is { } j && j.Engine.State == DownloadState.Running))
             {
                 RefuseStart(interactive, Localization.Get("safe.multiStreamOff"), Localization.Get("dialog.info"));
                 return;
             }
 
-            if (_jobRows.Any(r => r.Job.RoomName == roomName && r.Job.Engine.State == DownloadState.Running))
+            if (_roomRows.Any(r => r.Job is { } j && j.RoomName == roomName && j.Engine.State == DownloadState.Running))
             {
                 // En surveillance, un enregistrement déjà en cours est le cas
                 // NORMAL à chaque passage : silencieux, pas même une ligne de log.
@@ -1920,7 +1986,20 @@ namespace ChaturbateRecorderApp
                 TimerMinutes = RecordingTimer.MinutesForIndex(durationCombo.SelectedIndex),
             };
 
-            var row = BuildJobRow(job);
+            // 97.0 — le salon a peut-être déjà sa carte : on lui ATTACHE le job
+            // au lieu d'ouvrir une seconde ligne pour la même adresse, ce que
+            // faisaient les trois anciens panneaux. Sinon, une carte éphémère,
+            // qui n'entre pas dans la liste persistée : enregistrer une adresse
+            // collée ne doit pas la garder pour toujours sans qu'on l'ait
+            // demandé (l'interrupteur ou « + Ajouter » le font, eux).
+            var row = FindRoomRow(urlInput);
+            if (row == null)
+            {
+                row = BuildRoomRow(urlInput, ephemeral: true);
+                _roomRows.Add(row);
+                UpdateRoomsEmptyState();
+            }
+            AttachJob(row, job);
 
             // Capturée ici et réutilisée telle quelle pour les reconnexions
             // automatiques (4.2) : régénère un horodatage frais à chaque appel,
@@ -1943,10 +2022,6 @@ namespace ChaturbateRecorderApp
             }
             row.RestartEngine = StartEngine;
 
-            // La ligne est déjà posée dans le panneau par BuildJobRow (elle doit
-            // connaître son parent avant que le thème lui soit appliqué).
-            _jobRows.Add(row);
-
             AppendJobLog(job, "Démarrage de l'enregistrement...");
 
             try
@@ -1957,56 +2032,32 @@ namespace ChaturbateRecorderApp
             {
                 MessageBox.Show(Localization.Format("error.cannotStartDownload", ex.Message),
                     Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                RemoveJobRow(row);
+
+                // Le salon garde sa carte s'il est dans la liste : c'est
+                // l'ENREGISTREMENT qui a échoué, pas le salon qui disparaît.
+                // Seule une carte éphémère, créée à l'instant pour ce
+                // démarrage-là, n'a plus de raison d'exister.
+                row.Job = null;
+                if (row.Ephemeral) RemoveRoomRow(row); else RefreshCard(row);
             }
         }
 
         private void OnStopAllClick(object? sender, EventArgs e)
         {
-            foreach (var row in _jobRows.ToList())
+            foreach (var row in _roomRows.ToList())
             {
-                if (row.Job.Engine.State == DownloadState.Running)
-                    row.Job.Engine.Stop();
+                if (row.Job is { } job && job.Engine.State == DownloadState.Running)
+                    job.Engine.Stop();
             }
         }
 
-        private void OnAddFavoriteClick(object? sender, EventArgs e)
-        {
-            var url = urlTextBox.Text.Trim();
-
-            // Deux causes, deux messages. « URL invalide ou déjà présente »
-            // obligeait l'utilisateur à deviner laquelle des deux : signalé en
-            // vrai après un clic sur un favori déjà enregistré, où le message
-            // laissait croire à une URL malformée.
-            if (_favorites.Favorites.Any(f => string.Equals(f, url, StringComparison.OrdinalIgnoreCase)))
-            {
-                MessageBox.Show(this, Localization.Format("info.favoriteAlreadyPresent", url),
-                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (!_favorites.AddFavorite(url))
-            {
-                MessageBox.Show(this, Localization.Get("info.favoriteInvalidUrl"),
-                    Localization.Get("dialog.info"), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            favoritesListBox.Items.Add(url);
-            ShowNotification(Localization.Get("notify.favoriteAdded.title"), url);
-        }
-
-        private void OnRemoveFavoriteClick(object? sender, EventArgs e)
-        {
-            if (favoritesListBox.SelectedItem is not string selected) return;
-            _favorites.RemoveFavorite(selected);
-            favoritesListBox.Items.Remove(selected);
-        }
-
-        private void OnLoadFavoriteClick(object? sender, EventArgs e)
-        {
-            if (favoritesListBox.SelectedItem is string selected)
-                urlTextBox.Text = selected;
-        }
+        // 97.0 — OnAddFavoriteClick / OnRemoveFavoriteClick / OnLoadFavoriteClick
+        // ont disparu avec le panneau Favoris. Leurs trois rôles sont repris par
+        // la carte de salon : « + Ajouter » (OnAddRoomClick) fait entrer une
+        // adresse dans la liste, la corbeille l'en retire, et « Charger » n'a
+        // plus d'objet puisque chaque carte porte son propre bouton Démarrer —
+        // recopier l'adresse dans le champ pour la relancer était un détour que
+        // seul l'éclatement en trois panneaux imposait.
 
         private void OnDonateClick(object? sender, EventArgs e)
         {
@@ -2118,7 +2169,7 @@ namespace ChaturbateRecorderApp
             platformStrip.RefreshTooltip();
             startButton.Text = L("button.start");
             stopAllButton.Text = L("button.stopAll");
-            addFavoriteButton.Text = L("button.addFavorite");
+            addRoomButton.Text = L("button.addRoom");
 
             qualityLabel.Text = L("label.quality");
             var qualityIndex = qualityCombo.SelectedIndex;
@@ -2150,8 +2201,6 @@ namespace ChaturbateRecorderApp
             });
             durationCombo.SelectedIndex = durationIndex < 0 ? 0 : durationIndex;
 
-            grpProgress.Title = L("panel.progress");
-
             grpHistory.Title = L("panel.history");
             historyListView.Columns[0].Text = L("column.file");
             historyListView.Columns[1].Text = L("column.size");
@@ -2161,16 +2210,10 @@ namespace ChaturbateRecorderApp
             openHistoryFolderButton.Text = L("button.openFolder");
             openHistoryFileButton.Text = L("button.openFile");
 
-            grpFavorites.Title = L("panel.favorites");
-            loadFavoriteButton.Text = L("button.load");
-            removeFavoriteButton.Text = L("button.removeFavorite");
+            grpRooms.Title = L("panel.rooms");
+            addRoomButton.Text = L("button.addRoom");
+            roomsEmptyLabel.Text = L("room.empty");
 
-            grpWatch.Title = L("panel.watch");
-            addWatchButton.Text = L("button.watchAdd");
-            removeWatchButton.Text = L("button.watchRemove");
-            watchListView.Columns[0].Text = L("column.room");
-            watchListView.Columns[1].Text = L("column.watchState");
-            RefreshWatchStates();
             sideBar.SetLabel("streams", L("nav.streams"));
             sideBar.SetLabel("history", L("nav.history"));
             sideBar.SetLabel("settings", L("nav.settings"));
@@ -2186,8 +2229,16 @@ namespace ChaturbateRecorderApp
             grpLogs.Title = L("panel.logs");
             toggleLogsButton.Text = L(grpLogs.Visible ? "button.hideLogs" : "button.showLogs");
 
-            foreach (var row in _jobRows)
-                RefreshJobRowLabels(row);
+            // Les cartes se retraduisent entièrement : leur état est DÉRIVÉ à
+            // chaque rafraîchissement, il n'y a donc pas de libellé mémorisé
+            // qu'un changement de langue pourrait perdre — c'est précisément ce
+            // que la clé rangée dans ListViewItem.Name protégeait avant 97.0.
+            foreach (var row in _roomRows)
+            {
+                _cardTips.SetToolTip(row.OpenButton, L("job.open"));
+                _cardTips.SetToolTip(row.RemoveButton, L("job.remove"));
+                RefreshCard(row);
+            }
         }
 
         /// <summary>
@@ -2431,10 +2482,8 @@ namespace ChaturbateRecorderApp
 
                 default:
                     grpRecord.Bounds = new Rectangle(marge, marge, largeur, 218);
-                    grpProgress.Bounds = new Rectangle(marge, grpRecord.Bottom + sectionGap, largeur, grpProgress.Height);
-                    grpFavorites.Bounds = new Rectangle(marge, grpProgress.Bottom + sectionGap, largeur, grpFavorites.Height);
-                    grpWatch.Bounds = new Rectangle(marge, grpFavorites.Bottom + sectionGap, largeur, grpWatch.Height);
-                    toggleLogsButton.Location = new Point(marge, grpWatch.Bottom + sectionGap);
+                    grpRooms.Bounds = new Rectangle(marge, grpRecord.Bottom + sectionGap, largeur, grpRooms.Height);
+                    toggleLogsButton.Location = new Point(marge, grpRooms.Bottom + sectionGap);
                     if (grpLogs.Visible)
                     {
                         grpLogs.Bounds = new Rectangle(marge, toggleLogsButton.Bottom + 10, largeur, grpLogs.Height);
@@ -2500,7 +2549,7 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private async Task PromptAndInstallAsync(UpdateInfo update)
         {
-            var runningJobs = _jobRows.Count(r => r.Job.Engine.State == DownloadState.Running);
+            var runningJobs = _roomRows.Count(r => r.Job is { } j && j.Engine.State == DownloadState.Running);
             var warning = runningJobs > 0
                 ? Localization.Format("update.runningJobsWarning", runningJobs)
                 : "";
@@ -2641,10 +2690,10 @@ namespace ChaturbateRecorderApp
                 return;
             }
 
-            foreach (var row in _jobRows)
+            foreach (var row in _roomRows)
             {
                 StopRecordingTimer(row);
-                row.Job.Engine.Stop();
+                row.Job?.Engine.Stop();
             }
 
             _autoUpdateTimer?.Stop();
@@ -2866,7 +2915,7 @@ namespace ChaturbateRecorderApp
             urlTextBox = new TextBox { Location = new Point(12, 48), Size = new Size(360, 24) };
             startButton = new ThemedButton { Text = "Démarrer", Location = new Point(382, 46), Size = new Size(120, 28) };
             stopAllButton = new ThemedButton { Text = "Tout arrêter", Location = new Point(512, 46), Size = new Size(136, 28) };
-            addFavoriteButton = new ThemedButton { Text = "+ Favori", Location = new Point(445, 78), Size = new Size(198, 24) };
+            addRoomButton = new ThemedButton { Text = "+ Ajouter", Location = new Point(445, 78), Size = new Size(198, 24) };
 
             // Options avancées (qualité/codec/format, dossier, cookies/proxy) :
             // regroupées dans un panneau dédié pour pouvoir les masquer en bloc
@@ -2940,7 +2989,7 @@ namespace ChaturbateRecorderApp
 
             startButton.Click += OnStartClick;
             stopAllButton.Click += OnStopAllClick;
-            addFavoriteButton.Click += OnAddFavoriteClick;
+            addRoomButton.Click += OnAddRoomClick;
 
             // Dossier de sauvegarde/cookies/proxy/reconnexion automatique ont
             // déménagé dans SettingsForm (19.0) : ce panneau ne contient plus
@@ -2953,33 +3002,67 @@ namespace ChaturbateRecorderApp
 
             grpRecord.Controls.AddRange(new Control[]
             {
-                urlLabel, platformStrip, urlTextBox, startButton, stopAllButton, addFavoriteButton,
+                urlLabel, platformStrip, urlTextBox, startButton, stopAllButton, addRoomButton,
                 advancedOptionsPanel
             });
             urlTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             startButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             stopAllButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            addFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            addRoomButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             advancedOptionsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
-            // --- Panel : Enregistrements en cours (plusieurs jobs possibles) ---
-            // Hauteurs suivies sur celle d'une ligne de job (BuildJobRow) : 56 de
-            // conteneur + 2x2 de Margin = 60 par ligne, donc 122 laisse voir deux
-            // lignes entières sans défilement, comme avant l'élargissement des
-            // boutons. Le panneau grandit d'autant (140 -> 154) ; tout ce qui est
-            // en dessous se replace tout seul, ApplyUiMode calculant les positions
-            // à partir de grpProgress.Height.
-            grpProgress = new RoundedGroupPanel { Title = "Enregistrements en cours", Location = new Point(12, 320), Size = new Size(660, 154) };
-            jobsListPanel = new FlowLayoutPanel
+            // --- Panel : Mes salons (97.0 étape 2c) ---
+            //
+            // **UN panneau à la place de trois.** Enregistrements en cours,
+            // Favoris et Surveillance décrivaient les mêmes salons sous trois
+            // angles : un salon pouvait figurer aux trois endroits à la fois,
+            // avec trois vérités possibles sur ce qu'il faisait.
+            //
+            // Hauteur 300 (contre 154 + 130 + 130 = 414 pour les trois panneaux,
+            // séparateurs compris) : une carte compacte fait 60 px plus 8 de
+            // marge, donc 264 px de zone utile laissent voir quatre salons au
+            // repos sans défilement — là où les trois panneaux n'en montraient
+            // que deux en cours, trois favoris et trois surveillés, chacun dans
+            // sa boîte.
+            grpRooms = new RoundedGroupPanel { Title = "Mes salons", Location = new Point(12, 320), Size = new Size(660, 300) };
+            roomsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
-                Size = new Size(636, 122),
+                Size = new Size(636, 264),
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
             };
-            grpProgress.Controls.Add(jobsListPanel);
-            jobsListPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+            // Posé AVANT les cartes et sous elles dans l'ordre Z : il n'est
+            // visible que lorsque la liste est vide (UpdateRoomsEmptyState).
+            roomsEmptyLabel = new Label
+            {
+                Text = "Aucun salon pour l'instant. Colle une adresse ci-dessus, puis « + Ajouter ».",
+                Location = new Point(16, 34),
+                Size = new Size(600, 40),
+                AutoSize = false,
+                Visible = false,
+            };
+            ThemeManager.SetTextRole(roomsEmptyLabel, TextRole.Caption);
+
+            grpRooms.Controls.Add(roomsEmptyLabel);
+            grpRooms.Controls.Add(roomsListPanel);
+            roomsListPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+
+            // Les cartes suivent la largeur de la liste. Elles ne peuvent pas
+            // s'ancrer elles-mêmes : un FlowLayoutPanel ignore l'ancrage de ses
+            // enfants, et l'ancrage mémoriserait de toute façon une marge prise
+            // avant que la vue ait sa taille définitive (piège d'Anchor, bas de
+            // CLAUDE.md, déjà payé deux fois).
+            roomsListPanel.ClientSizeChanged += (s, e) =>
+            {
+                var largeur = Math.Max(320, roomsListPanel.ClientSize.Width - 8);
+                foreach (var row in _roomRows)
+                {
+                    row.Card.Width = largeur;
+                    LayoutCardActions(row);
+                }
+            };
 
             // --- Panel : Historique des enregistrements (4.4) ---
             // Hauteur 170 (au lieu de 130) depuis l'affichage des miniatures :
@@ -3036,54 +3119,12 @@ namespace ChaturbateRecorderApp
             refreshHistoryButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             openHistoryFolderButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
-            // --- Panel : Favoris ---
-            grpFavorites = new RoundedGroupPanel { Title = "Favoris", Location = new Point(12, 468), Size = new Size(660, 130) };
-            favoritesListBox = new ListBox { Location = new Point(12, 22), Size = new Size(460, 98) };
-            // Largeur 160 (au lieu de 140) : même correctif que ci-dessus,
-            // "Supprimer favori" était tronqué en "Supprimer".
-            loadFavoriteButton = new ThemedButton { Text = "Charger", Location = new Point(482, 22), Size = new Size(160, 26) };
-            removeFavoriteButton = new ThemedButton { Text = "Supprimer favori", Location = new Point(482, 54), Size = new Size(160, 26) };
-
-            loadFavoriteButton.Click += OnLoadFavoriteClick;
-            removeFavoriteButton.Click += OnRemoveFavoriteClick;
-            favoritesListBox.DoubleClick += OnLoadFavoriteClick;
-
-            grpFavorites.Controls.AddRange(new Control[] { favoritesListBox, loadFavoriteButton, removeFavoriteButton });
-
-            // --- Panel : Surveillance (88.0) ---
-            grpWatch = new RoundedGroupPanel { Title = "Surveillance", Location = new Point(12, 606), Size = new Size(660, 130) };
-            watchListView = new ListView
-            {
-                Location = new Point(12, 22),
-                Size = new Size(460, 98),
-                View = View.Details,
-                FullRowSelect = true,
-                HeaderStyle = ColumnHeaderStyle.Nonclickable,
-            };
-            watchListView.Columns.Add("Salon", 300);
-            watchListView.Columns.Add("État", 140);
-
-            // 103.0 — l'ImageList porte désormais les pictogrammes de
-            // plateforme, un par ligne surveillée : on voit d'un coup d'œil ce
-            // qu'on surveille et où. Elle continue de fixer la hauteur de ligne
-            // (39.0) — WinForms n'expose pas d'autre levier —, mais avec un
-            // contenu utile plutôt qu'une image vide de 1 px.
-            watchListView.SmallImageList = BuildPlatformImageList();
-
-            addWatchButton = new ThemedButton { Text = "+ Surveiller", Location = new Point(482, 22), Size = new Size(160, 26) };
-            addWatchButton.Click += OnAddWatchClick;
-            removeWatchButton = new ThemedButton { Text = "Ne plus surveiller", Location = new Point(482, 54), Size = new Size(160, 26) };
-            removeWatchButton.Click += OnRemoveWatchClick;
-
-            grpWatch.Controls.AddRange(new Control[] { watchListView, addWatchButton, removeWatchButton });
-            // Ancrage APRÈS AddRange — piège documenté en bas de CLAUDE.md, et
-            // déjà payé une fois en v1.23.1 sur le bouton d'import.
-            watchListView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            addWatchButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            removeWatchButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            favoritesListBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-            loadFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            removeFavoriteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            // Les panneaux Favoris et Surveillance ont disparu ici (97.0 étape
+            // 2c) : leur contenu vit dans grpRooms, une carte par salon. Le
+            // pictogramme de plateforme que portait la ListView surveillée
+            // (103.0) est désormais dessiné par la carte elle-même, à partir de
+            // Platforms.Badge — donc sans ImageList, et sans le piège de
+            // réalisation qui allait avec.
 
             // --- Panel : Soutenir le projet ---
             // Hauteur portée de 100 à 136 pour loger un troisième bouton : les
@@ -3193,8 +3234,9 @@ namespace ChaturbateRecorderApp
             // mode avancé, quatre aplats rouges donneraient une fenêtre en
             // alerte permanente alors que rien ne va mal.
             stopAllButton.Role = ButtonRole.Danger;
-            removeFavoriteButton.Role = ButtonRole.Danger;
-            removeWatchButton.Role = ButtonRole.Danger;
+            // Les rôles Danger des anciens « Supprimer favori » et « Ne plus
+            // surveiller » vivent désormais sur la corbeille de chaque carte,
+            // posée par BuildRoomRow.
 
             // Intitulés de champ : un cran en dessous du contenu qu'ils
             // annoncent. Sans ça « Qualité source : » pèse autant que la valeur
@@ -3222,7 +3264,7 @@ namespace ChaturbateRecorderApp
             // le rouvrir a chaque lancement.
             toggleLogsButton = new ThemedButton { Size = new Size(200, 26) };
             toggleLogsButton.Click += (s, e) => BasculerLogs(!grpLogs.Visible);
-            viewStreams.Controls.AddRange(new Control[] { grpRecord, grpProgress, grpFavorites, grpWatch, toggleLogsButton, grpLogs });
+            viewStreams.Controls.AddRange(new Control[] { grpRecord, grpRooms, toggleLogsButton, grpLogs });
             viewHistory.Controls.Add(grpHistory);
             viewSettings.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, legalButton });
             viewSupport.Controls.Add(grpDonate);
@@ -3241,23 +3283,23 @@ namespace ChaturbateRecorderApp
             Controls.Add(contentPanel);
             Controls.Add(sideBar);
 
-            // FORCER la création des handles des deux ListView, bien qu'elles
-            // soient dans des vues masquées.
+            // FORCER la création du handle de la ListView de l'historique, bien
+            // qu'elle vive dans une vue masquée. Lire `.Handle` le crée quelle
+            // que soit la visibilité, ce que CreateControl() ne fait pas.
             //
-            // Sans ça, la navigation RÉVEILLE le piège ImageList de 103.0 :
-            // `Images.Add` ne recopie l'image que si le handle EXISTE DÉJÀ,
-            // sinon la liste garde la référence. RefreshHistoryAsync ajoute les
-            // miniatures puis les libère (v1.29.0) — ce qui était sûr tant que
-            // tout vivait sur une page unique et visible. Avec des vues
-            // masquées, le handle n'apparaît qu'au premier affichage de la
-            // section, sur des bitmaps déjà détruits : ArgumentException
-            // « Parameter is not valid » dans OnHandleCreated, très loin de sa
-            // cause. Constaté à l'exécution en capturant les quatre sections.
+            // Ce n'est PLUS ce qui protège du piège ImageList de 103.0 : ce
+            // garde-fou-là vit désormais dans RefreshHistoryAsync, juste avant
+            // la boucle d'ajout, parce que dépendre d'une ligne lointaine
+            // exécutée plus tôt est une garantie qu'un chemin d'appel nouveau
+            // peut contourner sans bruit (v1.35.1, deux plantages en production).
+            // Il reste utile pour le reste : une ListView sans handle ne
+            // mesure pas ses colonnes, et ThemedListView.Refresh n'aurait rien
+            // à ajuster.
             //
-            // Lire `.Handle` le crée quelle que soit la visibilité, ce que
-            // CreateControl() ne fait pas.
+            // La ListView de surveillance a disparu avec son panneau (97.0
+            // étape 2c) : la carte de salon dessine son pictogramme elle-même,
+            // sans ImageList, donc sans ce piège.
             _ = historyListView.Handle;
-            _ = watchListView.Handle;
 
             // PAS D'ANCRAGE Left|Right sur ces panneaux : leurs largeurs sont
             // calculées par LayoutCurrentView. L'ancrage mémorise la marge

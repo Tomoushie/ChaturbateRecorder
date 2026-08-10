@@ -384,6 +384,29 @@ namespace ChaturbateRecorderApp.UI
             ["label.watchInterval"] = (
                 "Vérifier les salons surveillés toutes les :",
                 "Check monitored rooms every:"),
+            // --- 97.0 : la liste unifiée de salons, qui remplace les trois
+            // panneaux Enregistrements en cours / Favoris / Surveillance. Les
+            // libellés d'état sont ceux de la surveillance (watch.state.*) et
+            // de l'ancienne ligne de job (job.state.*) : ils décrivaient déjà
+            // exactement ces états, en faire des doublons ferait diverger les
+            // deux jeux au premier changement de formulation.
+            ["panel.rooms"] = ("Mes salons", "My rooms"),
+            ["button.addRoom"] = ("+ Ajouter", "+ Add"),
+            ["room.empty"] = (
+                "Aucun salon pour l'instant. Colle une adresse ci-dessus, puis « + Ajouter ».",
+                "No rooms yet. Paste an address above, then “+ Add”."),
+            ["room.alreadyKnown"] = (
+                "{0} est déjà dans ta liste.",
+                "{0} is already in your list."),
+            ["room.auto"] = (
+                "Enregistrer automatiquement dès que ce salon passe en ligne",
+                "Record automatically as soon as this room goes online"),
+            ["room.added"] = ("{0} ajouté à la liste.", "{0} added to the list."),
+            ["room.removed"] = ("{0} retiré de la liste.", "{0} removed from the list."),
+            ["room.removeRecording"] = (
+                "{0} est en cours d'enregistrement.\n\nLe retirer de la liste arrêtera la capture. Continuer ?",
+                "{0} is currently recording.\n\nRemoving it from the list will stop the capture. Continue?"),
+            ["dialog.confirm"] = ("Confirmation", "Confirm"),
             // --- 29.0 / 2.2 : Safe Mode ---
             ["safe.title"] = ("Fonctionnalités désactivées", "Features disabled"),
             ["safe.intro"] = (
@@ -449,10 +472,13 @@ namespace ChaturbateRecorderApp.UI
                 "Le champ \"Cookies\" permet d'importer une session déjà connectée depuis ton navigateur (fichier cookies.txt), pour accéder au contenu réservé à un compte.\n\nLe champ \"Proxy\" route le trafic via un SOCKS5/HTTP de ton choix, pour masquer ton IP réelle vis-à-vis du site distant.",
                 "The \"Cookies\" field imports an already signed-in session from your browser (cookies.txt file), to reach content reserved for logged-in accounts.\n\nThe \"Proxy\" field routes traffic through a SOCKS5/HTTP proxy of your choice, to hide your real IP from the remote site."),
 
+            // 97.0 étape 2c — réécrit : le guide décrivait le panneau
+            // « Enregistrements en cours », qui n'existe plus. Un guide qui
+            // nomme des boutons absents de l'écran est pire que pas de guide.
             ["tutorial.tracking.title"] = ("Suivi des enregistrements", "Tracking your recordings"),
             ["tutorial.tracking.body"] = (
-                "Chaque enregistrement actif apparaît comme une ligne dans \"Enregistrements en cours\", avec :\n\n•  sa propre barre de progression\n•  un bouton \"Ouvrir\" (accès direct à la page du stream)\n•  un bouton Stop individuel (qui devient \"Retirer\" une fois terminé)",
-                "Each active recording appears as a row under \"Active recordings\", with:\n\n•  its own progress bar\n•  an \"Open\" button (direct access to the stream page)\n•  its own Stop button (which becomes \"Remove\" once finished)"),
+                "Le panneau \"Mes salons\" réunit tout ce que tu suis : une carte par salon, qu'il diffuse ou non.\n\nChaque carte porte :\n\n•  une bande de couleur à gauche, qui dit son état d'un coup d'œil\n•  un interrupteur \"auto\", pour lancer l'enregistrement dès la mise en ligne\n•  un bouton Démarrer, qui devient Arrêter pendant la capture\n•  un bouton pour ouvrir la page du stream, et une corbeille pour retirer le salon\n\nPendant l'enregistrement, la carte s'agrandit pour montrer la progression et le temps restant.",
+                "The \"My rooms\" panel gathers everything you follow: one card per room, whether it is streaming or not.\n\nEach card carries:\n\n•  a colour strip on the left, telling its state at a glance\n•  an \"auto\" switch, to start recording as soon as it goes online\n•  a Start button, which becomes Stop during capture\n•  a button to open the stream page, and a bin to remove the room\n\nWhile recording, the card grows to show progress and time remaining."),
 
             ["tutorial.support.title"] = ("Soutenir le projet", "Supporting the project"),
             ["tutorial.support.body"] = (

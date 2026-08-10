@@ -217,6 +217,25 @@ namespace ChaturbateRecorderApp.UI
                     rgp.Invalidate();
                     break;
 
+                // 97.0 — la carte de salon se dessine entièrement elle-même :
+                // il suffit de lui passer la palette. On ne touche PAS à son
+                // BackColor, qu'elle lit sur son PARENT pour peindre autour de
+                // ses coins arrondis — le lui écraser dessinerait un rectangle
+                // plein aux quatre angles.
+                //
+                // childSurface passe à Card : les boutons d'action posés dessus
+                // doivent se croire sur une carte, pas sur le fond de fenêtre.
+                //
+                // AVANT `case Panel` : RoomCard en dérive, et c'est le cas
+                // dérivé qui doit gagner — même règle que ThemedButton/Button
+                // juste en dessous. Placé après, le compilateur le refuse comme
+                // inaccessible, ce qui est la bonne nouvelle de l'affaire.
+                case RoomCard rc:
+                    rc.Palette = p;
+                    childSurface = p.Card;
+                    rc.Invalidate();
+                    break;
+
                 // ThemedButton avant Button : il en dérive, et c'est le cas
                 // dérivé qui doit gagner.
                 case ThemedButton tb:

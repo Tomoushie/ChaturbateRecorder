@@ -39,6 +39,9 @@ namespace ChaturbateRecorderApp.UI
         private bool _autoRecord;
         private bool _hovering;
         private bool _toggleHovering;
+        private bool _indeterminate;
+        private int _pulse;
+        private System.Windows.Forms.Timer? _pulseTimer;
 
         internal event EventHandler? AutoRecordToggled;
 
@@ -75,6 +78,27 @@ namespace ChaturbateRecorderApp.UI
                 if (_state == value) return;
                 _state = value;
                 Height = IsExpanded(value) ? ExpandedHeight : CompactHeight;
+                SyncPulsation();
+                Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Barre indéterminée, pour un enregistrement qui n'a pas encore annoncé
+        /// de pourcentage — c'est le cas normal d'un direct, dont la durée n'est
+        /// pas connue d'avance. Sans elle une capture bien vivante s'afficherait
+        /// figée à 0 %, ce que l'ancienne interface évitait avec le mode Marquee
+        /// de ProgressBar (que la carte, se dessinant elle-même, n'a pas).
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        internal bool Indeterminate
+        {
+            get => _indeterminate;
+            set
+            {
+                if (_indeterminate == value) return;
+                _indeterminate = value;
+                SyncPulsation();
                 Invalidate();
             }
         }
@@ -227,17 +251,86 @@ namespace ChaturbateRecorderApp.UI
             using (var chemin = Arrondi(piste, 3))
                 g.FillPath(fond, chemin);
 
-            var largeur = (int)(piste.Width * Math.Clamp(Progress, 0, 100) / 100.0);
-            if (largeur > 4)
+            var rempli = _indeterminate
+                ? PulseBounds(piste, _pulse)
+                : new Rectangle(piste.X, piste.Y, (int)(piste.Width * Math.Clamp(Progress, 0, 100) / 100.0), piste.Height);
+
+            if (rempli.Width > 4)
             {
-                using var rempli = new SolidBrush(couleurEtat);
-                using var chemin = Arrondi(new Rectangle(piste.X, piste.Y, largeur, piste.Height), 3);
-                g.FillPath(rempli, chemin);
+                using var pinceau = new SolidBrush(couleurEtat);
+                using var chemin = Arrondi(rempli, 3);
+                g.FillPath(pinceau, chemin);
             }
 
             if (Detail.Length > 0)
                 using (var texte = new SolidBrush(p.FgMuted))
                     g.DrawString(Detail, Font, texte, PadX, CompactHeight + 12);
+        }
+
+        /// <summary>
+        /// Position du segment qui glisse quand la progression est inconnue.
+        /// Séparée du dessin et pure, comme <see cref="ToggleBounds"/> : une
+        /// erreur de bornes ferait déborder le segment hors de sa piste, par
+        /// dessus le bord arrondi de la carte, et seule une capture prise au bon
+        /// instant le montrerait.
+        /// </summary>
+        internal static Rectangle PulseBounds(Rectangle piste, int phase)
+        {
+            var segment = Math.Max(24, piste.Width * 3 / 10);
+            // Le segment entre par la gauche et sort par la droite : la course
+            // vaut donc la piste PLUS sa propre largeur.
+            var x = piste.X - segment + (piste.Width + segment) * Math.Clamp(phase, 0, 100) / 100;
+
+            var gauche = Math.Max(x, piste.X);
+            var droite = Math.Min(x + segment, piste.Right);
+            return new Rectangle(gauche, piste.Y, Math.Max(0, droite - gauche), piste.Height);
+        }
+
+        /// <summary>
+        /// Le minuteur ne tourne que si la carte est à la fois indéterminée et
+        /// étendue : une carte compacte n'a pas de piste où dessiner, et faire
+        /// battre un timer par carte au repos coûterait pour rien sur une liste
+        /// de vingt salons.
+        /// </summary>
+        private void SyncPulsation()
+        {
+            if (_indeterminate && IsExpanded(_state))
+            {
+                if (_pulseTimer != null) return;
+                _pulseTimer = new System.Windows.Forms.Timer { Interval = 50 };
+                _pulseTimer.Tick += (s, e) =>
+                {
+                    _pulse = (_pulse + 3) % 101;
+                    // Seule la bande basse est repeinte : réinvalider la carte
+                    // entière vingt fois par seconde redessinerait le nom, l'état
+                    // et le pictogramme sans qu'aucun n'ait changé.
+                    Invalidate(new Rectangle(0, CompactHeight, Width, Height - CompactHeight));
+                };
+                _pulseTimer.Start();
+                return;
+            }
+
+            if (_pulseTimer == null) return;
+            _pulseTimer.Stop();
+            _pulseTimer.Dispose();
+            _pulseTimer = null;
+            _pulse = 0;
+        }
+
+        /// <summary>
+        /// Sans ça le minuteur survivrait à la carte et appellerait Invalidate
+        /// sur un contrôle détruit — le piège déjà payé sur ThemedProgressBar en
+        /// mode Marquee, dont le Dispose est la seule chose qui arrête le timer.
+        /// </summary>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _pulseTimer?.Stop();
+                _pulseTimer?.Dispose();
+                _pulseTimer = null;
+            }
+            base.Dispose(disposing);
         }
 
         private void DessineInterrupteur(Graphics g, ThemeManager.Palette p)

@@ -33,6 +33,15 @@ namespace ChaturbateRecorderApp.UI
             ["update"] = Wrap(
                 "<polygon points=\"12,4 20,14 14,14 14,20 10,20 10,14 4,14\" fill=\"{COLOR}\"/>"),
 
+            // 97.0 — retrait d'un salon de la liste. Une corbeille plutôt qu'une
+            // croix : la croix dit « fermer », et sur une carte qu'on peut aussi
+            // arrêter, les deux se confondraient.
+            ["trash"] = Wrap(
+                "<path d=\"M5 7h14\" stroke=\"{COLOR}\" stroke-width=\"1.8\" stroke-linecap=\"round\"/>" +
+                "<path d=\"M10 5h4\" stroke=\"{COLOR}\" stroke-width=\"1.8\" stroke-linecap=\"round\"/>" +
+                "<path d=\"M7 7l1 12h8l1-12\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.8\" " +
+                "stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"),
+
             ["book"] = Wrap(
                 "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1.5\" fill=\"none\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>" +
                 "<line x1=\"12\" y1=\"4\" x2=\"12\" y2=\"20\" stroke=\"{COLOR}\" stroke-width=\"1.5\"/>"),
