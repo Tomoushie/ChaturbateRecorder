@@ -1,10 +1,28 @@
 name = "chaturbate-recorder-reports"
 main = "worker.js"
+
 # Ne pas mettre une date POSTÉRIEURE au runtime installé (workerd
 # 1.20260801.1 au moment de l'écriture) : wrangler avertit alors que la date de
 # compatibilité est dans le futur, et le comportement local diffère de celui du
 # déploiement.
 compatibility_date = "2026-08-01"
+
+# ATTENTION, ces deux réglages doivent rester AVANT toute table ([vars],
+# [[kv_namespaces]]) : en TOML, une clé écrite après un en-tête de table
+# appartient à cette table. Placés après [vars], ils sont devenus deux
+# variables d'environnement nommées "workers_dev" et "preview_urls" — le
+# déploiement a réussi, et aucun des deux réglages n'a été appliqué.
+#
+# L'URL publique workers.dev est le point d'entrée de l'application : elle doit
+# rester active. Écrite explicitement plutôt que laissée au défaut, pour que sa
+# présence soit un choix visible et non un effet de bord.
+workers_dev = true
+
+# Les URL de PRÉVISUALISATION, en revanche, sont coupées. Activées par défaut,
+# elles exposent une adresse publique SUPPLÉMENTAIRE par version déployée —
+# autant de portes vers un service qui crée des issues, qu'aucun quota ne
+# distingue de la vraie et qu'on ne penserait pas à surveiller.
+preview_urls = false
 
 # Le dépôt visé. Ce n'est pas un secret, contrairement au jeton : il est
 # public, et le voir en clair ici évite de le chercher dans le tableau de bord.
@@ -12,7 +30,7 @@ compatibility_date = "2026-08-01"
 GITHUB_REPO = "Tomoushie/ChaturbateRecorder"
 
 # Comptage des quotas. L'identifiant se remplit après
-# `npx wrangler kv namespace create REPORTS` (voir README.md).
+# `wrangler kv namespace create REPORTS` (voir README.md).
 # Sans ce binding le Worker fonctionne quand même, mais SANS aucun plafond —
 # à ne pas laisser en l'état sur une URL publique.
 [[kv_namespaces]]
