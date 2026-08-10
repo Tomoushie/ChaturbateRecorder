@@ -4,7 +4,20 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-10 — version courante : v1.35.0 (app, NON PUBLIÉE — v1.34.1 l'est), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-10 (fin de journée) — v1.35.0 PUBLIÉE ; 97.0 (refonte graphique) EN COURS sur `main`, non publiée ; SentinelGuard 1.2.0 sur nuget.org ; relais de signalements déployé (102.0) ; itch.io en ligne (96.0)
+
+**REPRENDRE ICI : 97.0 étape 2c** — remplacer les trois panneaux par la liste
+de cartes. Tout le reste de la refonte est fait et poussé. Voir la section
+97.0 ci-dessous pour le cadre commercial déjà tranché et les pièges rencontrés.
+
+**Le jeton GitHub du relais de signalements EXPIRE LE 2026-09-02.** Ce jour-là
+le relais répondra 502 et l'application dira « réessaie plus tard » — **rien ne
+préviendra le mainteneur**. Réparation : `wrangler secret put GITHUB_TOKEN`
+depuis `report-worker/`.
+
+**Le mainteneur autorise désormais à FERMER l'application** pour débloquer un
+build ou une capture (accordé le 2026-08-10). Vérifier d'abord qu'aucun
+`yt-dlp.exe` ne tourne : un enregistrement en cours serait perdu.
 
 **Publiés le 2026-08-09** : v1.29.0 à v1.33.0 côté application, et
 `sentinelguard-v1.1.0` puis `sentinelguard-v1.2.0` sur nuget.org. **Redemander
@@ -14,6 +27,99 @@ avant tout tag** : il déclenche une release publique.
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**97.0 EN COURS — refonte graphique. ÉTAPES 1, 2a et 2b FAITES, 2c À FAIRE.**
+
+**Le cadre commercial, tranché avec le mainteneur avant tout code** :
+- **Nom du produit payant : « Stream Recorder Pro »**. Motif : PayPal et GitHub
+  Sponsors ont des politiques sur le contenu adulte, et vendre sous un nom
+  portant celui d'une plateforme adulte expose à un gel de compte — celui-là
+  même qui reçoit les dons.
+- **La refonte visuelle est GRATUITE pour tout le monde.** Vendre un habillage
+  est le plus faible des arguments, et deux interfaces à maintenir seul est un
+  piège : chaque fonctionnalité future s'écrirait deux fois, ou la version
+  gratuite pourrirait. On vend des CAPACITÉS, une seule interface progresse.
+- **Un seul pack, un seul prix (10 €)** — pas de vente à l'unité, qui
+  fragmenterait une audience déjà petite. En revanche on CONSTRUIT une
+  fonctionnalité de bout en bout d'abord, pour éprouver la chaîne licence +
+  paiement avant d'en écrire dix.
+- **La licence MIT/Apache empêche de vendre un déverrouillage** : n'importe qui
+  peut forker, retirer le contrôle et redistribuer, légalement. Le premium doit
+  donc vivre dans un **composant fermé séparé**, chargé par l'app libre.
+  Relicencier ne protège rien : les versions déjà publiées restent forkables.
+- **Le User-Agent (113.0) reste GRATUIT** — proposé au premier abord comme
+  fonctionnalité payante, écarté : c'est le correctif d'une panne (Cloudflare
+  rejette selon l'agent), pas un confort. Faire payer ce qui répare un logiciel
+  cassé produit des avis négatifs et le soupçon d'un bridage volontaire.
+  **Règle qui en découle : on fait payer ce que les gens veulent EN PLUS,
+  jamais ce qui les empêche d'utiliser le produit.**
+
+**Inspirations** (`E:\Corpus\Chaturbate Record\Inspirations`) : Olived Pro
+(barre latérale, cartes, interrupteurs) et Stream Download Manager (table avec
+colonne AUTO et aperçu). **Sur le plagiat** : les conventions d'interface ne
+sont pas protégeables ; les icônes, la palette, le logo et les formulations le
+sont. Le projet a les siens depuis 39.0 et 108.0 — la structure est donc
+reprenable sans risque.
+
+**ÉTAPE 2a — modèle unifié (`Services/RoomStore.cs`)** :
+- **CONFLIT TROUVÉ EN LISANT LE CODE** : `WatchListManager` documentait une
+  décision explicite du mainteneur — favoris et surveillance séparés À DESSEIN,
+  parce que « y figurer suffit à être surveillé ». Fusionner naïvement aurait
+  fait sonder le site pour chaque favori.
+- **`RoomEntry.AutoRecord`, faux par défaut, préserve la règle** : une ligne
+  n'est qu'un salon CONNU, c'est le drapeau qui engage la surveillance. C'est
+  aussi ce que fait la colonne AUTO de Stream Download Manager.
+- **La migration est testée** parce que c'est le seul endroit où les données de
+  quelqu'un peuvent être perdues : un favori migré arrive DÉSACTIVÉ, un salon
+  des deux fichiers garde sa surveillance, les deux anciens fichiers ne sont
+  pas supprimés. **La normalisation d'URL n'est pas cosmétique** : deux entrées
+  pour un même salon donneraient deux enregistrements simultanés du même flux.
+- **`Resolve()` : l'ENREGISTREMENT PRIME SUR LE SONDAGE.** Un sondage peut
+  échouer pendant que la capture reçoit des données.
+
+**ÉTAPE 2b — carte de salon (`UI/RoomCard.cs`)**, vérifiée dans ses 8 états :
+- **ADAPTATIVE** : compacte au repos, étendue seulement pour les états qui ont
+  une progression à montrer. Les cartes fixes d'Olived Pro ne laissent voir que
+  quatre salons ; une ligne de tableau ne loge pas de barre de progression.
+- **`Palette` passe de 11 à 13 champs** : `Success` et `Warning`. **Choisies par
+  MESURE du contraste WCAG**, pas à l'œil — les candidates évidentes du thème
+  clair tombaient à 3,97 et 4,17, sous le seuil de 4,5. `LerpPalette` doit les
+  interpoler comme les autres, sinon elles sautent au milieu du fondu.
+- **La couleur porte l'état, jamais la décoration.** Réponse au « ça manque de
+  vie » du mainteneur, sans tomber dans le décor.
+- **L'état se lit sur un liseré vertical à gauche**, pas une pastille : lisible
+  en un balayage de la liste.
+
+**ÉTAPE 2c — CE QUI RESTE** : remplacer `grpProgress` + `grpFavorites` +
+`grpWatch` par la liste de cartes, brancher `RoomStore`, poser les boutons
+d'action (la place leur est réservée à droite de l'interrupteur), et la
+confirmation au retrait d'un salon en cours d'enregistrement (choix du
+mainteneur). **C'est un morceau d'un seul tenant** : il touche la logique
+d'enregistrement et n'a pas d'état intermédiaire cohérent — ne pas l'entamer
+sans le contexte pour le finir.
+
+**Défauts signalés en usage réel et corrigés le 2026-08-10** :
+- **Les `.part` ne devenaient JAMAIS des vidéos.** Un live ne se termine jamais
+  seul : l'app TUE le processus, donc yt-dlp ne renomme pas son temporaire.
+  **Deux causes, la seconde cachée derrière la première** : `FindOwnCaptureFile`
+  cherchait le nom final, ET la miniature n'était jamais générée après un arrêt
+  manuel (le code sautait `GenerateThumbnail` dès l'état `Stopped`).
+  `FinalizeCaptureAsync` renomme avec RÉESSAIS — Windows relâche le handle avec
+  du retard, un essai unique échouait par intermittence.
+- **Encoches sombres aux coins des boutons au premier lancement**, disparaissant
+  au survol. **JAMAIS reproduit sur la machine de développement**, ni par
+  `DrawToBitmap` ni par `CopyFromScreen`. Le fondu d'ouverture (9.2) a été
+  SUPPRIMÉ : sans `Opacity < 1`, plus de fenêtre en couche, donc plus de
+  composition partielle possible. **Si le défaut persiste, chercher du côté de
+  la mise à l'échelle d'affichage.**
+- **MÉTHODE, l'erreur à ne pas refaire** : j'ai annoncé « reproduit » à tort.
+  La mesure de référence échantillonnait le pixel (1,1) et les suivantes le
+  (0,0), où l'anticrénelage d'un coin arrondi donne légitimement une valeur
+  intermédiaire. **Comparer deux mesures suppose le même point de mesure** — et
+  une capture regardée à l'œil aurait tranché en dix secondes.
+- **Panneau des logs masqué par défaut** (`UserSettings.ShowLogs`), et
+  **« Ouvrir dossier » ouvre toujours le dossier des Paramètres** : il ouvrait
+  l'Explorateur sur le fichier sélectionné, doublonnant « Ouvrir fichier ».
 
 **97.0 ÉTAPE 1 (2026-08-10) — charpente en barre latérale, mode simple SUPPRIMÉ** :
 - **Périmètre tranché avec le mainteneur AVANT d'écrire** (leçon de 39.0) :
