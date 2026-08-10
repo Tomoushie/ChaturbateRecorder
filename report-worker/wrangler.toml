@@ -1,0 +1,19 @@
+name = "chaturbate-recorder-reports"
+main = "worker.js"
+compatibility_date = "2026-08-10"
+
+# Le dépôt visé. Ce n'est pas un secret, contrairement au jeton : il est
+# public, et le voir en clair ici évite de le chercher dans le tableau de bord.
+[vars]
+GITHUB_REPO = "Tomoushie/ChaturbateRecorder"
+
+# Comptage des quotas. L'identifiant se remplit après
+# `npx wrangler kv namespace create REPORTS` (voir README.md).
+# Sans ce binding le Worker fonctionne quand même, mais SANS aucun plafond —
+# à ne pas laisser en l'état sur une URL publique.
+[[kv_namespaces]]
+binding = "REPORTS"
+id = "A_REMPLIR"
+
+# GITHUB_TOKEN et IP_SALT ne figurent PAS ici : ce fichier est versionné.
+# Ils se posent en secrets, voir README.md.

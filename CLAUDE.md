@@ -15,6 +15,33 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**102.0 EN COURS (2026-08-10) — signalements envoyés depuis l'application, sans
+compte GitHub. BLOQUÉ sur un déploiement que seul le mainteneur peut faire.**
+- **Architecture tranchée par le mainteneur** : un Worker Cloudflare (gratuit)
+  garde le jeton et crée l'issue. La « BDD » demandée, ce sont les issues du
+  dépôt filtrées sur l'étiquette `via-application` — pas un second endroit à
+  consulter.
+- **Le jeton ne peut PAS vivre dans l'application** : un exécutable distribué
+  publiquement n'est pas un coffre, il s'extrait en quelques secondes et
+  donnerait un droit d'écriture au nom du mainteneur.
+- **L'URL du Worker, elle, EST extractible, et c'est irréductible.** Un secret
+  partagé le serait tout autant ; Turnstile suppose un navigateur. Défense
+  assumée : 3 envois/heure par adresse, 200/jour au global, bornes de taille,
+  modération. Supprimer le Worker coupe tout, l'app retombant sur GitHub.
+- **AUCUN champ de contact, pas même optionnel** : les issues sont publiques,
+  et y publier l'adresse de quelqu'un qui signale un bug sur un enregistreur de
+  cams serait un tort réel. Le suivi passe par l'URL de l'issue, renvoyée à
+  l'application. Aucune IP stockée non plus (condensé salé, TTL 1 h).
+- **Le quota n'est consommé qu'APRÈS création réussie** : une panne de GitHub
+  ne doit pas coûter son quota à quelqu'un dont le signalement n'est pas parti.
+- **AUCUNE LIGNE D'INTERFACE ÉCRITE, volontairement.** C'est l'erreur de 92.0
+  (UI, traductions et tests écrits avant d'avoir vérifié le contact réel,
+  quatre versions perdues). Le contact se prouve d'abord par un vrai POST.
+- **Ce qui manque pour reprendre** : le mainteneur suit
+  `report-worker/README.md` (jeton fine-grained limité à Issues:write sur ce
+  seul dépôt, `wrangler deploy`), transmet l'URL, on prouve la chaîne, PUIS on
+  écrit la fenêtre. Les fonctions pures du Worker sont déjà éprouvées en local.
+
 **v1.34.1 (2026-08-10) — 114.0 : ascenseurs blancs en thème sombre** :
 - **Signalé avec une capture, et la capture disait la vraie cause** : certains
   ascenseurs sombres, d'autres blancs. Le `SetWindowTheme(..., "DarkMode_
