@@ -196,7 +196,14 @@ jobs:
           & $butler push "installer\ChaturbateRecorder-v$v-setup.exe" "${target}:windows-installer" --userversion $v
           if ($LASTEXITCODE -ne 0) { throw "Envoi de l'installateur refuse par itch.io." }
 
-          & $butler push "ChaturbateRecorder-v$v-portable.zip" "${target}:windows-portable" --userversion $v
+          # Le DOSSIER publish/portable, et surtout pas le ZIP. butler compare
+          # les fichiers d'un build a l'autre pour n'envoyer que les
+          # differences, et ses propres avertissements le disent : sur une
+          # archive ou un executable tout-en-un, cette comparaison ne donne
+          # rien. En poussant le dossier, une mise a jour ne transfere que ce
+          # qui a change — et itch.io reconstruit le ZIP de son cote pour qui
+          # telecharge depuis le site.
+          & $butler push "publish/portable" "${target}:windows-portable" --userversion $v
           if ($LASTEXITCODE -ne 0) { throw "Envoi du portable refuse par itch.io." }
 
   # Appel direct plutôt que de compter sur l'évènement "release: published" :
