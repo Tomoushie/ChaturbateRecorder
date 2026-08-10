@@ -2071,6 +2071,25 @@ namespace ChaturbateRecorderApp
         /// bon compromis ici. Réutilisé pour le fondu d'ouverture (Opacity 0→1)
         /// et pour le clignotement léger au changement de mode simple/avancé.
         /// </summary>
+        /// <summary>
+        /// Repeint toute la fenêtre une fois qu'elle est redevenue opaque.
+        /// Le délai laisse Windows défaire la composition en couche avant
+        /// qu'on redessine ; 80 ms restent invisibles à l'œil.
+        /// </summary>
+        private void RepeindreApresFondu()
+        {
+            var minuteur = new System.Windows.Forms.Timer { Interval = 80 };
+            minuteur.Tick += (s, e) =>
+            {
+                minuteur.Stop();
+                minuteur.Dispose();
+                if (IsDisposed) return;
+                Invalidate(true);
+                Update();
+            };
+            minuteur.Start();
+        }
+
         private void AnimateOpacity(double target, int durationMs, Action? onComplete = null)
         {
             var start = Opacity;
@@ -2087,6 +2106,34 @@ namespace ChaturbateRecorderApp
                 {
                     timer.Stop();
                     timer.Dispose();
+
+                    // Repeindre TOUT une fois le fondu terminé.
+                    //
+                    // **ATTÉNUATION, PAS CORRECTIF PROUVÉ.** Le mainteneur voit
+                    // au premier lancement des encoches sombres aux coins
+                    // arrondis des ThemedButton, sur tous les onglets, qui
+                    // disparaissent dès que la souris survole le bouton
+                    // concerné — et UNIQUEMENT celui-là. **Le défaut n'a PAS pu
+                    // être reproduit** sur la machine de développement, ni par
+                    // DrawToBitmap ni par CopyFromScreen sur la fenêtre réelle
+                    // avec le fondu actif. Différence de mise à l'échelle ou de
+                    // composition, non élucidée.
+                    //
+                    // L'hypothèse : une fenêtre dont Opacity < 1 est une fenêtre
+                    // EN COUCHE, dont Windows compose le rendu avec l'alpha
+                    // courant. Un contrôle peint pendant le fondu verrait son
+                    // résultat figé à l'opacité de l'instant, et les zones plus
+                    // jamais repeintes le resteraient — ce qui expliquerait le
+                    // « ça part au survol ». Un repaint complet après le fondu
+                    // coûte une frame et couvre ce cas s'il est le bon.
+                    //
+                    // **Si le défaut persiste chez le mainteneur, la piste
+                    // suivante est de supprimer le fondu d'ouverture** (9.2) :
+                    // sans Opacity < 1, il n'y a plus de fenêtre en couche, donc
+                    // plus de composition partielle possible. C'est un agrément
+                    // décoratif contre un défaut visible à chaque lancement.
+                    if (!IsDisposed) RepeindreApresFondu();
+
                     onComplete?.Invoke();
                 }
             };
