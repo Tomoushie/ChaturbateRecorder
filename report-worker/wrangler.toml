@@ -1,6 +1,10 @@
 name = "chaturbate-recorder-reports"
 main = "worker.js"
-compatibility_date = "2026-08-10"
+# Ne pas mettre une date POSTÉRIEURE au runtime installé (workerd
+# 1.20260801.1 au moment de l'écriture) : wrangler avertit alors que la date de
+# compatibilité est dans le futur, et le comportement local diffère de celui du
+# déploiement.
+compatibility_date = "2026-08-01"
 
 # Le dépôt visé. Ce n'est pas un secret, contrairement au jeton : il est
 # public, et le voir en clair ici évite de le chercher dans le tableau de bord.
@@ -13,7 +17,7 @@ GITHUB_REPO = "Tomoushie/ChaturbateRecorder"
 # à ne pas laisser en l'état sur une URL publique.
 [[kv_namespaces]]
 binding = "REPORTS"
-id = "A_REMPLIR"
+id = "bfc78ae9938749e4b64b55394f85e641"
 
 # GITHUB_TOKEN et IP_SALT ne figurent PAS ici : ce fichier est versionné.
 # Ils se posent en secrets, voir README.md.

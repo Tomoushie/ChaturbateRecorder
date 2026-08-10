@@ -57,6 +57,19 @@ npm install -g wrangler
 wrangler login
 ```
 
+**Un seul jeton intervient dans tout ce document, et il est GitHub.** Côté
+Cloudflare, `wrangler login` ouvre le navigateur et fait tout : il n'y a
+**aucun jeton d'API Cloudflare à créer**, et rien à voir avec les « OAuth
+clients » du tableau de bord, qui servent à publier une application tierce.
+
+Si un jour un jeton d'API Cloudflare devient nécessaire (machine sans
+navigateur), il se limite à trois permissions — *Workers Scripts: Edit*,
+*Workers KV Storage: Edit*, *Account Settings: Read* — et se passe par la
+variable d'environnement `CLOUDFLARE_API_TOKEN`. **Jamais un jeton « toutes
+autorisations » et jamais sans expiration** : celui-là peut réécrire le DNS de
+tous les domaines du compte, lire les données KV et R2, et modifier la
+facturation.
+
 ### 4. Créer l'espace de comptage
 
 ```bash
