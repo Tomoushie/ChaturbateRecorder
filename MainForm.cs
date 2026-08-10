@@ -74,6 +74,7 @@ namespace ChaturbateRecorderApp
         private Panel viewHistory = null!;
         private Panel viewSettings = null!;
         private Panel viewSupport = null!;
+        private ThemedButton toggleLogsButton = null!;
         private ThemedButton thanksButton = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
@@ -242,6 +243,7 @@ namespace ChaturbateRecorderApp
             // supprimé — un réglage retiré de force ferait échouer la lecture
             // d'un fichier écrit par une version antérieure.
             ClientSize = new Size(SideBar.DefaultWidth + 700, 720);
+            BasculerLogs(_settings.ShowLogs);
             ShowView("streams");
             RefreshHistoryAsync();
             ShowFirstRunDialogs();
@@ -250,8 +252,24 @@ namespace ChaturbateRecorderApp
             // et remonte à pleine opacité une fois affichée — Shown ne se
             // déclenche qu'après Application.Run(new MainForm()), donc après les
             // dialogues de premier lancement éventuels ci-dessus.
-            Opacity = 0;
-            Shown += (s, e) => AnimateOpacity(1.0, 250);
+            // FONDU D'OUVERTURE SUPPRIMÉ (9.2 → 97.0), et ce n'est pas un
+            // renoncement esthétique : il produisait chez le mainteneur, à
+            // CHAQUE lancement et sur tous les onglets, des encoches sombres
+            // aux coins arrondis des boutons, qui ne partaient qu'au survol du
+            // bouton concerné.
+            //
+            // Une fenêtre dont Opacity < 1 est une fenêtre EN COUCHE : Windows
+            // compose son rendu avec l'alpha courant, et un contrôle peint
+            // pendant le fondu garde ce résultat composité tant que rien ne le
+            // repeint. Un repaint complet différé après le fondu a été essayé :
+            // insuffisant chez lui. Sans opacité partielle, il n'y a plus de
+            // fenêtre en couche, donc plus de composition partielle possible.
+            //
+            // Le défaut n'a jamais pu être reproduit sur la machine de
+            // développement — d'où le choix de supprimer la CAUSE possible
+            // plutôt que de continuer à traiter un symptôme invisible d'ici.
+            // Un agrément décoratif ne vaut pas un défaut visible à chaque
+            // lancement.
 
             StartAutoUpdateChecks();
             ListenForSecondInstance();
@@ -845,15 +863,20 @@ namespace ChaturbateRecorderApp
                     AppendJobLog(row.Job, $"Job terminé (état : {state}).");
                     RefreshHistoryAsync();
 
+                    // Finaliser le .part, quelle que soit la façon dont ça s'est
+                    // terminé. Un live s'arrête TOUJOURS par un Kill du
+                    // processus, donc yt-dlp ne renomme jamais son fichier
+                    // temporaire lui-même : sans ça l'enregistrement reste un
+                    // « X.mp4.part » que rien ne lit, absent de l'historique et
+                    // sans miniature. Signalé en usage réel.
+                    FinalizeCaptureAsync(row.Job, avecMiniature: state != DownloadState.Failed);
+
                     if (state == DownloadState.Stopped)
                     {
                         AppendJobLog(row.Job, "Téléchargement interrompu.");
                     }
                     else
                     {
-                        // Sans ffmpeg, pas de miniature — mais la capture, elle,
-                        // a bien eu lieu : il n'y a aucune raison de la perdre.
-                        if (SafeMode.IsEnabled(SafeComponent.Ffmpeg)) GenerateThumbnail(row.Job);
                         if (state == DownloadState.Completed)
                             ShowNotification(Localization.Get("notify.recordingDone.title"), row.Job.RoomName);
                         else
@@ -1175,17 +1198,14 @@ namespace ChaturbateRecorderApp
         {
             try
             {
-                if (historyListView.SelectedItems.Count > 0 &&
-                    historyListView.SelectedItems[0].Tag is string path && File.Exists(path))
-                {
-                    var psi = new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = false };
-                    psi.ArgumentList.Add($"/select,{path}");
-                    Process.Start(psi);
-                }
-                else
-                {
-                    Process.Start(new ProcessStartInfo(AppConfig.CaptureDir) { UseShellExecute = true });
-                }
+                // TOUJOURS le dossier de capture, jamais le fichier sélectionné.
+                //
+                // Avant, une sélection dans la liste faisait ouvrir
+                // l'Explorateur AVEC ce fichier mis en évidence — ce qui
+                // doublonnait « Ouvrir fichier » juste à côté et surprenait :
+                // le bouton s'appelle « Ouvrir dossier », il doit ouvrir le
+                // dossier, celui des Paramètres, quoi qui soit sélectionné.
+                Process.Start(new ProcessStartInfo(AppConfig.CaptureDir) { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -1200,6 +1220,73 @@ namespace ChaturbateRecorderApp
         /// gel possible), ce qui contredit le principe "ffmpeg jamais sur le
         /// thread principal" (2.2). Même traitement que ReencodeCaptureAsync.
         /// </summary>
+        /// <summary>
+        /// Renomme le fichier temporaire de yt-dlp en son nom définitif, puis
+        /// génère la miniature (97.0, signalé en usage réel).
+        ///
+        /// **Pourquoi c'est nécessaire** : un live ne se termine jamais tout
+        /// seul. L'application tue le processus — bouton Stop, fermeture, ou
+        /// watchdog — et yt-dlp n'a donc jamais l'occasion de renommer son
+        /// `.part`. Le résultat restait un « X.mp4.part » : absent de
+        /// l'historique (qui ne liste que .mp4/.mkv/.mov), sans miniature, et
+        /// que l'utilisateur devait renommer à la main pour le lire.
+        ///
+        /// **Réessais, parce que le fichier peut encore être verrouillé** : le
+        /// processus vient d'être tué, Windows relâche le handle avec un léger
+        /// retard. Un seul essai échouait donc par intermittence — exactement
+        /// le genre de défaut qu'on croit corrigé jusqu'à ce qu'il revienne.
+        ///
+        /// **Un .part VIDE n'est pas renommé** : cela créerait un fichier de
+        /// 0 octet dans l'historique, à côté des vrais enregistrements.
+        /// </summary>
+        private void FinalizeCaptureAsync(RecordingJob job, bool avecMiniature)
+        {
+            if (job.OutputBaseName == null) return;
+
+            var final = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.{job.ContainerExt}");
+            var part = final + ".part";
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (!File.Exists(final) && File.Exists(part))
+                    {
+                        for (var essai = 0; essai < 12; essai++)
+                        {
+                            try
+                            {
+                                if (new FileInfo(part).Length == 0)
+                                {
+                                    Logger.Log($"Fichier temporaire vide, non renommé : {part}", LogLevel.WARN);
+                                    return;
+                                }
+                                File.Move(part, final);
+                                Logger.Log($"Enregistrement finalisé : {Path.GetFileName(final)}", LogLevel.INFO);
+                                break;
+                            }
+                            catch (IOException) when (essai < 11)
+                            {
+                                await Task.Delay(250).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Finalisation impossible ({part}) : {ex.Message}", LogLevel.ERROR);
+                }
+
+                SafeInvoke(() =>
+                {
+                    // Sans ffmpeg, pas de miniature — mais la capture, elle, a
+                    // bien eu lieu : il n'y a aucune raison de la perdre.
+                    if (avecMiniature && SafeMode.IsEnabled(SafeComponent.Ffmpeg)) GenerateThumbnail(job);
+                    RefreshHistoryAsync();
+                });
+            });
+        }
+
         private void GenerateThumbnail(RecordingJob job)
         {
             var videoFile = FindOwnCaptureFile(job);
@@ -2025,6 +2112,7 @@ namespace ChaturbateRecorderApp
             donateLabel.Text = L("label.donate");
 
             grpLogs.Title = L("panel.logs");
+            toggleLogsButton.Text = L(grpLogs.Visible ? "button.hideLogs" : "button.showLogs");
 
             foreach (var row in _jobRows)
                 RefreshJobRowLabels(row);
@@ -2192,6 +2280,20 @@ namespace ChaturbateRecorderApp
         /// barre de défilement d'une autre. C'est ce que l'ancien ApplyUiMode
         /// faisait pour la page unique, appliqué ici par section.
         /// </summary>
+        /// <summary>
+        /// Affiche ou masque le panneau des logs (97.0) et retient le choix.
+        /// Persisté parce que l'inverse serait une corvée : quelqu'un qui suit
+        /// un problème devrait rouvrir le panneau à chaque lancement.
+        /// </summary>
+        private void BasculerLogs(bool visible)
+        {
+            grpLogs.Visible = visible;
+            toggleLogsButton.Text = Localization.Get(visible ? "button.hideLogs" : "button.showLogs", _currentLanguage);
+            _settings.ShowLogs = visible;
+            SettingsManager.Save(_settings);
+            LayoutCurrentView();
+        }
+
         private string _currentViewKey = "streams";
 
         private (string Key, Panel Vue)[] Vues => new[]
@@ -2260,8 +2362,16 @@ namespace ChaturbateRecorderApp
                     grpProgress.Bounds = new Rectangle(marge, grpRecord.Bottom + sectionGap, largeur, grpProgress.Height);
                     grpFavorites.Bounds = new Rectangle(marge, grpProgress.Bottom + sectionGap, largeur, grpFavorites.Height);
                     grpWatch.Bounds = new Rectangle(marge, grpFavorites.Bottom + sectionGap, largeur, grpWatch.Height);
-                    grpLogs.Bounds = new Rectangle(marge, grpWatch.Bottom + sectionGap, largeur, grpLogs.Height);
-                    hauteur = grpLogs.Bottom + marge;
+                    toggleLogsButton.Location = new Point(marge, grpWatch.Bottom + sectionGap);
+                    if (grpLogs.Visible)
+                    {
+                        grpLogs.Bounds = new Rectangle(marge, toggleLogsButton.Bottom + 10, largeur, grpLogs.Height);
+                        hauteur = grpLogs.Bottom + marge;
+                    }
+                    else
+                    {
+                        hauteur = toggleLogsButton.Bottom + marge;
+                    }
                     break;
             }
 
@@ -3034,7 +3144,13 @@ namespace ChaturbateRecorderApp
             viewSettings = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
             viewSupport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
 
-            viewStreams.Controls.AddRange(new Control[] { grpRecord, grpProgress, grpFavorites, grpWatch, grpLogs });
+            // 97.0 — les logs sont MASQUES par defaut : ce panneau occupait un
+            // tiers de la page pour une information que personne ne lit tant
+            // que rien ne va mal. Le choix est persiste, sans quoi il faudrait
+            // le rouvrir a chaque lancement.
+            toggleLogsButton = new ThemedButton { Size = new Size(200, 26) };
+            toggleLogsButton.Click += (s, e) => BasculerLogs(!grpLogs.Visible);
+            viewStreams.Controls.AddRange(new Control[] { grpRecord, grpProgress, grpFavorites, grpWatch, toggleLogsButton, grpLogs });
             viewHistory.Controls.Add(grpHistory);
             viewSettings.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, legalButton });
             viewSupport.Controls.Add(grpDonate);

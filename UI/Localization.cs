@@ -180,6 +180,9 @@ namespace ChaturbateRecorderApp.UI
                 "The report could not be sent. Try again later, or use GitHub — your text is kept."),
 
             ["panel.logs"] = ("Logs", "Logs"),
+            // 97.0 — le panneau des logs est masqué par défaut.
+            ["button.showLogs"] = ("Afficher les logs", "Show logs"),
+            ["button.hideLogs"] = ("Masquer les logs", "Hide logs"),
 
             // 19.0 : fenêtre Paramètres + menu de la zone de notification.
             ["button.settings"] = ("Paramètres", "Settings"),

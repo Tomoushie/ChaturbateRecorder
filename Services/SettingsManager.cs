@@ -22,6 +22,13 @@ namespace ChaturbateRecorderApp.Services
         // Affichée une seule fois, la première fois que la fenêtre principale
         // est masquée dans la zone de notification (19.0) au lieu de fermer.
         public bool HasSeenTrayHint { get; set; }
+
+        /// <summary>
+        /// Panneau des logs visible ou non (97.0). MASQUÉ par défaut : il
+        /// occupait un tiers de la page pour une information que personne ne
+        /// lit tant que rien ne va mal.
+        /// </summary>
+        public bool ShowLogs { get; set; }
         // Recherche automatique de mise à jour (79.0), activée par défaut.
         // L'initialiseur vaut aussi pour un settings.json antérieur à 79.0 :
         // System.Text.Json construit l'objet puis n'assigne que les propriétés
