@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remerciements — Chaturbate Recorder</title>
+<style>
+  /*
+    104.0 — Pendant sur le site de la fenêtre "Remerciements" du logiciel.
+    Même feuille que index.html et documentation.html, recopiée pour la même
+    raison : ces trois pages n'ont pas de front matter, Jekyll les copie
+    telles quelles, et un CSS commun serait leur seul lien fragile.
+  */
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b36;
+    --text: #e6e8eb;
+    --muted: #9aa3b2;
+    --accent: #dc2828;
+    --accent-dark: #a91f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    position: relative;
+    padding: 56px 24px 40px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 2rem; margin: 0 0 8px; }
+  header p.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 auto 24px; max-width: 620px; }
+
+  .lang-toggle {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .lang-toggle:hover { border-color: var(--muted); color: var(--text); }
+
+  .sub-links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  .sub-links a { color: var(--muted); font-size: 0.9rem; }
+  .sub-links a:hover { color: var(--text); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+  section { margin-bottom: 44px; }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; }
+
+  /* Une grille de pastilles plutôt qu'une colonne de puces : la liste doit
+     rester lisible à 3 noms comme à 300, et une colonne unique donnerait une
+     page interminable dès qu'elle grossit. */
+  .supporters {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+  }
+  .supporters li {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+  }
+
+  .empty {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 22px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .empty strong { color: var(--text); display: block; margin-bottom: 6px; }
+
+  .status { color: var(--muted); font-size: 0.85rem; margin-top: 14px; }
+
+  .note {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .btn { display: inline-block; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); text-decoration: none; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-secondary:hover { border-color: var(--muted); text-decoration: none; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--text); }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --border: #e3e5e8;
+      --text: #1b1e24;
+      --muted: #5c6370;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="lang-toggle" id="langToggle" type="button"></button>
+  <h1 data-i18n="pageTitle"></h1>
+  <p class="tagline" data-i18n="intro"></p>
+  <div class="sub-links">
+    <a href="index.html" data-i18n="navHome"></a>
+    <a href="documentation.html" data-i18n="navDocs"></a>
+    <a href="roadmap.html" data-i18n="navRoadmap"></a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2 data-i18n="listTitle"></h2>
+    <ul class="supporters" id="supporters" hidden></ul>
+    <div class="empty" id="empty" hidden>
+      <strong data-i18n="emptyTitle"></strong>
+      <span data-i18n="emptyBody"></span>
+    </div>
+    <p class="status" id="status" data-i18n="statusLoading"></p>
+  </section>
+
+  <section>
+    <div class="note" data-i18n="consent"></div>
+  </section>
+
+  <section>
+    <h2 data-i18n="supportTitle"></h2>
+    <p data-i18n="supportBody" style="color: var(--muted);"></p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/sponsors/Tomoushie" data-i18n="ctaSponsor"></a>
+      <a class="btn btn-secondary" href="https://paypal.me/tomoushie" data-i18n="ctaDonate"></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>
+    <a href="index.html" data-i18n="navHome"></a>
+    ·
+    <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>
+    ·
+    <a href="documentation.html" data-i18n="navDocs"></a>
+  </p>
+</footer>
+
+<script>
+  /*
+    La page lit EXACTEMENT le même supporters.json que l'application, et lui
+    applique les mêmes règles (Services/SupportersProvider.cs) : caractères de
+    contrôle et de formatage retirés, espaces repliés, 40 caractères par nom,
+    doublons supprimés sans tenir compte de la casse, tri alphabétique, 500
+    noms au plus.
+
+    **Deux implémentations d'une même règle, c'est un risque assumé** : une
+    seule source de données, mais deux lecteurs. L'alternative — servir du
+    HTML pré-généré — obligerait à un build pour ajouter un nom, ce qui
+    supprimerait justement l'intérêt du fichier JSON. Toute évolution des
+    règles doit donc toucher les DEUX.
+
+    Le tri alphabétique n'est pas cosmétique : il garantit que l'ordre
+    d'affichage ne puisse pas se lire comme un classement par montant.
+  */
+  var MAX_NAMES = 500;
+  var MAX_NAME_LENGTH = 40;
+
+  function cleanName(raw) {
+    if (typeof raw !== "string") return null;
+
+    // L'ORDRE des trois étapes reproduit celui du C#, et il n'est pas
+    // interchangeable. Les espaces d'abord : une tabulation et un saut de
+    // ligne sont des caractères de contrôle, mais les supprimer souderait les
+    // mots ("Jean\nDupont" → "JeanDupont"). Les autres contrôles, eux, sont
+    // retirés SANS être remplacés, sinon U+202E laisserait un espace au
+    // milieu d'un pseudo ("Ali‹RLO›ce" → "Ali ce" au lieu de "Alice").
+    //
+    // \p{White_Space} et non \s : en JavaScript \s inclut U+FEFF, que
+    // char.IsWhiteSpace ne considère PAS comme un espace côté .NET. Les deux
+    // implémentations donneraient alors des résultats différents pour le même
+    // fichier — vérifié, c'était le cas.
+    var spaced = raw.replace(/\p{White_Space}+/gu, " ");
+    // Cc contrôle, Cf formatage (dont les marques de direction et les espaces
+    // de largeur nulle), Co usage privé, Cn non attribué.
+    var stripped = spaced.replace(/[\p{Cc}\p{Cf}\p{Co}\p{Cn}]/gu, "");
+    var collapsed = stripped.replace(/\p{White_Space}+/gu, " ").trim();
+    if (!collapsed) return null;
+
+    var points = Array.from(collapsed);
+    if (points.length <= MAX_NAME_LENGTH) return collapsed;
+    // slice sur les points de code et non sur les unités UTF-16 : couper au
+    // milieu d'une paire de substituts produirait un caractère de remplacement.
+    var cut = points.slice(0, MAX_NAME_LENGTH).join("").trim();
+    return cut || null;
+  }
+
+  function cleanList(raw) {
+    if (!Array.isArray(raw)) return [];
+    var seen = Object.create(null);
+    var names = [];
+    for (var i = 0; i < raw.length && names.length < MAX_NAMES; i++) {
+      var name = cleanName(raw[i]);
+      if (!name) continue;
+      var key = name.toLowerCase();
+      if (seen[key]) continue;
+      seen[key] = true;
+      names.push(name);
+    }
+    names.sort(function (a, b) { return a.localeCompare(b, undefined, { sensitivity: "base" }); });
+    return names;
+  }
+
+  var STRINGS = {
+    fr: {
+      langToggle: "English",
+      pageTitle: "Remerciements",
+      intro: "Merci aux personnes ci-dessous, dont la générosité soutient le développement de Chaturbate Recorder. L'application reste gratuite et identique pour tout le monde.",
+      navHome: "Accueil",
+      navDocs: "Documentation",
+      navRoadmap: "Roadmap",
+      listTitle: "Elles soutiennent le projet",
+      emptyTitle: "La liste est vide pour l'instant.",
+      emptyBody: "Le projet n'a encore reçu aucun don — et il fonctionne très bien ainsi.",
+      statusLoading: "Chargement de la liste…",
+      statusOk: "Cette liste est la même que celle affichée dans le logiciel.",
+      statusFail: "La liste n'a pas pu être chargée. Réessaie plus tard.",
+      consent: "Aucun montant n'est affiché, et l'ordre est alphabétique : il ne reflète ni la date, ni la somme. Seuls des pseudonymes figurent ici, et uniquement avec l'accord des personnes concernées.",
+      supportTitle: "Soutenir le projet",
+      supportBody: "Aucune fonctionnalité n'est réservée aux contributeurs : l'application est identique dans tous les cas.",
+      ctaSponsor: "❤ Sponsoriser (GitHub)",
+      ctaDonate: "Faire un don (PayPal)",
+    },
+    en: {
+      langToggle: "Français",
+      pageTitle: "Thanks",
+      intro: "Thanks to the people below, whose generosity supports the development of Chaturbate Recorder. The application stays free, and identical for everyone.",
+      navHome: "Home",
+      navDocs: "Documentation",
+      navRoadmap: "Roadmap",
+      listTitle: "They support the project",
+      emptyTitle: "The list is empty for now.",
+      emptyBody: "The project has not received any donation yet — and it works perfectly well that way.",
+      statusLoading: "Loading the list…",
+      statusOk: "This list is the same as the one shown in the application.",
+      statusFail: "The list could not be loaded. Please try again later.",
+      consent: "No amount is ever shown, and the order is alphabetical: it reflects neither the date nor the sum. Only pseudonyms appear here, and only with the consent of the people concerned.",
+      supportTitle: "Support the project",
+      supportBody: "No feature is ever reserved for contributors: the application is the same either way.",
+      ctaSponsor: "❤ Sponsor (GitHub)",
+      ctaDonate: "Donate (PayPal)",
+    },
+  };
+
+  var state = { names: null, failed: false };
+
+  function renderList() {
+    var list = document.getElementById("supporters");
+    var empty = document.getElementById("empty");
+    if (state.names === null) { list.hidden = true; empty.hidden = true; return; }
+    if (state.names.length === 0) { list.hidden = true; empty.hidden = false; return; }
+
+    // textContent et jamais innerHTML : ces noms viennent d'un fichier de
+    // données, et rien ne justifie de leur laisser produire du balisage.
+    list.innerHTML = "";
+    state.names.forEach(function (name) {
+      var li = document.createElement("li");
+      li.textContent = name;
+      list.appendChild(li);
+    });
+    list.hidden = false;
+    empty.hidden = true;
+  }
+
+  function setLanguage(lang) {
+    var s = STRINGS[lang];
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      if (s[key] === undefined) { console.warn("Clé de traduction manquante : " + key + " (" + lang + ")"); return; }
+      el.textContent = s[key];
+    });
+    document.getElementById("langToggle").textContent = s.langToggle;
+    var status = document.getElementById("status");
+    status.textContent = state.failed ? s.statusFail : (state.names === null ? s.statusLoading : s.statusOk);
+    localStorage.setItem("lang", lang);
+  }
+
+  var saved = localStorage.getItem("lang");
+  var initial = saved || (navigator.language && navigator.language.toLowerCase().indexOf("fr") === 0 ? "fr" : "en");
+  setLanguage(initial);
+
+  fetch("supporters.json", { cache: "no-cache" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (doc) {
+      var raw = Array.isArray(doc) ? doc : (doc && doc.supporters);
+      state.names = cleanList(raw);
+    })
+    .catch(function (err) {
+      console.warn("Liste des donateurs indisponible :", err);
+      state.failed = true;
+    })
+    .finally(function () {
+      renderList();
+      setLanguage(document.documentElement.lang);
+    });
+
+  document.getElementById("langToggle").addEventListener("click", function () {
+    setLanguage(document.documentElement.lang === "fr" ? "en" : "fr");
+  });
+</script>
+
+</body>
+</html>

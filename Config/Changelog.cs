@@ -294,6 +294,10 @@ namespace ChaturbateRecorderApp.Config
                 "La liste des donateurs est aussi récupérée sur le site du projet à l'ouverture de la fenêtre : un nom peut donc être ajouté sans attendre une nouvelle version. Sans connexion, la liste embarquée s'affiche.",
                 "Un nom n'est ajouté qu'avec l'accord de la personne concernée, et la liste est triée alphabétiquement pour que son ordre ne puisse pas se lire comme un classement.",
             }),
+            ("1.34.1", new[]
+            {
+                "Correction : en thème sombre, les ascenseurs des Favoris, des Logs et de la fenêtre principale restaient blancs alors que ceux de l'historique et de la surveillance étaient bien sombres.",
+            }),
         };
 
         /// <summary>
@@ -465,6 +469,10 @@ namespace ChaturbateRecorderApp.Config
                 "New \"Thanks\" button in the \"Support the project\" panel: it lists the people whose donations support the project, and never mentions an amount.",
                 "The list of donors is also fetched from the project website when the window opens, so a name can be added without waiting for a new version. With no connection, the built-in list is shown.",
                 "A name is only added with that person's consent, and the list is sorted alphabetically so its order cannot be read as a ranking.",
+            },
+            ["1.34.1"] = new[]
+            {
+                "Fixed: in dark theme, the scrollbars of Favourites, Logs and the main window stayed white while those of the history and monitoring lists were properly dark.",
             },
         };
 

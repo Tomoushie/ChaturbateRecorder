@@ -4,7 +4,7 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-10 — version courante : v1.34.0 (app, NON PUBLIÉE), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-10 — version courante : v1.34.1 (app, NON PUBLIÉE — v1.34.0 l'est), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 **Publiés le 2026-08-09** : v1.29.0 à v1.33.0 côté application, et
 `sentinelguard-v1.1.0` puis `sentinelguard-v1.2.0` sur nuget.org. **Redemander
@@ -14,6 +14,46 @@ avant tout tag** : il déclenche une release publique.
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.34.1 (2026-08-10) — 114.0 : ascenseurs blancs en thème sombre** :
+- **Signalé avec une capture, et la capture disait la vraie cause** : certains
+  ascenseurs sombres, d'autres blancs. Le `SetWindowTheme(..., "DarkMode_
+  Explorer")` de 103.0 vivait DANS `ThemedListView`, donc seules l'historique
+  et la surveillance en bénéficiaient. Favoris, Logs et l'ascenseur de la
+  fenêtre principale restaient blancs. **Le défaut n'était pas la couleur mais
+  le mélange** — un seul type de contrôle était câblé.
+- **`UI/NativeScrollBars.cs`, un seul exemplaire du P/Invoke**, appelé depuis
+  les cas ListBox / TextBox / RichTextBox / Panel / ListView de `ThemeManager`.
+  Même leçon que la fusion Security ↔ SentinelGuard : du code dupliqué ou
+  enfermé dans une classe finit par ne bénéficier qu'à un seul appelant.
+- **Le handle peut ne pas exister à l'appel** (contrôle jamais affiché, mode
+  simple, fenêtre pas encore ouverte). L'ancien code testait `IsHandleCreated`
+  et abandonnait en silence. La nouvelle classe REJOUE sur `HandleCreated`.
+- **Mesuré, pas jugé à l'œil** : comparaison pixel des captures avant/après.
+  Colonnes de luminance > 600/765 dans Favoris (x 483-499) et Logs (x 659-675)
+  AVANT, aucune APRÈS ; l'historique est resté **identique au bit près**
+  (`ImageChops.difference` → `None`), ce qui prouve que le refactor n'a rien
+  changé pour le seul contrôle qui marchait déjà.
+- **Tests** : `Tests/NativeScrollBarsTests.cs` (6, **226 au total**), éprouvés
+  en les cassant (2 échecs). Ils ne peuvent pas vérifier une couleur — la zone
+  non cliente n'est pas lisible — mais ils vérifient EXACTEMENT la cause du
+  défaut : que chaque type de contrôle à ascenseur est bien passé au traitement.
+
+**Page « Remerciements » du site (2026-08-10, suite de 104.0)** — demandée
+après coup, aucun changement applicatif :
+- `docs/remerciements.html` lit **le même `supporters.json`** que
+  l'application. Une source de données, deux lecteurs.
+- **Deux implémentations de la même règle de nettoyage, risque assumé et
+  documenté des deux côtés.** L'alternative — du HTML pré-généré — obligerait
+  à un build pour ajouter un nom, ce qui supprimerait tout l'intérêt du JSON.
+- **La parité a été VÉRIFIÉE, et elle était fausse deux fois** : (a) le JS
+  remplaçait les caractères de contrôle par un espace au lieu de les
+  supprimer, d'où « Ali ce » là où le C# donne « Alice » ; (b) `\s` en
+  JavaScript inclut U+FEFF, que `char.IsWhiteSpace` exclut — d'où
+  `\p{White_Space}`. Les 12 vecteurs de `SupportersTests` sont désormais
+  rejoués dans le navigateur avec zéro écart.
+- `textContent` et jamais `innerHTML` pour les noms : ils viennent d'un fichier
+  de données, rien ne justifie de les laisser produire du balisage.
 
 **v1.34.0 (2026-08-10) — 104.0 : remerciements aux donateurs** :
 - **Deux sources, choix de l'utilisateur** : `Config/Supporters.cs` (embarquée,

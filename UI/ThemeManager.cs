@@ -215,6 +215,10 @@ namespace ChaturbateRecorderApp.UI
                     // sans quoi leur fond système gris resterait visible et une
                     // ligne d'enregistrement trancherait sur sa carte.
                     pnl.BackColor = surface;
+                    // Les panneaux AutoScroll (contentPanel, jobsListPanel) ont
+                    // de VRAIS ascenseurs Windows : celui de la fenêtre
+                    // principale restait blanc sur toute sa hauteur (114.0).
+                    NativeScrollBars.Apply(pnl, p);
                     break;
 
                 case Button b:
@@ -231,6 +235,10 @@ namespace ChaturbateRecorderApp.UI
                     tb2.ForeColor = p.Fg;
                     tb2.BorderStyle = BorderStyle.None;
                     InputFrame.Attach(tb2, p.Border);
+                    // Multiligne uniquement en pratique (note de légalité,
+                    // liste des remerciements) : un TextBox d'une ligne n'a pas
+                    // d'ascenseur, l'appel est alors sans effet.
+                    NativeScrollBars.Apply(tb2, p);
                     break;
 
                 // RichTextBox ne dérive pas de TextBox (tous deux dérivent de
@@ -240,6 +248,7 @@ namespace ChaturbateRecorderApp.UI
                     rtb.BackColor = p.Input;
                     rtb.ForeColor = p.Fg;
                     rtb.BorderStyle = BorderStyle.None;
+                    NativeScrollBars.Apply(rtb, p);
                     break;
 
                 case ListBox lb:
@@ -247,6 +256,10 @@ namespace ChaturbateRecorderApp.UI
                     lb.ForeColor = p.Fg;
                     lb.BorderStyle = BorderStyle.None;
                     InputFrame.Attach(lb, p.Border);
+                    // Favoris et Logs : les deux ascenseurs blancs les plus
+                    // visibles de la fenêtre, celui des Logs étant en plus
+                    // HORIZONTAL (114.0).
+                    NativeScrollBars.Apply(lb, p);
                     break;
 
                 case ListView lv:

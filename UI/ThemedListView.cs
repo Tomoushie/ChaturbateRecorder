@@ -33,13 +33,11 @@ namespace ChaturbateRecorderApp.UI
         private static readonly ConditionalWeakTable<ListView, State> _states = new();
 
         /// <summary>
-        /// Applique le thème système à un contrôle. Utilisé avec
-        /// "DarkMode_Explorer" pour obtenir des ASCENSEURS sombres : ceux d'une
-        /// ListView sont dessinés par Windows dans la zone non cliente, hors de
-        /// portée de <c>BackColor</c> comme de tout dessin par l'application.
-        /// Sans ça, une liste sombre garde deux barres blanches sur ses bords —
-        /// exactement le défaut qui avait motivé ThemedScrollBar là où le
-        /// contrôle, lui, était remplaçable.
+        /// Ascenseurs sombres : délégué à <see cref="NativeScrollBars"/> depuis
+        /// 114.0. Le P/Invoke vivait ici, et c'est précisément pour ça que
+        /// SEULES les ListView en bénéficiaient — Favoris, Logs et la fenêtre
+        /// principale gardaient des barres blanches. Un seul exemplaire du
+        /// code, appelé depuis tous les cas de ThemeManager.
         ///
         /// **Contrepartie assumée, mesurée en comparant les deux rendus à
         /// l'écran** : ce thème fait aussi dessiner par Windows les séparateurs
@@ -48,29 +46,12 @@ namespace ChaturbateRecorderApp.UI
         /// filet gris, qui est de surcroît le rendu même de l'Explorateur. La
         /// classe "ItemsView" a été essayée : mêmes séparateurs.
         /// </summary>
-        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private static extern int SetWindowTheme(IntPtr handle, string? appName, string? idList);
-
         public static void Attach(ListView list, ThemeManager.Palette palette)
         {
             var state = _states.GetValue(list, _ => new State());
             state.Palette = palette;
 
-            if (list.IsHandleCreated)
-            {
-                // Le thème se déduit de la clarté du fond plutôt que d'un
-                // booléen transmis : la palette est parfois INTERPOLÉE pendant
-                // la transition clair/sombre, et un booléen ferait basculer les
-                // ascenseurs d'un coup au milieu du fondu.
-                var dark = palette.Input.R + palette.Input.G + palette.Input.B < 384;
-                try { SetWindowTheme(list.Handle, dark ? "DarkMode_Explorer" : "Explorer", null); }
-                catch (Exception ex)
-                {
-                    // uxtheme absent ou refusé : la liste reste utilisable,
-                    // seuls ses ascenseurs gardent le rendu clair.
-                    System.Diagnostics.Debug.WriteLine($"SetWindowTheme indisponible : {ex.Message}");
-                }
-            }
+            NativeScrollBars.Apply(list, palette);
 
             if (!state.Wired)
             {
