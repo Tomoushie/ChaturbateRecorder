@@ -4,7 +4,7 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-09 — version courante : v1.33.0 (app), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-10 — version courante : v1.34.0 (app, NON PUBLIÉE), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 **Publiés le 2026-08-09** : v1.29.0 à v1.33.0 côté application, et
 `sentinelguard-v1.1.0` puis `sentinelguard-v1.2.0` sur nuget.org. **Redemander
@@ -14,6 +14,76 @@ avant tout tag** : il déclenche une release publique.
 v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
+
+**v1.34.0 (2026-08-10) — 104.0 : remerciements aux donateurs** :
+- **Deux sources, choix de l'utilisateur** : `Config/Supporters.cs` (embarquée,
+  socle hors ligne, vide pour l'instant) FUSIONNÉE avec `docs/supporters.json`
+  servi par le site. Ajouter un nom au JSON et pousser suffit — pas besoin
+  d'attendre une release ; recopier la liste dans `Supporters.Embedded` au
+  prochain bump pour qu'elle reste affichable sans connexion.
+- **Le tri alphabétique fait partie de la consigne, pas de l'esthétique.** La
+  demande dit « on ne mentionne pas la somme » : un ordre d'ajout ou un ordre
+  choisi à la main finirait par se lire comme un classement par montant.
+  `SupportersProvider` trie, donc la question ne se pose plus.
+- **Consentement écrit dans l'interface ET dans les deux fichiers de données** :
+  un don PayPal transporte le NOM RÉEL du payeur. La fenêtre affiche « un nom
+  n'est ajouté qu'avec l'accord de la personne concernée », et les en-têtes de
+  `Supporters.cs` / `supporters.json` disent de préférer un pseudonyme. Ce
+  n'était pas demandé, mais publier une identité sans accord serait une
+  divulgation, pas un remerciement.
+- **C'est le SEUL texte de l'application qui vienne du réseau**, d'où
+  l'assainissement : catégories Unicode Cc/Cf/Co supprimées (U+202E inverse le
+  rendu de ce qui suit, les espaces de largeur nulle déjouent la
+  déduplication), espaces repliés, 40 caractères par nom, 500 noms, 64 Ko de
+  réponse, HTTPS exigé. Parcours par **rune** et non par `char` pour ne pas
+  couper une paire de substituts — un pseudo peut contenir un emoji.
+- **Les sauts de ligne valent un espace, ils ne sont pas supprimés** : les
+  effacer souderait les mots (« Jean\nDupont » → « JeanDupont »). Ordre des
+  tests dans `Clean` : espaces d'abord, catégories ensuite.
+- **Aucune requête au démarrage** : le chargement n'a lieu qu'à l'ouverture de
+  la fenêtre, et la liste embarquée s'affiche AVANT lui. Contacter un serveur
+  à chaque lancement révélerait l'IP sans que l'utilisateur l'ait demandé.
+- **Bouton dans `grpDonate` et non dans la barre du haut** : c'est au moment où
+  quelqu'un envisage de donner qu'il a du sens de voir qui l'a déjà fait.
+  Panneau de 144 à 168 px, garde de 10 px sous le dernier contrôle conservée.
+- **Deux troncatures trouvées à la capture, invisibles autrement** : l'intitulé
+  d'introduction coupait sa troisième ligne (56 → 72 px) et la mention de
+  consentement passait SOUS le bouton Fermer (largeur 496 → 380, ancrage privé
+  de `Right`). **Un Label ne signale pas qu'il tronque** — vérifié en FR et EN,
+  clair et sombre, liste vide et liste remplie.
+- **Tests** : `Tests/SupportersTests.cs` (20, **221 au total**), éprouvés en les
+  cassant volontairement (3 échecs). Dont un qui relit `docs/supporters.json`
+  du dépôt : c'est le seul lien entre le fichier du site et le code qui le
+  consomme, et rien d'autre ne le vérifierait.
+
+**105.0 (2026-08-10) — page Documentation** (site, README FR/EN : aucun
+changement applicatif, pas de bump) :
+- **Ce qui manquait n'était pas du contenu mais un POINT D'ENTRÉE.** La
+  documentation existait, éclatée sur trois supports (site, wiki en 7 pages
+  FR + 7 EN, deux README) sans page qui la rassemble. `docs/documentation.html`
+  est ce hub, au style de `index.html` et non du thème Cayman des pages
+  Markdown — donc bilingue par le même mécanisme et la même clé
+  `localStorage("lang")`.
+- **Trois tableaux de référence qui n'existaient nulle part** : les quatre
+  réglages par enregistrement, les huit réglages de l'application avec leurs
+  valeurs par défaut, et l'emplacement de CHAQUE fichier produit
+  (enregistrements, logs JSONL, rapports de plantage, `settings.json`,
+  `favorites.json`, `watchlist.json`, `trusted-binaries.json`,
+  `installed-components.json`). Tout relevé dans le code, pas de mémoire.
+- **Bascule FR/EN par attributs `data-i18n`, PAS une ligne de code par clé.**
+  Ce n'est pas un goût : la méthode d'`index.html` a déjà produit un bug en
+  production (« Légalité » affichait `undefined` sur tout le site anglais,
+  clé absente du bloc `en`). Ici une clé manquante est signalée en console et
+  le texte reste affiché. Les tableaux vivent dans une structure séparée, si
+  bien qu'une divergence de lignes ou de colonnes entre FR et EN se voit.
+- **Les liens vers le wiki sont réécrits selon la langue** (`data-wiki`) : ses
+  pages anglaises sont des FICHIERS distincts (`Installation-EN`), sans
+  bascule à la volée. Sans ça, un lecteur anglophone atterrissait en français.
+  **Les 12 URL ont été vérifiées à 200**, pas supposées.
+- **Vérifié dans un navigateur** : aucune clé manquante ni élément vide dans
+  les deux langues, aucun débordement horizontal de la page (les tableaux
+  défilent dans leur propre conteneur, contrôlé à 375 px), couleurs pilotées
+  par les variables en clair comme en sombre.
 
 **2026-08-08 — le deploiement Pages ne suit plus la pointe de main** (CI
 uniquement, pas de bump) :

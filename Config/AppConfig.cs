@@ -65,6 +65,11 @@ namespace ChaturbateRecorderApp.Config
         // Parrainage récurrent (80.0), distinct du don ponctuel PayPal ci-dessus.
         public static string SponsorUrl        = "https://github.com/sponsors/Tomoushie";
         public static string WebsiteUrl        = "https://tomoushie.github.io/ChaturbateRecorder/";
+        // 104.0 — liste des donateurs servie par le site, lue seulement quand
+        // l'utilisateur ouvre la fenêtre "Remerciements". Sert à ajouter
+        // quelqu'un sans attendre une release ; la liste embarquée
+        // (Config/Supporters.cs) reste le socle hors ligne.
+        public static string SupportersUrl     = "https://tomoushie.github.io/ChaturbateRecorder/supporters.json";
         public static int    ThumbnailOffsetSeconds = 10;
         // Watchdog anti-freeze (2.1) : durée max sans nouvelle ligne de sortie
         // yt-dlp/ffmpeg avant de considérer le process figé et le tuer.

@@ -98,6 +98,24 @@ namespace ChaturbateRecorderApp.UI
             ["button.website"] = ("Site web", "Website"),
             ["label.donate"] = ("Scanne le QR code avec ton téléphone, ou clique sur le bouton.", "Scan the QR code with your phone, or click the button."),
 
+            // 104.0 — fenêtre de remerciements aux donateurs. Aucun montant
+            // n'apparaît nulle part, et la liste est triée alphabétiquement
+            // pour que son ordre ne se lise pas comme un classement.
+            ["button.thanks"] = ("Remerciements", "Thanks"),
+            ["window.thanks"] = ("Remerciements", "Thanks"),
+            ["thanks.intro"] = (
+                "Merci aux personnes ci-dessous, dont la générosité soutient le développement de Chaturbate Recorder. L'application reste gratuite et identique pour tout le monde.",
+                "Thanks to the people below, whose generosity supports the development of Chaturbate Recorder. The application stays free, and identical for everyone."),
+            ["thanks.empty"] = (
+                "La liste est vide pour l'instant.\n\nLe projet n'a encore reçu aucun don — et il fonctionne très bien ainsi.",
+                "The list is empty for now.\n\nThe project has not received any donation yet — and it works perfectly well that way."),
+            ["thanks.consent"] = (
+                "Aucun montant n'est affiché. Un nom n'est ajouté qu'avec l'accord de la personne concernée.",
+                "No amount is ever shown. A name is only added with that person's consent."),
+            ["thanks.refreshing"] = ("Actualisation de la liste…", "Refreshing the list…"),
+            ["thanks.upToDate"] = ("Liste à jour, récupérée sur le site du projet.", "List up to date, fetched from the project website."),
+            ["thanks.offline"] = ("Liste embarquée : le site du projet n'a pas répondu.", "Built-in list: the project website did not answer."),
+
             ["panel.logs"] = ("Logs", "Logs"),
 
             // 19.0 : fenêtre Paramètres + menu de la zone de notification.

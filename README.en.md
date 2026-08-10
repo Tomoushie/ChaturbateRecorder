@@ -18,6 +18,7 @@
   ![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows11&logoColor=white)
   ![Top language](https://img.shields.io/github/languages/top/Tomoushie/ChaturbateRecorder?color=0078D4)
 
+  📚 [Documentation](https://tomoushie.github.io/ChaturbateRecorder/documentation.html) ·
   🌐 [Project website](https://tomoushie.github.io/ChaturbateRecorder/) ·
   📦 [Latest release](https://github.com/Tomoushie/ChaturbateRecorder/releases/latest) ·
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·

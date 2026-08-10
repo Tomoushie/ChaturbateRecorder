@@ -69,6 +69,7 @@ namespace ChaturbateRecorderApp
         private ThemedButton shareRedditButton = null!;
         private ThemedButton githubButton = null!;
         private PictureBox qrPictureBox = null!;
+        private ThemedButton thanksButton = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
 
@@ -2005,6 +2006,7 @@ namespace ChaturbateRecorderApp
             sponsorButton.Text = L("button.sponsor");
             donateButton.Text = L("button.donate");
             websiteButton.Text = L("button.website");
+            thanksButton.Text = L("button.thanks");
             donateLabel.Text = L("label.donate");
 
             grpLogs.Title = L("panel.logs");
@@ -2817,7 +2819,11 @@ namespace ChaturbateRecorderApp
             //
             // La position de grpLogs est recalculée à partir de
             // grpDonate.Bottom dans ApplyUiMode, elle suit automatiquement.
-            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 144) };
+            //
+            // 168 depuis 104.0 : le bouton "Remerciements" occupe une quatrième
+            // ligne dans la colonne de droite (y=128..154), et la garde de 10 px
+            // sous le dernier contrôle est conservée (168 - 4 - 154).
+            grpDonate = new RoundedGroupPanel { Title = "Soutenir le projet", Location = new Point(12, 606), Size = new Size(660, 168) };
             sponsorButton = new ThemedButton { Text = "Sponsoriser (GitHub)", Location = new Point(12, 34), Size = new Size(220, 32) };
             donateButton = new ThemedButton { Text = "Faire un don (PayPal)", Location = new Point(12, 70), Size = new Size(220, 32) };
             websiteButton = new ThemedButton { Text = "Site web", Location = new Point(12, 106), Size = new Size(220, 24) };
@@ -2854,6 +2860,20 @@ namespace ChaturbateRecorderApp
             shareRedditButton.Click += (s, e) => OpenExternal($"https://www.reddit.com/submit?url={shareUrl}&title={shareText}");
             githubButton.Click += (s, e) => OpenExternal(repoUrl);
 
+            // 104.0 — remerciements aux donateurs. Placé dans ce panneau et
+            // non dans la barre du haut : c'est au moment où quelqu'un envisage
+            // de donner qu'il a du sens de voir qui l'a déjà fait, et le mettre
+            // ailleurs en aurait fait une fenêtre que personne n'ouvre.
+            // Sur la colonne de droite, sous la rangée de partage : la colonne
+            // de gauche est celle des trois actions "donner", celle-ci est
+            // occupée par ce qui relève de la communauté.
+            thanksButton = new ThemedButton { Text = "Remerciements", Location = new Point(340, 128), Size = new Size(316, 26) };
+            thanksButton.Click += (s, e) =>
+            {
+                using var dialog = new SupportersForm(_currentTheme, _currentLanguage);
+                dialog.ShowDialog(this);
+            };
+
             sponsorButton.Click += OnSponsorClick;
             donateButton.Click += OnDonateClick;
             websiteButton.Click += OnWebsiteClick;
@@ -2861,7 +2881,7 @@ namespace ChaturbateRecorderApp
             grpDonate.Controls.AddRange(new Control[]
             {
                 sponsorButton, donateButton, websiteButton, qrPictureBox, donateLabel,
-                shareXButton, shareRedditButton, githubButton,
+                shareXButton, shareRedditButton, githubButton, thanksButton,
             });
 
             // --- Panel : Logs ---

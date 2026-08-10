@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation — Chaturbate Recorder</title>
+<style>
+  /*
+    105.0 — Même feuille de style que index.html, volontairement recopiée
+    plutôt que partagée : la page d'accueil n'a pas de front matter (Jekyll la
+    copie telle quelle), celle-ci non plus, et un fichier CSS commun serait le
+    seul lien fragile entre deux pages qui n'en ont aucun autre. Les pages
+    Markdown du site (features, roadmap...) gardent, elles, le thème Cayman.
+  */
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b36;
+    --text: #e6e8eb;
+    --muted: #9aa3b2;
+    --accent: #dc2828;
+    --accent-dark: #a91f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.88em;
+  }
+
+  header {
+    position: relative;
+    padding: 56px 24px 40px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 2rem; margin: 0 0 8px; }
+  header p.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; }
+
+  .lang-toggle {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .lang-toggle:hover { border-color: var(--muted); color: var(--text); }
+
+  .sub-links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  .sub-links a { color: var(--muted); font-size: 0.9rem; }
+  .sub-links a:hover { color: var(--text); }
+
+  main { max-width: 880px; margin: 0 auto; padding: 48px 24px; }
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 { font-size: 1.35rem; margin: 0 0 8px; }
+  h3 { font-size: 1rem; margin: 28px 0 8px; }
+  section > p { color: var(--muted); }
+
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 48px;
+  }
+  .toc ol { margin: 0; padding-left: 22px; columns: 2; column-gap: 32px; }
+  .toc li { margin-bottom: 4px; }
+  @media (max-width: 560px) { .toc ol { columns: 1; } }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+  .note {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin-top: 20px;
+  }
+
+  /* Le conteneur défile, jamais la page : un tableau large ne doit pas
+     imposer un défilement horizontal à tout le document sur mobile. */
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; min-width: 520px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  td { color: var(--muted); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--text); }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --border: #e3e5e8;
+      --text: #1b1e24;
+      --muted: #5c6370;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="lang-toggle" id="langToggle" type="button"></button>
+  <h1 data-i18n="pageTitle"></h1>
+  <p class="tagline" id="tagline" data-i18n="tagline"></p>
+  <div class="sub-links">
+    <a href="index.html" data-i18n="navHome"></a>
+    <a href="features.html" data-i18n="navFeatures"></a>
+    <a href="screenshots.html" data-i18n="navScreenshots"></a>
+    <a href="sentinelguard.html" data-i18n="navSentinelGuard"></a>
+    <a href="roadmap.html" data-i18n="navRoadmap"></a>
+    <a href="legalite.html" data-i18n="navLegal"></a>
+  </div>
+</header>
+
+<main>
+  <nav class="toc">
+    <ol>
+      <li><a href="#install" data-i18n="tocInstall"></a></li>
+      <li><a href="#record" data-i18n="tocRecord"></a></li>
+      <li><a href="#watch" data-i18n="tocWatch"></a></li>
+      <li><a href="#settings" data-i18n="tocSettings"></a></li>
+      <li><a href="#files" data-i18n="tocFiles"></a></li>
+      <li><a href="#security" data-i18n="tocSecurity"></a></li>
+      <li><a href="#trouble" data-i18n="tocTrouble"></a></li>
+      <li><a href="#dev" data-i18n="tocDev"></a></li>
+    </ol>
+  </nav>
+
+  <section id="install">
+    <h2 data-i18n="installTitle"></h2>
+    <p data-i18n-html="installIntro"></p>
+    <div class="grid">
+      <div class="card">
+        <h3 data-i18n="installSetupTitle"></h3>
+        <p data-i18n-html="installSetupDesc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="installPortableTitle"></h3>
+        <p data-i18n-html="installPortableDesc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="installStandardTitle"></h3>
+        <p data-i18n-html="installStandardDesc"></p>
+      </div>
+    </div>
+    <div class="note" data-i18n-html="installNote"></div>
+    <p><a data-wiki="Installation" data-i18n="installWiki"></a></p>
+  </section>
+
+  <section id="record">
+    <h2 data-i18n="recordTitle"></h2>
+    <p data-i18n-html="recordIntro"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th data-i18n="colOption"></th><th data-i18n="colMeaning"></th><th data-i18n="colDefault"></th></tr>
+        </thead>
+        <tbody id="recordTable"></tbody>
+      </table>
+    </div>
+    <h3 data-i18n="recordMultiTitle"></h3>
+    <p data-i18n-html="recordMultiDesc"></p>
+    <p><a data-wiki="Guide-utilisation" data-i18n="recordWiki"></a></p>
+  </section>
+
+  <section id="watch">
+    <h2 data-i18n="watchTitle"></h2>
+    <p data-i18n-html="watchIntro"></p>
+    <div class="note" data-i18n-html="watchNote"></div>
+  </section>
+
+  <section id="settings">
+    <h2 data-i18n="settingsTitle"></h2>
+    <p data-i18n-html="settingsIntro"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th data-i18n="colSetting"></th><th data-i18n="colMeaning"></th><th data-i18n="colDefault"></th></tr>
+        </thead>
+        <tbody id="settingsTable"></tbody>
+      </table>
+    </div>
+    <h3 data-i18n="safeTitle"></h3>
+    <p data-i18n-html="safeDesc"></p>
+    <p><a data-wiki="Configuration" data-i18n="settingsWiki"></a></p>
+  </section>
+
+  <section id="files">
+    <h2 data-i18n="filesTitle"></h2>
+    <p data-i18n-html="filesIntro"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th data-i18n="colWhat"></th><th data-i18n="colWhere"></th></tr>
+        </thead>
+        <tbody id="filesTable"></tbody>
+      </table>
+    </div>
+    <div class="note" data-i18n-html="filesNote"></div>
+  </section>
+
+  <section id="security">
+    <h2 data-i18n="securityTitle"></h2>
+    <p data-i18n-html="securityIntro"></p>
+    <div class="grid">
+      <div class="card">
+        <h3 data-i18n="sec1Title"></h3>
+        <p data-i18n-html="sec1Desc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="sec2Title"></h3>
+        <p data-i18n-html="sec2Desc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="sec3Title"></h3>
+        <p data-i18n-html="sec3Desc"></p>
+      </div>
+    </div>
+    <p><a data-wiki="Securite" data-i18n="securityWiki"></a></p>
+  </section>
+
+  <section id="trouble">
+    <h2 data-i18n="troubleTitle"></h2>
+    <p data-i18n-html="troubleIntro"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th data-i18n="colSymptom"></th><th data-i18n="colFix"></th></tr>
+        </thead>
+        <tbody id="troubleTable"></tbody>
+      </table>
+    </div>
+    <p><a data-wiki="FAQ-Depannage" data-i18n="troubleWiki"></a></p>
+  </section>
+
+  <section id="dev">
+    <h2 data-i18n="devTitle"></h2>
+    <p data-i18n-html="devIntro"></p>
+    <div class="grid">
+      <div class="card">
+        <h3 data-i18n="dev1Title"></h3>
+        <p data-i18n-html="dev1Desc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="dev2Title"></h3>
+        <p data-i18n-html="dev2Desc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="dev3Title"></h3>
+        <p data-i18n-html="dev3Desc"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="dev4Title"></h3>
+        <p data-i18n-html="dev4Desc"></p>
+      </div>
+    </div>
+    <p><a data-wiki="Contribuer" data-i18n="devWiki"></a></p>
+  </section>
+</main>
+
+<footer>
+  <p>
+    <a href="index.html" data-i18n="navHome"></a>
+    ·
+    <a href="https://github.com/Tomoushie/ChaturbateRecorder">GitHub</a>
+    ·
+    <a href="https://github.com/Tomoushie/ChaturbateRecorder/wiki" data-i18n="footerWiki"></a>
+    ·
+    <a href="https://github.com/Tomoushie/ChaturbateRecorder/issues" data-i18n="footerIssues"></a>
+  </p>
+</footer>
+
+<script>
+  /*
+    Bascule FR/EN pilotée par attributs (data-i18n / data-i18n-html) et non
+    par une ligne de code par élément comme sur index.html.
+    **Ce n'est pas une préférence de style** : la version « une ligne par
+    clé » a déjà produit un bug en production (le lien « Légalité » affichait
+    "undefined" sur tout le site anglais, faute d'une clé oubliée dans le bloc
+    `en`). Ici une clé manquante est signalée dans la console et le texte
+    français reste affiché, au lieu d'écrire "undefined" dans la page.
+
+    Même clé localStorage("lang") que le reste du site : la langue choisie
+    ici suit l'utilisateur sur la page d'accueil et les pages Markdown.
+  */
+  var WIKI = "https://github.com/Tomoushie/ChaturbateRecorder/wiki/";
+
+  var STRINGS = {
+    fr: {
+      langToggle: "English",
+      pageTitle: "Documentation",
+      tagline: "Installer, enregistrer, régler, dépanner — et contribuer.",
+      navHome: "Accueil",
+      navFeatures: "Fonctionnalités détaillées",
+      navScreenshots: "Captures d'écran",
+      navSentinelGuard: "SentinelGuard (NuGet)",
+      navRoadmap: "Roadmap",
+      navLegal: "Légalité",
+
+      tocInstall: "Installer",
+      tocRecord: "Enregistrer",
+      tocWatch: "Surveiller un salon",
+      tocSettings: "Réglages",
+      tocFiles: "Où sont mes fichiers",
+      tocSecurity: "Sécurité",
+      tocTrouble: "Dépannage",
+      tocDev: "Pour les développeurs",
+
+      colOption: "Réglage",
+      colSetting: "Réglage",
+      colMeaning: "Ce qu'il fait",
+      colDefault: "Par défaut",
+      colWhat: "Quoi",
+      colWhere: "Où",
+      colSymptom: "Symptôme",
+      colFix: "Quoi faire",
+
+      installTitle: "Installer",
+      installIntro: "Trois formats sont publiés à chaque <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">release</a>. Si tu hésites, prends l'installateur.",
+      installSetupTitle: "setup.exe — recommandé",
+      installSetupDesc: "2 Mo. Il télécharge l'application, yt-dlp et ffmpeg, vérifie leurs empreintes et n'a besoin d'aucun droit administrateur. Il propose l'installation classique ou un déploiement portable dès le premier écran.",
+      installPortableTitle: "portable.zip",
+      installPortableDesc: "~46 Mo, autonome : aucun runtime à installer. À extraire où tu veux.",
+      installStandardTitle: "standard.zip",
+      installStandardDesc: "~600 Ko, mais exige le <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>.",
+      installNote: "Avec les deux archives seulement, place toi-même <code>yt-dlp.exe</code> et <code>ffmpeg.exe</code> à côté de l'exécutable : la licence GPL de ffmpeg interdit de le redistribuer ici. Windows affichera « Éditeur inconnu » au lancement de l'installateur, faute d'un certificat de signature payant — <em>Informations complémentaires</em> puis <em>Exécuter quand même</em>.",
+      installWiki: "Page Installation du wiki →",
+
+      recordTitle: "Enregistrer",
+      recordIntro: "Colle l'adresse d'un live — <strong>Chaturbate, Twitch, YouTube ou TikTok</strong> — dans le champ du haut, puis clique sur <strong>Démarrer</strong>. Les quatre réglages de la carte Enregistrement valent pour cet enregistrement-là, et non pour l'application entière : ils se changent d'une capture à l'autre.",
+      recordMultiTitle: "Plusieurs lives à la fois",
+      recordMultiDesc: "Chaque enregistrement lancé s'ajoute au panneau « Enregistrements en cours » avec sa propre barre de progression, son bouton d'ouverture de la page du stream et son bouton d'arrêt. Une seule instance de l'application suffit ; « Tout arrêter » les interrompt tous. Un watchdog tue le processus si yt-dlp ou ffmpeg cesse d'émettre pendant 120 secondes, plutôt que de laisser une capture figée passer pour active.",
+      recordWiki: "Guide d'utilisation complet sur le wiki →",
+
+      watchTitle: "Surveiller un salon",
+      watchIntro: "Le panneau « Surveillance » garde une liste de salons et démarre l'enregistrement dès que l'un d'eux passe en ligne. L'état de chaque ligne est réinterrogé à intervalle régulier, réglable dans les Paramètres.",
+      watchNote: "Twitch distingue un compte inexistant d'un compte hors ligne : une faute de frappe est signalée au lieu d'être attendue indéfiniment. Chaturbate ne le permet pas — un salon jamais vu en ligne peut simplement ne pas exister.",
+
+      settingsTitle: "Réglages",
+      settingsIntro: "Le bouton <strong>Paramètres</strong> ouvre les réglages qui valent pour toute l'application. Ils sont enregistrés dans <code>settings.json</code>, à côté de l'exécutable.",
+      safeTitle: "Safe Mode",
+      safeDesc: "Une fonctionnalité dont le composant manque est désactivée plutôt que de faire échouer l'enregistrement : sans ffmpeg, la capture continue, seuls le réencodage et les miniatures s'arrêtent. Les Paramètres montrent l'état de chaque composant (réencodage et miniatures, fichier cookies, proxy, enregistrements simultanés, surveillance automatique) et permettent d'en désactiver un à la main. L'application le signale au démarrage, une seule fois, et ne dit rien quand tout va bien.",
+      settingsWiki: "Page Configuration du wiki →",
+
+      filesTitle: "Où sont mes fichiers",
+      filesIntro: "Les enregistrements et les logs ne vivent pas au même endroit : les premiers vont dans tes Vidéos, les seconds dans <code>%LOCALAPPDATA%</code>, qui existe toujours et reste inscriptible sans élévation.",
+      filesNote: "Une désinstallation supprime les logs et les fichiers de configuration, <strong>jamais les enregistrements</strong>.",
+
+      securityTitle: "Sécurité",
+      securityIntro: "L'application lance des exécutables tiers et écrit des fichiers volumineux : ces deux points sont traités explicitement, pas supposés sûrs.",
+      sec1Title: "Binaires vérifiés",
+      sec1Desc: "L'empreinte SHA-256 et la signature de <code>yt-dlp.exe</code> et <code>ffmpeg.exe</code> sont contrôlées avant chaque lancement. L'installateur inscrit les empreintes qu'il a lui-même vérifiées auprès des auteurs.",
+      sec2Title: "Chemins et URL encadrés",
+      sec2Desc: "Chemins UNC, chemins étendus, flux ADS, noms réservés Windows et liens symboliques sont refusés ; les URL sont validées schéma par schéma. Voir <a href=\"sentinelguard.html\">SentinelGuard</a>, le paquet NuGet qui porte ces validateurs.",
+      sec3Title: "Emplacement d'exécution",
+      sec3Desc: "L'application refuse de tourner depuis un dossier réseau, temporaire ou compressé, et prévient si les droits d'un dossier sensible sont trop permissifs.",
+      securityWiki: "Page Sécurité du wiki →",
+
+      troubleTitle: "Dépannage",
+      troubleIntro: "Le bouton <strong>Diagnostic</strong> rassemble en une fenêtre ce qu'on demanderait autrement dans un ticket : versions, chemins, résultats des vérifications. Le bouton <strong>Signaler un bug</strong> ouvre une issue pré-remplie avec ces éléments.",
+      troubleWiki: "FAQ et dépannage sur le wiki →",
+
+      devTitle: "Pour les développeurs",
+      devIntro: "Le dépôt est sous double licence MIT / Apache 2.0. Les contributions passent par les issues et les pull requests ; la CI construit, teste et analyse chaque proposition.",
+      dev1Title: "Construire",
+      dev1Desc: "Application WinForms .NET 10. <code>dotnet build</code> puis <code>dotnet test Tests/ChaturbateRecorderApp.Tests.csproj</code>. Aucune dépendance externe hors NuGet.",
+      dev2Title: "Organisation du code",
+      dev2Desc: "<code>Services/</code> la logique (moteur de téléchargement, surveillance, mises à jour), <code>UI/</code> les fenêtres et le thème, <code>Config/</code> les réglages et l'historique des versions, <code>Tests/</code> la suite xUnit.",
+      dev3Title: "SentinelGuard",
+      dev3Desc: "Les validateurs de sécurité sont publiés séparément sur <a href=\"https://www.nuget.org/packages/SentinelGuard\">nuget.org</a> et réutilisables dans n'importe quel projet .NET. <a href=\"sentinelguard.html\">Détails →</a>",
+      dev4Title: "Chaîne de publication",
+      dev4Desc: "Un tag <code>vX.Y.Z</code> déclenche la construction, la publication des deux archives et de l'installateur, et l'attachement d'un SBOM CycloneDX à la release.",
+      devWiki: "Page Contribuer du wiki →",
+
+      footerWiki: "Wiki",
+      footerIssues: "Signaler un problème",
+    },
+
+    en: {
+      langToggle: "Français",
+      pageTitle: "Documentation",
+      tagline: "Install, record, configure, troubleshoot — and contribute.",
+      navHome: "Home",
+      navFeatures: "Detailed features",
+      navScreenshots: "Screenshots",
+      navSentinelGuard: "SentinelGuard (NuGet)",
+      navRoadmap: "Roadmap",
+      navLegal: "Legality",
+
+      tocInstall: "Install",
+      tocRecord: "Record",
+      tocWatch: "Monitor a room",
+      tocSettings: "Settings",
+      tocFiles: "Where my files are",
+      tocSecurity: "Security",
+      tocTrouble: "Troubleshooting",
+      tocDev: "For developers",
+
+      colOption: "Option",
+      colSetting: "Setting",
+      colMeaning: "What it does",
+      colDefault: "Default",
+      colWhat: "What",
+      colWhere: "Where",
+      colSymptom: "Symptom",
+      colFix: "What to do",
+
+      installTitle: "Install",
+      installIntro: "Three formats ship with every <a href=\"https://github.com/Tomoushie/ChaturbateRecorder/releases/latest\">release</a>. If in doubt, take the installer.",
+      installSetupTitle: "setup.exe — recommended",
+      installSetupDesc: "2 MB. It downloads the application, yt-dlp and ffmpeg, verifies their checksums, and needs no administrator rights. It offers a classic install or a portable deployment on its first screen.",
+      installPortableTitle: "portable.zip",
+      installPortableDesc: "~46 MB, self-contained: no runtime to install. Extract it wherever you like.",
+      installStandardTitle: "standard.zip",
+      installStandardDesc: "~600 KB, but requires the <a href=\"https://dotnet.microsoft.com/download/dotnet/10.0\">.NET 10 Desktop Runtime</a>.",
+      installNote: "With the two archives only, place <code>yt-dlp.exe</code> and <code>ffmpeg.exe</code> next to the executable yourself: ffmpeg's GPL licence means it is not redistributed here. Windows will say \"Unknown publisher\" when the installer starts, for lack of a paid signing certificate — <em>More info</em> then <em>Run anyway</em>.",
+      installWiki: "Installation page on the wiki →",
+
+      recordTitle: "Record",
+      recordIntro: "Paste a stream address — <strong>Chaturbate, Twitch, YouTube or TikTok</strong> — into the top field, then click <strong>Start</strong>. The four options on the Recording card apply to that recording only, not to the whole application: you can change them between captures.",
+      recordMultiTitle: "Several streams at once",
+      recordMultiDesc: "Every recording you start is added to the \"Active recordings\" panel with its own progress bar, a button that opens the stream page, and its own stop button. A single instance of the application is enough; \"Stop all\" interrupts them all. A watchdog kills the process if yt-dlp or ffmpeg goes silent for 120 seconds, rather than letting a frozen capture pass for an active one.",
+      recordWiki: "Full usage guide on the wiki →",
+
+      watchTitle: "Monitor a room",
+      watchIntro: "The \"Monitoring\" panel keeps a list of rooms and starts recording as soon as one of them goes live. Each row's state is re-checked at a regular interval, adjustable in Settings.",
+      watchNote: "Twitch tells a non-existent account apart from an offline one, so a typo is reported instead of being waited on forever. Chaturbate does not allow that — a room never seen live may simply not exist.",
+
+      settingsTitle: "Settings",
+      settingsIntro: "The <strong>Settings</strong> button opens the options that apply to the whole application. They are stored in <code>settings.json</code>, next to the executable.",
+      safeTitle: "Safe Mode",
+      safeDesc: "A feature whose component is missing is disabled rather than made to fail the recording: without ffmpeg, capture goes on and only re-encoding and thumbnails stop. Settings show the state of each component (re-encoding and thumbnails, cookies file, proxy, simultaneous recordings, automatic monitoring) and let you turn one off by hand. The application says so once at startup, and says nothing when all is well.",
+      settingsWiki: "Configuration page on the wiki →",
+
+      filesTitle: "Where my files are",
+      filesIntro: "Recordings and logs do not live in the same place: the former go to your Videos folder, the latter to <code>%LOCALAPPDATA%</code>, which always exists and stays writable without elevation.",
+      filesNote: "Uninstalling removes the logs and the configuration files, <strong>never the recordings</strong>.",
+
+      securityTitle: "Security",
+      securityIntro: "The application runs third-party executables and writes large files: both are handled explicitly rather than assumed safe.",
+      sec1Title: "Verified binaries",
+      sec1Desc: "The SHA-256 checksum and signature of <code>yt-dlp.exe</code> and <code>ffmpeg.exe</code> are checked before every launch. The installer records the checksums it verified against the authors' own published sums.",
+      sec2Title: "Paths and URLs fenced in",
+      sec2Desc: "UNC paths, extended paths, ADS streams, Windows reserved names and symbolic links are refused; URLs are validated scheme by scheme. See <a href=\"sentinelguard.html\">SentinelGuard</a>, the NuGet package that carries these validators.",
+      sec3Title: "Where it runs from",
+      sec3Desc: "The application refuses to run from a network, temporary or compressed folder, and warns when a sensitive folder's permissions are too broad.",
+      securityWiki: "Security page on the wiki →",
+
+      troubleTitle: "Troubleshooting",
+      troubleIntro: "The <strong>Diagnostics</strong> button gathers in one window what a ticket would otherwise ask for: versions, paths, results of the checks. The <strong>Report a bug</strong> button opens an issue pre-filled with them.",
+      troubleWiki: "FAQ and troubleshooting on the wiki →",
+
+      devTitle: "For developers",
+      devIntro: "The repository is dual-licensed MIT / Apache 2.0. Contributions go through issues and pull requests; CI builds, tests and analyses every proposal.",
+      dev1Title: "Building",
+      dev1Desc: "A .NET 10 WinForms application. <code>dotnet build</code> then <code>dotnet test Tests/ChaturbateRecorderApp.Tests.csproj</code>. No external dependency beyond NuGet.",
+      dev2Title: "Code layout",
+      dev2Desc: "<code>Services/</code> the logic (download engine, monitoring, updates), <code>UI/</code> windows and theming, <code>Config/</code> settings and version history, <code>Tests/</code> the xUnit suite.",
+      dev3Title: "SentinelGuard",
+      dev3Desc: "The security validators are published separately on <a href=\"https://www.nuget.org/packages/SentinelGuard\">nuget.org</a> and reusable in any .NET project. <a href=\"sentinelguard.html\">Details →</a>",
+      dev4Title: "Release pipeline",
+      dev4Desc: "A <code>vX.Y.Z</code> tag triggers the build, the publication of both archives and the installer, and attaches a CycloneDX SBOM to the release.",
+      devWiki: "Contributing page on the wiki →",
+
+      footerWiki: "Wiki",
+      footerIssues: "Report a problem",
+    },
+  };
+
+  /* Tableaux : contenu séparé des chaînes d'interface pour que les deux
+     langues aient forcément le même nombre de lignes et les mêmes colonnes —
+     une divergence se verrait immédiatement ici, alors qu'elle passerait
+     inaperçue dans deux blocs de HTML recopiés. */
+  var TABLES = {
+    recordTable: {
+      fr: [
+        ["Qualité source", "Meilleure, moyenne (720p max) ou minimale.", "Meilleure"],
+        ["Codec de sortie", "Copie sans réencodage, H.264 ou H.265. Le réencodage a lieu après coup et ne touche jamais le fichier d'origine.", "Copie"],
+        ["Format de sortie", "MP4, MKV (plus robuste face à un arrêt brutal) ou MOV.", "MP4"],
+        ["Durée maximale", "Arrête l'enregistrement au bout du délai choisi.", "Illimité"],
+      ],
+      en: [
+        ["Source quality", "Best, medium (720p max) or minimum.", "Best"],
+        ["Output codec", "Copy without re-encoding, H.264 or H.265. Re-encoding happens afterwards and never touches the original file.", "Copy"],
+        ["Output format", "MP4, MKV (more resilient to an abrupt stop) or MOV.", "MP4"],
+        ["Maximum duration", "Stops the recording after the chosen delay.", "Unlimited"],
+      ],
+    },
+    settingsTable: {
+      fr: [
+        ["Thème", "Clair ou sombre, appliqué à toutes les fenêtres.", "Clair"],
+        ["Langue", "Français ou anglais.", "Selon le système"],
+        ["Dossier de sauvegarde", "Où atterrissent les enregistrements. Un dossier devenu injoignable est corrigé au démarrage au lieu de faire échouer l'application.", "Vidéos\\Chaturbate Recorder"],
+        ["Cookies", "Fichier <code>cookies.txt</code> au format Netscape, pour le contenu réservé aux comptes connectés. Sa validité est contrôlée à la sélection et au démarrage.", "aucun"],
+        ["Proxy", "SOCKS5 ou HTTP, par ex. <code>socks5://127.0.0.1:9050</code>.", "aucun"],
+        ["Reconnexion automatique", "Relance la capture si le live s'interrompt de façon inattendue.", "activée"],
+        ["Recherche de mises à jour", "Vérifie les releases GitHub toutes les heures.", "activée"],
+        ["Intervalle de surveillance", "Délai entre deux vérifications de l'état des salons surveillés.", "120 secondes"],
+      ],
+      en: [
+        ["Theme", "Light or dark, applied to every window.", "Light"],
+        ["Language", "French or English.", "From the system"],
+        ["Save folder", "Where recordings land. A folder that became unreachable is corrected at startup instead of failing the application.", "Videos\\Chaturbate Recorder"],
+        ["Cookies", "A Netscape-format <code>cookies.txt</code> file, for content reserved to logged-in accounts. Its validity is checked on selection and at startup.", "none"],
+        ["Proxy", "SOCKS5 or HTTP, e.g. <code>socks5://127.0.0.1:9050</code>.", "none"],
+        ["Automatic reconnect", "Restarts the capture if the live ends unexpectedly.", "on"],
+        ["Update check", "Checks GitHub releases every hour.", "on"],
+        ["Monitoring interval", "Delay between two checks of the monitored rooms' state.", "120 seconds"],
+      ],
+    },
+    filesTable: {
+      fr: [
+        ["Enregistrements", "Le dossier de sauvegarde choisi dans les Paramètres. Une miniature <code>.jpg</code> est déposée à côté de chaque vidéo."],
+        ["Logs", "<code>%LOCALAPPDATA%\\ChaturbateRecorder\\logs</code>, au format JSONL. Supprimés au-delà de 14 jours, et pivotés au-delà de 20 Mo."],
+        ["Rapports de plantage", "<code>%LOCALAPPDATA%\\ChaturbateRecorder\\logs\\crashes</code>."],
+        ["Réglages", "<code>settings.json</code>, à côté de l'exécutable."],
+        ["Favoris et surveillance", "<code>favorites.json</code> et <code>watchlist.json</code>, à côté de l'exécutable."],
+        ["Empreintes approuvées", "<code>trusted-binaries.json</code>, écrit par l'installateur après vérification de yt-dlp et ffmpeg."],
+        ["Inventaire installé", "<code>installed-components.json</code> : versions, empreintes et licences des composants tiers, dont le GPL de ffmpeg."],
+      ],
+      en: [
+        ["Recordings", "The save folder chosen in Settings. A <code>.jpg</code> thumbnail is written next to each video."],
+        ["Logs", "<code>%LOCALAPPDATA%\\ChaturbateRecorder\\logs</code>, in JSONL format. Deleted past 14 days, and rotated past 20 MB."],
+        ["Crash reports", "<code>%LOCALAPPDATA%\\ChaturbateRecorder\\logs\\crashes</code>."],
+        ["Settings", "<code>settings.json</code>, next to the executable."],
+        ["Favourites and monitoring", "<code>favorites.json</code> and <code>watchlist.json</code>, next to the executable."],
+        ["Trusted checksums", "<code>trusted-binaries.json</code>, written by the installer once yt-dlp and ffmpeg are verified."],
+        ["Installed inventory", "<code>installed-components.json</code>: versions, checksums and licences of third-party components, ffmpeg's GPL included."],
+      ],
+    },
+    troubleTable: {
+      fr: [
+        ["« Éditeur inconnu » au lancement", "Attendu : le projet n'a pas de certificat de signature payant. <em>Informations complémentaires</em> puis <em>Exécuter quand même</em>."],
+        ["Tous les enregistrements échouent d'un coup", "Souvent un <code>cookies.txt</code> malformé : yt-dlp ignore un fichier absent mais rejette durement un fichier invalide. Vide le champ Cookies pour trancher."],
+        ["Un salon surveillé ne déclenche jamais rien", "Même cause que ci-dessus : un cookies.txt refusé rend l'état du salon indéterminable. Sur Chaturbate, vérifie aussi l'orthographe — le site ne distingue pas un salon inexistant d'un salon hors ligne."],
+        ["Le réencodage ou les miniatures ne se font pas", "ffmpeg est absent ou refusé : le Safe Mode l'a désactivé et l'indique dans les Paramètres. La capture, elle, continue."],
+        ["L'application ne démarre pas", "Regarde le dossier <code>crashes</code> des logs, puis ouvre une issue avec ce fichier."],
+      ],
+      en: [
+        ["\"Unknown publisher\" at launch", "Expected: the project has no paid signing certificate. <em>More info</em> then <em>Run anyway</em>."],
+        ["Every recording fails at once", "Often a malformed <code>cookies.txt</code>: yt-dlp ignores a missing file but hard-fails on an invalid one. Clear the Cookies field to find out."],
+        ["A monitored room never triggers anything", "Same cause as above: a rejected cookies.txt makes the room's state undeterminable. On Chaturbate, check the spelling too — the site does not tell a non-existent room from an offline one."],
+        ["Re-encoding or thumbnails do not happen", "ffmpeg is missing or refused: Safe Mode disabled it and says so in Settings. Capture itself carries on."],
+        ["The application does not start", "Look in the <code>crashes</code> folder of the logs, then open an issue with that file."],
+      ],
+    },
+  };
+
+  function fillTable(id, lang) {
+    var rows = TABLES[id][lang];
+    var html = "";
+    for (var i = 0; i < rows.length; i++) {
+      html += "<tr>";
+      for (var c = 0; c < rows[i].length; c++) {
+        html += (c === 0 ? "<th>" : "<td>") + rows[i][c] + (c === 0 ? "</th>" : "</td>");
+      }
+      html += "</tr>";
+    }
+    document.getElementById(id).innerHTML = html;
+  }
+
+  function setLanguage(lang) {
+    var s = STRINGS[lang];
+    document.documentElement.lang = lang;
+
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      if (s[key] === undefined) { console.warn("Clé de traduction manquante : " + key + " (" + lang + ")"); return; }
+      el.textContent = s[key];
+    });
+    document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-html");
+      if (s[key] === undefined) { console.warn("Clé de traduction manquante : " + key + " (" + lang + ")"); return; }
+      el.innerHTML = s[key];
+    });
+
+    /* Le wiki n'a pas de bascule à la volée : ses pages anglaises sont des
+       FICHIERS distincts (convention "NomPage-EN"). Les liens sont donc
+       réécrits ici, sans quoi le lecteur anglophone atterrirait sur du
+       français après avoir choisi l'anglais. */
+    document.querySelectorAll("[data-wiki]").forEach(function (el) {
+      var page = el.getAttribute("data-wiki");
+      el.href = WIKI + page + (lang === "en" ? "-EN" : "");
+    });
+
+    for (var id in TABLES) fillTable(id, lang);
+
+    document.getElementById("langToggle").textContent = s.langToggle;
+    localStorage.setItem("lang", lang);
+  }
+
+  var saved = localStorage.getItem("lang");
+  var initial = saved || (navigator.language && navigator.language.toLowerCase().indexOf("fr") === 0 ? "fr" : "en");
+  setLanguage(initial);
+
+  document.getElementById("langToggle").addEventListener("click", function () {
+    setLanguage(document.documentElement.lang === "fr" ? "en" : "fr");
+  });
+</script>
+
+</body>
+</html>
