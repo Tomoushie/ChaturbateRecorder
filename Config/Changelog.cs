@@ -298,6 +298,13 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Correction : en thème sombre, les ascenseurs des Favoris, des Logs et de la fenêtre principale restaient blancs alors que ceux de l'historique et de la surveillance étaient bien sombres.",
             }),
+            ("1.35.0", new[]
+            {
+                "\"Signaler un bug\" ouvre désormais une fenêtre dans l'application : bug, idée ou simple retour s'envoient sans compte GitHub et sans quitter le logiciel.",
+                "La fenêtre affiche exactement ce qui sera transmis, y compris la ligne d'informations techniques jointe, et prévient que le signalement sera publié sur une page publique.",
+                "Aucune adresse e-mail n'est demandée : l'adresse de la page créée s'affiche après l'envoi, et c'est par elle que se suit la réponse.",
+                "Le passage par GitHub reste proposé pour qui a un compte, et redevient le seul chemin si le service d'envoi ne répond pas — le texte saisi n'est jamais perdu.",
+            }),
         };
 
         /// <summary>
@@ -473,6 +480,13 @@ namespace ChaturbateRecorderApp.Config
             ["1.34.1"] = new[]
             {
                 "Fixed: in dark theme, the scrollbars of Favourites, Logs and the main window stayed white while those of the history and monitoring lists were properly dark.",
+            },
+            ["1.35.0"] = new[]
+            {
+                "\"Report a bug\" now opens a window inside the application: a bug, an idea or plain feedback can be sent without a GitHub account and without leaving the software.",
+                "The window shows exactly what will be sent, including the line of technical details attached, and warns that the report will be published on a public page.",
+                "No e-mail address is asked for: the address of the created page is shown after sending, and that is how you follow the answer.",
+                "Going through GitHub is still offered for those who have an account, and becomes the only route if the sending service does not answer — the text you typed is never lost.",
             },
         };
 

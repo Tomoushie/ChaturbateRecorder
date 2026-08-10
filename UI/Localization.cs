@@ -116,6 +116,61 @@ namespace ChaturbateRecorderApp.UI
             ["thanks.upToDate"] = ("Liste à jour, récupérée sur le site du projet.", "List up to date, fetched from the project website."),
             ["thanks.offline"] = ("Liste embarquée : le site du projet n'a pas répondu.", "Built-in list: the project website did not answer."),
 
+            // 102.0 — signalement envoyé depuis l'application, sans compte
+            // GitHub. L'avertissement sur le caractère PUBLIC de l'issue n'est
+            // pas une formalité : c'est la seule chose que l'utilisateur ne
+            // peut pas deviner, et elle est irréversible une fois envoyée.
+            ["window.report"] = ("Signaler un bug", "Report a bug"),
+            ["report.intro"] = (
+                "Décris ce qui ne va pas, ou ce que tu aimerais voir. Aucun compte n'est nécessaire : le signalement est transmis pour toi.",
+                "Describe what went wrong, or what you would like to see. No account is needed: the report is submitted for you."),
+            ["report.kind"] = ("Type :", "Type:"),
+            ["report.kind.bug"] = ("Un bug", "A bug"),
+            ["report.kind.feature"] = ("Une idée", "An idea"),
+            ["report.kind.feedback"] = ("Un retour", "Feedback"),
+            ["report.title"] = ("Résumé en une ligne :", "One-line summary:"),
+            ["report.body"] = ("Description — que se passe-t-il, et à quel moment ?", "Description — what happens, and when?"),
+            ["report.contextCaption"] = ("Ces informations partent aussi, et rien d'autre :", "This is also sent, and nothing else:"),
+            ["report.context.ffmpegOn"] = ("ffmpeg présent", "ffmpeg present"),
+            ["report.context.ffmpegOff"] = ("ffmpeg absent", "ffmpeg missing"),
+            ["report.context.advanced"] = ("mode avancé", "advanced mode"),
+            ["report.context.simple"] = ("mode simple", "simple mode"),
+            ["report.publicWarning"] = (
+                "Ton signalement sera publié dans une page PUBLIQUE, visible de tous. N'y mets ni nom de salon, ni chemin de fichier, ni quoi que ce soit de personnel.",
+                "Your report will be published on a PUBLIC page, visible to everyone. Do not put room names, file paths, or anything personal in it."),
+            ["report.noRelay"] = (
+                "L'envoi depuis l'application n'est pas disponible dans cette version. Le bouton ci-dessous ouvre la page GitHub du projet.",
+                "Sending from the application is not available in this build. The button below opens the project's GitHub page."),
+            ["report.send"] = ("Envoyer le signalement", "Send the report"),
+            ["report.viaGitHub"] = ("Passer par GitHub", "Use GitHub instead"),
+            ["report.sending"] = ("Envoi en cours…", "Sending…"),
+            ["report.sent"] = ("Signalement envoyé. Merci.", "Report sent. Thank you."),
+            ["report.sentBody"] = (
+                "Ton signalement a été publié. Garde cette adresse : c'est le seul moyen de suivre la réponse, aucune adresse e-mail ne t'ayant été demandée.\n\nL'ouvrir maintenant ?",
+                "Your report has been published. Keep this address: it is the only way to follow the answer, since no e-mail address was asked of you.\n\nOpen it now?"),
+            ["report.error.titleShort"] = ("Le résumé est trop court.", "The summary is too short."),
+            ["report.error.titleLong"] = ("Le résumé est trop long.", "The summary is too long."),
+            ["report.error.bodyShort"] = ("La description est trop courte — quelques phrases aident beaucoup.", "The description is too short — a few sentences help a lot."),
+            ["report.error.bodyLong"] = ("La description est trop longue.", "The description is too long."),
+            ["report.error.rateLimited"] = (
+                "Trop de signalements envoyés depuis cette connexion. Réessaie dans une heure, ou passe par GitHub.",
+                "Too many reports sent from this connection. Try again in an hour, or use GitHub."),
+            ["report.error.dailyLimit"] = (
+                "Le service a atteint sa limite du jour. Réessaie demain, ou passe par GitHub.",
+                "The service has reached its daily limit. Try again tomorrow, or use GitHub."),
+            ["report.error.timeout"] = (
+                "Le service n'a pas répondu à temps. Réessaie, ou passe par GitHub — ton texte est conservé.",
+                "The service did not answer in time. Try again, or use GitHub — your text is kept."),
+            ["report.error.network"] = (
+                "Impossible de joindre le service. Vérifie ta connexion, ou passe par GitHub — ton texte est conservé.",
+                "Could not reach the service. Check your connection, or use GitHub — your text is kept."),
+            ["report.error.notConfigured"] = (
+                "L'envoi depuis l'application n'est pas disponible. Passe par GitHub.",
+                "Sending from the application is not available. Please use GitHub."),
+            ["report.error.generic"] = (
+                "Le signalement n'a pas pu être envoyé. Réessaie plus tard, ou passe par GitHub — ton texte est conservé.",
+                "The report could not be sent. Try again later, or use GitHub — your text is kept."),
+
             ["panel.logs"] = ("Logs", "Logs"),
 
             // 19.0 : fenêtre Paramètres + menu de la zone de notification.

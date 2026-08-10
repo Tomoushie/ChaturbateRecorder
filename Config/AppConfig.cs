@@ -65,6 +65,12 @@ namespace ChaturbateRecorderApp.Config
         // Parrainage récurrent (80.0), distinct du don ponctuel PayPal ci-dessus.
         public static string SponsorUrl        = "https://github.com/sponsors/Tomoushie";
         public static string WebsiteUrl        = "https://tomoushie.github.io/ChaturbateRecorder/";
+        // 102.0 — relais qui crée l'issue à la place de l'utilisateur, pour
+        // qui n'a pas de compte GitHub. Le code source du service est dans
+        // report-worker/. Chaîne VIDE = fonctionnalité désactivée : la fenêtre
+        // n'offre alors que le chemin GitHub, ce qui permet à une version
+        // compilée sans relais de rester cohérente au lieu d'échouer.
+        public static string ReportEndpoint    = "https://chaturbate-recorder-reports.tom-nowak.workers.dev/report";
         // 104.0 — liste des donateurs servie par le site, lue seulement quand
         // l'utilisateur ouvre la fenêtre "Remerciements". Sert à ajouter
         // quelqu'un sans attendre une release ; la liste embarquée

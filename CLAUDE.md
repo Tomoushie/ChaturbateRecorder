@@ -4,7 +4,7 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-10 — version courante : v1.34.1 (app, NON PUBLIÉE — v1.34.0 l'est), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
+## État au 2026-08-10 — version courante : v1.35.0 (app, NON PUBLIÉE — v1.34.1 l'est), SentinelGuard 1.2.0 sur nuget.org, CI/CD + site Jekyll en place (34.0/37.0), site/README/wiki bilingues (25.0/25.1)
 
 **Publiés le 2026-08-09** : v1.29.0 à v1.33.0 côté application, et
 `sentinelguard-v1.1.0` puis `sentinelguard-v1.2.0` sur nuget.org. **Redemander
@@ -15,8 +15,50 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
-**102.0 EN COURS (2026-08-10) — signalements envoyés depuis l'application, sans
-compte GitHub. BLOQUÉ sur un déploiement que seul le mainteneur peut faire.**
+**v1.35.0 (2026-08-10) — 102.0 : la fenêtre de signalement.** Le relais est
+**DÉPLOYÉ et PROUVÉ** : `https://chaturbate-recorder-reports.tom-nowak.workers.dev`
+- **Chaîne vérifiée deux fois, et la seconde comptait** : d'abord par `curl`
+  (issue #38), **puis par `ReportSender.SendAsync` lui-même** (issue #39). Le
+  second essai visait le seul maillon que rien n'exerçait — sérialisation,
+  en-têtes et lecture de la réponse côté .NET. Compiler et passer les tests
+  n'aurait rien prouvé de ce chemin-là.
+- **Ordre de travail respecté, contrairement à 92.0** : le contact réel
+  d'abord, l'interface ensuite. Les six chemins de refus du relais ont été
+  éprouvés en ligne AVANT qu'une ligne de fenêtre soit écrite.
+- **Le vrai sujet de la fenêtre est le consentement, pas le formulaire.** Ce
+  qui part devient une issue publique, et un rapport sur un enregistreur de
+  cams peut contenir un nom de salon ou un chemin. D'où : avertissement AVANT
+  le bouton d'envoi et en contraste PLEIN (les autres intitulés sont
+  atténués — l'atténuer en aurait fait la ligne la moins lue), ligne de
+  contexte **affichée** et non résumée, aucun champ de contact.
+- **La ligne de contexte est volontairement pauvre** : système, présence de
+  ffmpeg, mode d'interface. Ni dossier de capture, ni proxy, ni salon — un
+  test le vérifie, parce que c'est la seule chose qui parte sans avoir été
+  tapée.
+- **Les bornes sont recopiées côté application ET côté relais.** Ce n'est pas
+  une duplication à supprimer : le relais les applique parce qu'il ne fait
+  confiance à personne, l'application pour répondre sans aller-retour réseau.
+  Un test verrouille leur égalité — si elles divergent, l'utilisateur croit
+  avoir envoyé alors que le serveur refusera.
+- **Un échec laisse la fenêtre OUVERTE et le texte intact.** Perdre ce que
+  quelqu'un vient d'écrire parce que le réseau a hoqueté serait la pire façon
+  de traiter un signalement.
+- **PIÈGE TOML payé en direct, invisible au déploiement** : `workers_dev` et
+  `preview_urls` écrits APRÈS `[vars]` deviennent deux variables
+  d'environnement. Le déploiement réussit, wrangler affiche ses liaisons sans
+  broncher, et aucun des deux réglages n'est appliqué. Les réglages de premier
+  niveau doivent précéder toute table.
+- **Les URL de prévisualisation étaient actives par défaut** : une adresse
+  publique de plus par version déployée, capable de créer des issues, et
+  qu'aucun quota ne distingue de la vraie. Coupées.
+- **Défaut de rendu trouvé à la capture** : `InputFrame` dessine le cadre 3 px
+  AU-DESSUS du champ ; à 2 px d'écart le trait passait sous l'intitulé et
+  ressortait à sa droite. **8 px minimum entre un intitulé et son champ.**
+- **Tests** : `Tests/ReportSenderTests.cs` (35, **260 au total**). Dont un qui
+  échoue si un code de refus du relais n'a pas de message traduit — sans lui,
+  « report.error.upstream » s'afficherait tel quel à quelqu'un qui signale un bug.
+
+**102.0 — architecture du relais (2026-08-10)** :
 - **Architecture tranchée par le mainteneur** : un Worker Cloudflare (gratuit)
   garde le jeton et crée l'issue. La « BDD » demandée, ce sont les issues du
   dépôt filtrées sur l'étiquette `via-application` — pas un second endroit à
@@ -37,7 +79,9 @@ compte GitHub. BLOQUÉ sur un déploiement que seul le mainteneur peut faire.**
 - **AUCUNE LIGNE D'INTERFACE ÉCRITE, volontairement.** C'est l'erreur de 92.0
   (UI, traductions et tests écrits avant d'avoir vérifié le contact réel,
   quatre versions perdues). Le contact se prouve d'abord par un vrai POST.
-- **Ce qui manque pour reprendre** : le mainteneur suit
+- **FAIT** : déployé, secrets posés, étiquettes `via-application` et `feedback`
+  créées. Le README garde la procédure pour la rejouer.
+- *(historique)* Ce qui manquait alors : le mainteneur suivait
   `report-worker/README.md` (jeton fine-grained limité à Issues:write sur ce
   seul dépôt, `wrangler deploy`), transmet l'URL, on prouve la chaîne, PUIS on
   écrit la fenêtre. Les fonctions pures du Worker sont déjà éprouvées en local.

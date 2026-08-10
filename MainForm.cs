@@ -2420,7 +2420,21 @@ namespace ChaturbateRecorderApp
         /// (titre + version/OS/dossier de capture) dans le navigateur, plutôt
         /// que de collecter/envoyer quoi que ce soit depuis l'appli elle-même.
         /// </summary>
+        /// <summary>
+        /// 102.0 — le bouton ouvre désormais une fenêtre au lieu d'aller droit
+        /// sur GitHub. Motif : ouvrir un navigateur sur un formulaire d'issue
+        /// exige un compte, et quelqu'un qui n'en a pas — ou qui ne veut pas
+        /// s'en créer un pour signaler un plantage — repartait sans rien dire.
+        /// Le chemin GitHub reste proposé dans la fenêtre.
+        /// </summary>
         private void OnReportBugClick(object? sender, EventArgs e)
+        {
+            using var dialog = new ReportForm(
+                _currentTheme, _currentLanguage, CurrentVersion, _advancedMode, OpenGitHubIssue);
+            dialog.ShowDialog(this);
+        }
+
+        private void OpenGitHubIssue()
         {
             try
             {
