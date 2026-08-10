@@ -2145,61 +2145,91 @@ namespace ChaturbateRecorderApp
         /// barre de défilement d'une autre. C'est ce que l'ancien ApplyUiMode
         /// faisait pour la page unique, appliqué ici par section.
         /// </summary>
+        private string _currentViewKey = "streams";
+
+        private (string Key, Panel Vue)[] Vues => new[]
+        {
+            ("streams", viewStreams), ("history", viewHistory),
+            ("settings", viewSettings), ("support", viewSupport),
+        };
+
         private void ShowView(string key)
+        {
+            _currentViewKey = key;
+            foreach (var (k, vue) in Vues) vue.Visible = k == key;
+            LayoutCurrentView();
+        }
+
+        /// <summary>
+        /// Positionne ET DIMENSIONNE les panneaux de la vue affichée (97.0).
+        ///
+        /// **Les largeurs sont calculées, pas ancrées**, et ce n'est pas un
+        /// choix de style. L'ancrage Left|Right mémorise la marge droite au
+        /// moment où il est posé ; à cet instant la vue a encore sa taille par
+        /// DÉFAUT (200 px), donc la marge enregistrée était négative et les
+        /// panneaux débordaient de ~470 px à toutes les tailles — bords droits
+        /// invisibles même en élargissant la fenêtre. C'est la variante
+        /// « parent pas encore dimensionné » du piège Anchor noté en bas de ce
+        /// fichier : le parent existe, ce qui suffit à tromper.
+        /// </summary>
+        private void LayoutCurrentView()
         {
             const int marge = 12;
             const int sectionGap = 20;
+            const int largeurMini = 520;
 
-            var vues = new (string Key, Panel Vue)[]
-            {
-                ("streams", viewStreams), ("history", viewHistory),
-                ("settings", viewSettings), ("support", viewSupport),
-            };
-
-            foreach (var (k, vue) in vues) vue.Visible = k == key;
+            var vue = Array.Find(Vues, v => v.Key == _currentViewKey).Vue ?? viewStreams;
+            var largeur = Math.Max(largeurMini, vue.ClientSize.Width - 2 * marge);
 
             int hauteur;
-            switch (key)
+            switch (_currentViewKey)
             {
                 case "history":
-                    grpHistory.Location = new Point(marge, marge);
+                    // L'historique OCCUPE sa section : c'est la seule chose
+                    // qu'elle contient, la laisser à 170 px de haut au milieu
+                    // d'un écran vide n'avait aucun sens.
+                    grpHistory.Bounds = new Rectangle(marge, marge, largeur,
+                        Math.Max(220, vue.ClientSize.Height - 2 * marge));
                     hauteur = grpHistory.Bottom + marge;
                     break;
 
                 case "settings":
-                    // Les six boutons qui peuplaient la barre du haut : ils y
-                    // occupaient trois rangées et rognaient la fenêtre en
-                    // permanence, pour des actions qu'on déclenche une fois par
-                    // mois. Empilés ici, ils ne coûtent plus rien à personne.
                     var y = marge;
                     foreach (var b in new[] { paramsButton, tutorialButton, checkUpdateButton, legalButton, diagnosticButton, reportBugButton })
                     {
-                        b.Location = new Point(marge, y);
-                        b.Size = new Size(240, 30);
+                        b.Bounds = new Rectangle(marge, y, Math.Min(280, largeur), 30);
                         y += 38;
                     }
                     hauteur = y + marge;
                     break;
 
                 case "support":
-                    grpDonate.Location = new Point(marge, marge);
+                    grpDonate.Bounds = new Rectangle(marge, marge, largeur, grpDonate.Height);
                     hauteur = grpDonate.Bottom + marge;
                     break;
 
                 default:
-                    grpRecord.Location = new Point(marge, marge);
-                    grpRecord.Height = 218;
-                    grpProgress.Location = new Point(marge, grpRecord.Bottom + sectionGap);
-                    grpFavorites.Location = new Point(marge, grpProgress.Bottom + sectionGap);
-                    grpWatch.Location = new Point(marge, grpFavorites.Bottom + sectionGap);
-                    grpLogs.Location = new Point(marge, grpWatch.Bottom + sectionGap);
+                    grpRecord.Bounds = new Rectangle(marge, marge, largeur, 218);
+                    grpProgress.Bounds = new Rectangle(marge, grpRecord.Bottom + sectionGap, largeur, grpProgress.Height);
+                    grpFavorites.Bounds = new Rectangle(marge, grpProgress.Bottom + sectionGap, largeur, grpFavorites.Height);
+                    grpWatch.Bounds = new Rectangle(marge, grpFavorites.Bottom + sectionGap, largeur, grpWatch.Height);
+                    grpLogs.Bounds = new Rectangle(marge, grpWatch.Bottom + sectionGap, largeur, grpLogs.Height);
                     hauteur = grpLogs.Bottom + marge;
                     break;
             }
 
-            var vueCourante = Array.Find(vues, v => v.Key == key).Vue ?? viewStreams;
-            vueCourante.AutoScrollMinSize = new Size(660 + 2 * marge, hauteur);
-            advancedOptionsPanel.Visible = true;
+            vue.AutoScrollMinSize = new Size(largeurMini + 2 * marge, hauteur);
+
+            // Repeindre TOUTE la vue, enfants compris.
+            //
+            // Sans ça, le premier affichage d'une section laissait un fragment
+            // du contour de bouton à son ancienne position : ces contrôles
+            // viennent d'être déplacés et redimensionnés, et ThemedButton peint
+            // ses coins arrondis avec la couleur du parent — un parent qui n'a
+            // pas repeint laisse donc l'ancien coin visible. Le défaut
+            // disparaissait en quittant puis revenant sur la section, ce qui
+            // forçait le repaint : signature exacte d'un rendu non invalidé.
+            vue.Invalidate(true);
         }
 
         private async void OnCheckUpdateClick(object? sender, EventArgs e)
@@ -2994,15 +3024,14 @@ namespace ChaturbateRecorderApp
             _ = historyListView.Handle;
             _ = watchListView.Handle;
 
-            // Ancrage des panneaux eux-mêmes, posé après leur ajout à leur vue
-            // (même raison que ci-dessus : Parent doit être connu).
-            grpRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpProgress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpHistory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpFavorites.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpWatch.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpDonate.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            grpLogs.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            // PAS D'ANCRAGE Left|Right sur ces panneaux : leurs largeurs sont
+            // calculées par LayoutCurrentView. L'ancrage mémorise la marge
+            // droite à l'instant où il est posé, et la vue a alors sa taille par
+            // défaut — d'où une marge négative et des panneaux qui débordaient
+            // de ~470 px à toutes les tailles. Voir le commentaire de
+            // LayoutCurrentView.
+            foreach (var vue in Vues)
+                vue.Vue.SizeChanged += (s, e) => { if (vue.Vue.Visible) LayoutCurrentView(); };
 
             ResumeLayout(false);
             PerformLayout();

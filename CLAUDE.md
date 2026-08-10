@@ -1806,6 +1806,24 @@ lequel prendre. **Le maintenir a jour si un fichier est ajoute ou retire.**
 
 **Piège WinForms — `DrawToBitmap` sur un `Form` top-level** : contrairement à un `Panel` enfant, `DrawToBitmap` sur un formulaire top-level (ex: une fenêtre modale comme `SettingsForm`) inclut la barre de titre et les bordures. Dimensionner le bitmap sur `form.ClientSize` écrase alors le contenu du bas (la barre de titre "mange" de la hauteur sans que le bitmap ne s'agrandisse en conséquence). Utiliser `form.Size` (pas `.ClientSize`) pour la taille du bitmap et du rectangle de dessin.
 
+**Piège WinForms — `Anchor` posé sur un parent PAS ENCORE DIMENSIONNÉ** (97.0,
+variante du piège ci-dessous et bien plus vicieuse) : poser `Anchor` après
+`Controls.Add` ne suffit pas. L'ancrage mémorise la marge droite **à l'instant
+où il est posé** ; si le parent a encore sa taille par défaut (un `Panel` neuf
+fait 200×100, même déclaré `Dock = Fill`), la marge enregistrée est NÉGATIVE et
+le contrôle déborde de la différence à TOUTES les tailles — bords droits
+invisibles même en élargissant la fenêtre. Signalé en usage réel sur les cinq
+panneaux de la vue Streams. **Remède retenu : calculer les largeurs** dans la
+méthode de mise en page, au même endroit que les hauteurs, plutôt que de faire
+confiance à l'ancrage sur un parent dont la taille arrive plus tard.
+
+**Piège WinForms — un contrôle déplacé laisse son ancien contour** : les
+`ThemedButton` peignent leurs coins arrondis avec la couleur du PARENT. Déplacer
+ou redimensionner le bouton sans invalider le parent laisse un fragment de
+l'ancien coin à l'écran. Symptôme reconnaissable : le défaut disparaît dès
+qu'on quitte puis revient sur la section, ce qui force le repaint.
+`vue.Invalidate(true)` en fin de mise en page suffit.
+
 **Piège WinForms — `Anchor` posé avant `Controls.Add`** : définir `Anchor` dans l'initialiseur d'objet d'un contrôle (avant qu'il soit ajouté à son parent) capture une marge basée sur un `Parent` encore `null` — le contrôle se retrouve projeté hors de la fenêtre dès le premier redimensionnement (marge négative interprétée comme "encore plus loin du bord"). Toujours poser `control.Anchor = ...;` en instruction séparée, APRÈS le `Controls.Add`/`AddRange` qui le parente.
 
 **NuGet** — Le `NuGet.Config` global de cette machine (`%APPDATA%\NuGet\NuGet.Config`) a une liste de sources vide. Un `NuGet.Config` local (déjà présent à la racine du projet) ajoute `nuget.org`, sans toucher au fichier global. Sans lui, toute dépendance externe (y compris le self-contained publish, qui a besoin de runtime packs) échoue avec `NU1100`.
