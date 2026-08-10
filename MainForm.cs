@@ -1123,6 +1123,28 @@ namespace ChaturbateRecorderApp
                     historyListView.Items.Clear();
                     historyThumbnails.Images.Clear();
 
+                    // RÉALISER LA LISTE D'IMAGES AVANT D'Y AJOUTER QUOI QUE CE
+                    // SOIT. Tant que son handle natif n'existe pas, Images.Add
+                    // ne recopie rien : elle GARDE la référence et ne la
+                    // matérialise qu'à la création du handle. Les bitmaps
+                    // libérés trois lignes plus bas sont alors déjà morts quand
+                    // Windows vient les lire, et la ListView plante à
+                    // l'affichage — ArgumentException « Parameter is not valid »
+                    // dans OnHandleCreated, très loin de sa cause.
+                    //
+                    // Le défaut est une COURSE, d'où son caractère intermittent :
+                    // il ne se produit que si ce rafraîchissement se termine
+                    // avant que la ListView ait obtenu son handle. Constaté en
+                    // v1.35.0 à deux reprises au lancement (journaux de crash du
+                    // 2026-08-10, 19:54 et 21:50).
+                    //
+                    // `_ = historyListView.Handle` dans le constructeur couvrait
+                    // déjà ce cas, mais par un ORDRE D'EXÉCUTION : une ligne
+                    // lointaine devait s'exécuter avant celle-ci. Le garde-fou
+                    // est ici posé là où le risque est pris, donc il ne peut
+                    // plus être contourné par un chemin d'appel nouveau.
+                    _ = historyThumbnails.Handle;
+
                     foreach (var entry in entries)
                     {
                         var item = new ListViewItem(entry.Name);
