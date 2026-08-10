@@ -1,0 +1,2 @@
+# Cache local de wrangler : etat de session, jamais du code.
+.wrangler/
