@@ -305,6 +305,12 @@ namespace ChaturbateRecorderApp.Config
                 "Aucune adresse e-mail n'est demandée : l'adresse de la page créée s'affiche après l'envoi, et c'est par elle que se suit la réponse.",
                 "Le passage par GitHub reste proposé pour qui a un compte, et redevient le seul chemin si le service d'envoi ne répond pas — le texte saisi n'est jamais perdu.",
             }),
+            ("1.35.1", new[]
+            {
+                "Correction : l'application pouvait s'interrompre au démarrage sur une erreur « Parameter is not valid ». La cause venait de l'historique, dont les vignettes étaient libérées avant d'avoir été recopiées. Le défaut dépendait d'une question de rapidité, il ne se produisait donc pas à tous les lancements.",
+                "Correction : après un arrêt manuel, la vignette de l'enregistrement n'apparaissait pas dans l'historique. Elle était bien créée, mais la liste se rafraîchissait avant qu'elle n'existe, et plus rien ne la rejouait ensuite.",
+                "Correction : un enregistrement plus court que dix secondes n'obtenait jamais de vignette.",
+            }),
         };
 
         /// <summary>
@@ -487,6 +493,12 @@ namespace ChaturbateRecorderApp.Config
                 "The window shows exactly what will be sent, including the line of technical details attached, and warns that the report will be published on a public page.",
                 "No e-mail address is asked for: the address of the created page is shown after sending, and that is how you follow the answer.",
                 "Going through GitHub is still offered for those who have an account, and becomes the only route if the sending service does not answer — the text you typed is never lost.",
+            },
+            ["1.35.1"] = new[]
+            {
+                "Fix: the application could stop at startup on a “Parameter is not valid” error. The cause was in the history, whose thumbnails were released before being copied. The fault came down to timing, so it did not happen on every launch.",
+                "Fix: after a manual stop, the recording's thumbnail did not appear in the history. It was created, but the list refreshed before it existed, and nothing replayed it afterwards.",
+                "Fix: a recording shorter than ten seconds never got a thumbnail.",
             },
         };
 

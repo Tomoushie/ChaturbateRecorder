@@ -4,11 +4,52 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-10 (fin de journée) — v1.35.0 PUBLIÉE ; 97.0 (refonte graphique) EN COURS sur `main`, non publiée ; SentinelGuard 1.2.0 sur nuget.org ; relais de signalements déployé (102.0) ; itch.io en ligne (96.0)
+## État au 2026-08-11 — v1.35.1 (correctifs de plantage) ; 97.0 (refonte graphique) EN COURS sur `main`, non publiée ; SentinelGuard 1.2.0 sur nuget.org ; relais de signalements déployé (102.0) ; itch.io en ligne (96.0)
 
 **REPRENDRE ICI : 97.0 étape 2c** — remplacer les trois panneaux par la liste
 de cartes. Tout le reste de la refonte est fait et poussé. Voir la section
 97.0 ci-dessous pour le cadre commercial déjà tranché et les pièges rencontrés.
+
+**v1.35.1 (2026-08-11) — DEUX PLANTAGES, dont un dans la version PUBLIÉE.**
+
+- **`ImageList` non réalisée : plantage au lancement de la v1.35.0.**
+  `ArgumentException` « Parameter is not valid » dans `ImageList.CreateHandle`,
+  appelée depuis `ListView.OnHandleCreated` — **pile d'appels ne citant aucun
+  code de l'application**, ce qui rend la cause introuvable par lecture.
+  Tant que le handle natif n'existe pas, `Images.Add` ne recopie rien : elle
+  garde la référence. `RefreshHistoryAsync` libère chaque miniature juste
+  après l'avoir ajoutée (v1.29.0, contre une fuite de 50 bitmaps par
+  rafraîchissement) — la liste se remplit donc d'images mortes.
+  **C'est une COURSE** : elle ne se déclenche que si le rafraîchissement finit
+  avant que la `ListView` ait son handle, d'où deux plantages seulement le
+  2026-08-10 (19:54 et 21:50) sur des dizaines de lancements.
+  Le garde-fou `_ = historyListView.Handle` de 97.0 étape 1 couvrait déjà ce
+  cas **par un ordre d'exécution** ; il est désormais posé là où le risque est
+  pris (`_ = historyThumbnails.Handle` avant la boucle d'ajout), donc aucun
+  chemin d'appel nouveau ne peut le contourner.
+  **Tests** : `Tests/ImageListRealizationTests.cs` (3, **316 au total**). Le
+  premier REPRODUIT la faute — sans lui, les deux autres passeraient au vert
+  même si la cause réelle était ailleurs.
+
+- **La miniature manquait encore après un arrêt manuel**, alors que le
+  renommage du `.part` (corrigé la veille) fonctionnait. **Deux causes, la
+  seconde cachée derrière la première, comme la veille** : (1) la miniature
+  partait en parallèle du rafraîchissement de l'historique, qui lit le `.jpg`
+  au moment du scan — ffmpeg met ~1 s (mesuré de 13 Mo à 1,6 Go), le
+  rafraîchissement gagnait toujours, et rien ne le rejouait ; (2) `-ss` placé
+  avant `-i` cherche la position dans la vidéo, et au-delà de sa fin ffmpeg
+  n'écrit RIEN (mesuré : sortie -22), donc un enregistrement plus court que les
+  10 s de `ThumbnailOffsetSeconds` n'avait jamais de miniature. Repli sur le
+  début du fichier, uniquement sur échec.
+
+- **MÉTHODE — un plantage signalé peut venir d'un binaire périmé.** Le message
+  affiché à l'écran (`ArgumentNullException`, paramètre `path`) et le journal
+  fourni (`ArgumentException`, `ImageList`) étaient **deux plantages
+  différents**, à deux horodatages différents. Le premier venait de
+  `CaptureForReview()`, harnais de capture temporaire **jamais commité** :
+  absent du code ET de l'historique git, donc irreproductible depuis le dépôt.
+  **Vérifier `git log -S` avant de chercher à corriger** — et lire le fichier
+  de crash plutôt que le résumé de la fenêtre, qui n'en montre qu'un.
 
 **Le jeton GitHub du relais de signalements EXPIRE LE 2026-09-02.** Ce jour-là
 le relais répondra 502 et l'application dira « réessaie plus tard » — **rien ne
