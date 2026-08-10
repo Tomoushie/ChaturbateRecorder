@@ -115,6 +115,17 @@ namespace ChaturbateRecorderApp
             public RoomStatus PollStatus = RoomStatus.Unknown;
 
             /// <summary>
+            /// Ce salon a-t-il DÉJÀ été sondé une fois ?
+            ///
+            /// Sans ce drapeau, un salon jamais contrôlé s'affiche « Indéterminé »
+            /// — le libellé d'un sondage qui a ÉCHOUÉ. L'ancienne liste de
+            /// surveillance distinguait les deux avec « En attente... », et
+            /// confondre « je n'ai pas encore regardé » avec « j'ai regardé sans
+            /// pouvoir conclure » fait soupçonner une panne là où il n'y a rien.
+            /// </summary>
+            public bool Polled;
+
+            /// <summary>
             /// Salon absent de la liste persistée : une adresse collée puis
             /// enregistrée sans être ajoutée. Sa carte vit le temps de la
             /// capture, exactement comme l'ancienne ligne de job — l'enregistrer
@@ -552,7 +563,7 @@ namespace ChaturbateRecorderApp
                 PlatformIcon = icone,
                 ActionsWidth = CardActionsWidth,
                 Palette = ThemeManager.GetPalette(_currentTheme),
-                Width = Math.Max(320, roomsListPanel.ClientSize.Width - 8),
+                Width = Math.Max(320, roomsListPanel.Width - SystemInformation.VerticalScrollBarWidth - 6),
             };
 
             // Icône seule pour « ouvrir » et « retirer » : ThemedButton centre
@@ -621,6 +632,30 @@ namespace ChaturbateRecorderApp
         /// largeur pas encore établie — le piège d'Anchor documenté en bas de
         /// CLAUDE.md, déjà payé deux fois.
         /// </summary>
+        /// <summary>
+        /// Largeur d'une carte.
+        ///
+        /// **Calculée sur `Width`, JAMAIS sur `ClientSize`, et la place de
+        /// l'ascenseur vertical est réservée en permanence.** `ClientSize`
+        /// rétrécit au moment où cet ascenseur apparaît : les cartes gardaient
+        /// alors la largeur d'avant et débordaient, ce qui ajoutait un ascenseur
+        /// HORIZONTAL — visible sur la première capture, et invisible à la
+        /// lecture du code. Réserver 17 px en permanence coûte un liseré vide à
+        /// droite quand la liste est courte ; c'est le prix d'une largeur qui ne
+        /// dépend pas de ce qu'elle provoque.
+        /// </summary>
+        private void ResizeRoomCards()
+        {
+            var largeur = Math.Max(320,
+                roomsListPanel.Width - SystemInformation.VerticalScrollBarWidth - 6);
+
+            foreach (var row in _roomRows)
+            {
+                row.Card.Width = largeur;
+                LayoutCardActions(row);
+            }
+        }
+
         private static void LayoutCardActions(RoomRow row)
         {
             const int marge = 14;
@@ -810,7 +845,9 @@ namespace ChaturbateRecorderApp
                     RoomRowState.Reconnecting => string.Format(L("job.reconnectIn"), row.ReconnectDelaySeconds),
                     RoomRowState.Live => L("watch.state.online"),
                     RoomRowState.NotFound => L("watch.state.notfound"),
-                    RoomRowState.Unknown => L("watch.state.unknown"),
+                    // « En attente » tant que rien n'a été contrôlé, « Indéterminé »
+                    // seulement après un sondage qui n'a pas pu conclure.
+                    RoomRowState.Unknown => L(row.Polled ? "watch.state.unknown" : "watch.state.pending"),
                     RoomRowState.Failed => L("job.state.failed"),
                     RoomRowState.Finished => row.FinishedState == DownloadState.Completed
                         ? L("job.state.completed")
@@ -1806,6 +1843,7 @@ namespace ChaturbateRecorderApp
                     if (!_roomRows.Contains(row)) continue;
 
                     row.PollStatus = status;
+                    row.Polled = true;
                     RefreshCard(row);
 
                     if (status == RoomStatus.NotFound)
@@ -3018,17 +3056,16 @@ namespace ChaturbateRecorderApp
             // angles : un salon pouvait figurer aux trois endroits à la fois,
             // avec trois vérités possibles sur ce qu'il faisait.
             //
-            // Hauteur 300 (contre 154 + 130 + 130 = 414 pour les trois panneaux,
-            // séparateurs compris) : une carte compacte fait 60 px plus 8 de
-            // marge, donc 264 px de zone utile laissent voir quatre salons au
-            // repos sans défilement — là où les trois panneaux n'en montraient
-            // que deux en cours, trois favoris et trois surveillés, chacun dans
-            // sa boîte.
-            grpRooms = new RoundedGroupPanel { Title = "Mes salons", Location = new Point(12, 320), Size = new Size(660, 300) };
+            // Hauteur 314 (contre 154 + 130 + 130 = 414 pour les trois panneaux,
+            // séparateurs compris). Une carte compacte fait 60 px PLUS 8 de
+            // marge basse, soit 68 : il en faut donc 272 pour quatre salons, pas
+            // 264 — mesuré sur la première capture, où l'ascenseur vertical
+            // apparaissait dès la quatrième carte. 276 laisse 4 px de garde.
+            grpRooms = new RoundedGroupPanel { Title = "Mes salons", Location = new Point(12, 320), Size = new Size(660, 314) };
             roomsListPanel = new FlowLayoutPanel
             {
                 Location = new Point(12, 22),
-                Size = new Size(636, 264),
+                Size = new Size(636, 276),
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
@@ -3054,15 +3091,7 @@ namespace ChaturbateRecorderApp
             // enfants, et l'ancrage mémoriserait de toute façon une marge prise
             // avant que la vue ait sa taille définitive (piège d'Anchor, bas de
             // CLAUDE.md, déjà payé deux fois).
-            roomsListPanel.ClientSizeChanged += (s, e) =>
-            {
-                var largeur = Math.Max(320, roomsListPanel.ClientSize.Width - 8);
-                foreach (var row in _roomRows)
-                {
-                    row.Card.Width = largeur;
-                    LayoutCardActions(row);
-                }
-            };
+            roomsListPanel.SizeChanged += (s, e) => ResizeRoomCards();
 
             // --- Panel : Historique des enregistrements (4.4) ---
             // Hauteur 170 (au lieu de 130) depuis l'affichage des miniatures :
