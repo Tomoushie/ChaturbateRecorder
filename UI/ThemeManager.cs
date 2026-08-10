@@ -52,7 +52,13 @@ namespace ChaturbateRecorderApp.UI
             Color Neutral,
             Color Danger,
             Color Border,
-            Color Shadow);
+            Color Shadow,
+            // 97.0 — deux couleurs d'ÉTAT, ajoutées pour les cartes de salon.
+            // Elles ne servent jamais de décor : Success dit « en ligne »,
+            // Warning dit « reconnexion en cours ». Une couleur qui ne porte pas
+            // d'information rend illisibles celles qui en portent.
+            Color Success,
+            Color Warning);
 
         public static Palette GetPalette(AppTheme theme) => theme == AppTheme.Dark
             ? new Palette(
@@ -74,7 +80,12 @@ namespace ChaturbateRecorderApp.UI
                 // dans les tons saumon pour repasser le seuil de 4,5.
                 Danger: Color.FromArgb(0xFF, 0xA7, 0x9A),
                 Border: Color.FromArgb(0x3D, 0x3D, 0x3D),
-                Shadow: Color.FromArgb(90, 0, 0, 0))
+                Shadow: Color.FromArgb(90, 0, 0, 0),
+                // Choisies par MESURE du contraste sur la surface de carte
+                // (#262626) et non a l'oeil : 6,83 et 7,51, bien au-dessus du
+                // seuil WCAG de 4,5.
+                Success: Color.FromArgb(0x4C, 0xC3, 0x8A),
+                Warning: Color.FromArgb(0xF0, 0xA8, 0x4E))
             : new Palette(
                 Bg: Color.FromArgb(0xEF, 0xEF, 0xEF),
                 Card: Color.FromArgb(0xFB, 0xFB, 0xFB),
@@ -89,7 +100,12 @@ namespace ChaturbateRecorderApp.UI
                 // une fois le fond du bouton teinté au survol et à l'appui.
                 Danger: Color.FromArgb(0xB0, 0x1F, 0x12),
                 Border: Color.FromArgb(0xE0, 0xE0, 0xE0),
-                Shadow: Color.FromArgb(24, 0, 0, 0));
+                Shadow: Color.FromArgb(24, 0, 0, 0),
+                // Nettement assombries par rapport au theme sombre : sur une
+                // carte quasi blanche (#FBFBFB), un vert ou un orange vifs
+                // tombent sous 4 de contraste. Mesure : 5,12 et 5,24.
+                Success: Color.FromArgb(0x0F, 0x7B, 0x4F),
+                Warning: Color.FromArgb(0x9A, 0x5B, 0x00));
 
         public static void Apply(Control root, AppTheme theme) => ApplyPalette(root, GetPalette(theme));
 
@@ -124,7 +140,11 @@ namespace ChaturbateRecorderApp.UI
             Lerp(a.Fg, b.Fg, t), Lerp(a.FgMuted, b.FgMuted, t),
             Lerp(a.Accent, b.Accent, t), Lerp(a.AccentFg, b.AccentFg, t),
             Lerp(a.Neutral, b.Neutral, t), Lerp(a.Danger, b.Danger, t),
-            Lerp(a.Border, b.Border, t), Lerp(a.Shadow, b.Shadow, t));
+            Lerp(a.Border, b.Border, t), Lerp(a.Shadow, b.Shadow, t),
+            // Interpolées comme les autres : oubliées ici, les pastilles d'état
+            // sauteraient d'une couleur à l'autre au milieu du fondu clair/sombre,
+            // seules immobiles pendant que tout le reste glisse.
+            Lerp(a.Success, b.Success, t), Lerp(a.Warning, b.Warning, t));
 
         // --- Rôles de texte -------------------------------------------------
 
