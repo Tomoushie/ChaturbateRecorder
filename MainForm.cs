@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
@@ -1245,6 +1246,9 @@ namespace ChaturbateRecorderApp
 
             var final = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.{job.ContainerExt}");
             var part = final + ".part";
+            // Lu ici, sur le thread UI : SafeMode s'appuie sur un dictionnaire
+            // statique sans verrou, que le contrôle des composants peut vider.
+            var miniature = avecMiniature && SafeMode.IsEnabled(SafeComponent.Ffmpeg);
 
             Task.Run(async () =>
             {
@@ -1277,63 +1281,109 @@ namespace ChaturbateRecorderApp
                     Logger.Log($"Finalisation impossible ({part}) : {ex.Message}", LogLevel.ERROR);
                 }
 
-                SafeInvoke(() =>
-                {
-                    // Sans ffmpeg, pas de miniature — mais la capture, elle, a
-                    // bien eu lieu : il n'y a aucune raison de la perdre.
-                    if (avecMiniature && SafeMode.IsEnabled(SafeComponent.Ffmpeg)) GenerateThumbnail(job);
-                    RefreshHistoryAsync();
-                });
+                // La miniature AVANT le rafraîchissement, et non en parallèle de
+                // lui. C'est la seconde moitié du défaut signalé en usage réel :
+                // le renommage du .part marchait, et pourtant l'historique
+                // restait sans image. `RefreshHistoryAsync` scanne le disque et
+                // lit le .jpg AU MOMENT DU SCAN ; lancée en tâche de fond, ffmpeg
+                // met environ une seconde à ouvrir la vidéo et à écrire l'image
+                // (mesuré sur les captures réelles, de 13 Mo à 1,6 Go). Le
+                // rafraîchissement gagnait donc toujours la course, et comme rien
+                // ne le rejoue, la ligne restait sans miniature jusqu'à un
+                // rafraîchissement manuel. Attendre coûte une seconde avant que la
+                // ligne apparaisse — infiniment moins que de ne jamais voir l'image.
+                //
+                // Sans ffmpeg, pas de miniature — mais la capture, elle, a bien eu
+                // lieu : il n'y a aucune raison de la perdre.
+                if (miniature) await GenerateThumbnailAsync(job).ConfigureAwait(false);
+
+                SafeInvoke(RefreshHistoryAsync);
             });
         }
 
-        private void GenerateThumbnail(RecordingJob job)
+        /// <summary>
+        /// Extrait une image de la capture, posée en .jpg à côté d'elle.
+        ///
+        /// **Repli sur le début du fichier** : `-ss` placé avant `-i` cherche la
+        /// position demandée dans la vidéo, et au-delà de sa fin ffmpeg n'écrit
+        /// RIEN — mesuré, sortie -22 et « nothing was written into output file ».
+        /// Un enregistrement plus court que `ThumbnailOffsetSeconds` (un essai,
+        /// un live coupé aussitôt) n'avait donc jamais de miniature. Le second
+        /// appel ne coûte que dans ce cas-là, puisqu'il ne part que sur échec.
+        /// </summary>
+        private async Task GenerateThumbnailAsync(RecordingJob job)
         {
             var videoFile = FindOwnCaptureFile(job);
             if (videoFile == null)
             {
-                AppendJobLog(job, "Aucune vidéo trouvée.");
+                SafeInvoke(() => AppendJobLog(job, "Aucune vidéo trouvée."));
                 return;
             }
 
             var thumbnail = Path.Combine(videoFile.DirectoryName!, Path.GetFileNameWithoutExtension(videoFile.Name) + ".jpg");
 
-            Task.Run(() =>
+            try
             {
-                try
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = AppConfig.FFmpegPath,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                    };
-                    foreach (var a in new[]
-                    {
-                        "-ss", AppConfig.ThumbnailOffsetSeconds.ToString(),
-                        "-i", videoFile.FullName,
-                        "-frames:v", "1",
-                        "-q:v", "2",
-                        thumbnail,
-                        "-y",
-                        "-loglevel", "error"
-                    })
-                    {
-                        psi.ArgumentList.Add(a);
-                    }
+                var ok = await ExtractFrameAsync(videoFile.FullName, thumbnail,
+                    AppConfig.ThumbnailOffsetSeconds).ConfigureAwait(false);
 
-                    using var p = Process.Start(psi);
-                    p?.WaitForExit(15000);
+                if (!ok && AppConfig.ThumbnailOffsetSeconds > 0)
+                    ok = await ExtractFrameAsync(videoFile.FullName, thumbnail, 0).ConfigureAwait(false);
 
-                    SafeInvoke(() => AppendJobLog(job, File.Exists(thumbnail)
-                        ? $"Miniature créée : {thumbnail}"
-                        : "Erreur création miniature."));
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Erreur lors de la génération de la miniature : {ex.Message}", LogLevel.WARN);
-                }
-            });
+                SafeInvoke(() => AppendJobLog(job, ok
+                    ? $"Miniature créée : {thumbnail}"
+                    : "Erreur création miniature."));
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erreur lors de la génération de la miniature : {ex.Message}", LogLevel.WARN);
+            }
+        }
+
+        /// <summary>
+        /// Un appel à ffmpeg, une image. Le verdict est l'existence du fichier et
+        /// non le code de sortie : c'est le fichier que l'historique ira lire.
+        /// </summary>
+        private static async Task<bool> ExtractFrameAsync(string video, string thumbnail, int offsetSeconds)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = AppConfig.FFmpegPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            foreach (var a in new[]
+            {
+                "-ss", offsetSeconds.ToString(),
+                "-i", video,
+                "-frames:v", "1",
+                "-q:v", "2",
+                thumbnail,
+                "-y",
+                "-loglevel", "error"
+            })
+            {
+                psi.ArgumentList.Add(a);
+            }
+
+            using var p = Process.Start(psi);
+            if (p == null) return false;
+
+            using var delai = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            try
+            {
+                await p.WaitForExitAsync(delai.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Un ffmpeg figé garderait un handle de lecture sur la capture et
+                // ferait échouer le réencodage qui suit. L'ancien code se contentait
+                // d'abandonner l'attente en le laissant tourner.
+                try { p.Kill(entireProcessTree: true); } catch { /* déjà parti */ }
+                return false;
+            }
+
+            return File.Exists(thumbnail);
         }
 
         /// <summary>
