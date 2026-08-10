@@ -32,18 +32,13 @@
     background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
     border-bottom: 1px solid var(--border);
   }
+  /* 108.0 — vrai logo. Jusqu'ici la page dessinait un cercle gris avec un
+     point rouge EN CSS, faute d'image : un dépannage qui a tenu cinq mois et
+     que personne ne reconnaissait comme le logo du projet. */
   .logo {
-    width: 72px; height: 72px;
-    border-radius: 50%;
-    background: #2d2d30;
-    display: flex; align-items: center; justify-content: center;
+    display: block;
+    width: 88px; height: 88px;
     margin: 0 auto 20px;
-  }
-  .logo::after {
-    content: "";
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    background: var(--accent);
   }
   h1 { font-size: 2.1rem; margin: 0 0 8px; }
   header p.tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 28px; }
@@ -134,7 +129,7 @@
 
 <header>
   <button class="lang-toggle" id="langToggle" type="button"></button>
-  <div class="logo"></div>
+  <img class="logo" src="assets/logo.png" alt="Chaturbate Recorder" width="88" height="88">
   <h1>Chaturbate Recorder</h1>
   <p class="tagline" id="tagline"></p>
   <div class="cta-row">
