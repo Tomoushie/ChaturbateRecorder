@@ -30,6 +30,14 @@ namespace ChaturbateRecorderApp.UI
             ["mode.switchToSimple"] = ("Mode simple", "Simple mode"),
             ["mode.switchToAdvanced"] = ("Mode avancé", "Advanced mode"),
 
+            // 97.0 — sections de la barre de navigation. Des noms courts : la
+            // colonne fait 196 px et doit rester lisible en anglais comme en
+            // français, sans troncature.
+            ["nav.streams"] = ("Enregistrer", "Record"),
+            ["nav.history"] = ("Historique", "History"),
+            ["nav.settings"] = ("Réglages", "Settings"),
+            ["nav.support"] = ("Soutenir", "Support"),
+
             ["panel.record"] = ("Enregistrement", "Recording"),
             // 40.0 — libellé neutre : l'application prend aussi Twitch, YouTube
             // et TikTok. Le NOM du logiciel ne change pas (décision du

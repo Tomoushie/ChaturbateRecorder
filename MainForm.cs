@@ -22,7 +22,6 @@ namespace ChaturbateRecorderApp
         private ThemedButton tutorialButton = null!;
         private ThemedButton reportBugButton = null!;
         private ThemedButton diagnosticButton = null!;
-        private ThemedButton modeToggleButton = null!;
         private Label urlLabel = null!;
         private PlatformStrip platformStrip = null!;
         private TextBox urlTextBox = null!;
@@ -69,6 +68,12 @@ namespace ChaturbateRecorderApp
         private ThemedButton shareRedditButton = null!;
         private ThemedButton githubButton = null!;
         private PictureBox qrPictureBox = null!;
+        // 97.0 — charpente : navigation à gauche, une vue par section.
+        private SideBar sideBar = null!;
+        private Panel viewStreams = null!;
+        private Panel viewHistory = null!;
+        private Panel viewSettings = null!;
+        private Panel viewSupport = null!;
         private ThemedButton thanksButton = null!;
         private Label donateLabel = null!;
         private ListBox logListBox = null!;
@@ -231,7 +236,13 @@ namespace ChaturbateRecorderApp
             ThemeManager.Apply(this, _currentTheme);
             ApplyIcons();
             ApplyLanguage(_currentLanguage);
-            ApplyUiMode(_settings.AdvancedMode ?? true, animate: false);
+            // 97.0 — la fenêtre s'ouvre sur la section Streams. Le réglage
+            // AdvancedMode n'est plus lu : il pilotait un mode qui n'existe
+            // plus. Il reste dans settings.json sans effet, plutôt que d'être
+            // supprimé — un réglage retiré de force ferait échouer la lecture
+            // d'un fichier écrit par une version antérieure.
+            ClientSize = new Size(SideBar.DefaultWidth + 700, 720);
+            ShowView("streams");
             RefreshHistoryAsync();
             ShowFirstRunDialogs();
 
@@ -1938,7 +1949,6 @@ namespace ChaturbateRecorderApp
             reportBugButton.Text = L("button.reportBug");
             diagnosticButton.Text = L("button.diagnostic");
             legalButton.Text = L("button.legal");
-            modeToggleButton.Text = _advancedMode ? L("mode.switchToSimple") : L("mode.switchToAdvanced");
 
             _trayOpenItem.Text = L("tray.open");
             _traySettingsItem.Text = L("tray.settings");
@@ -2002,6 +2012,11 @@ namespace ChaturbateRecorderApp
             watchListView.Columns[0].Text = L("column.room");
             watchListView.Columns[1].Text = L("column.watchState");
             RefreshWatchStates();
+            sideBar.SetLabel("streams", L("nav.streams"));
+            sideBar.SetLabel("history", L("nav.history"));
+            sideBar.SetLabel("settings", L("nav.settings"));
+            sideBar.SetLabel("support", L("nav.support"));
+
             grpDonate.Title = L("panel.donate");
             sponsorButton.Text = L("button.sponsor");
             donateButton.Text = L("button.donate");
@@ -2122,72 +2137,69 @@ namespace ChaturbateRecorderApp
         /// accessible via "Paramètres" dans les deux modes. Le choix est
         /// mémorisé entre les lancements.
         /// </summary>
-        private void ApplyUiMode(bool advanced, bool animate = true)
+        /// <summary>
+        /// Affiche une section et pose la mise en page de ses panneaux (97.0).
+        ///
+        /// **Chaque vue calcule sa propre hauteur naturelle** et la donne à son
+        /// AutoScrollMinSize : une section courte ne doit pas hériter de la
+        /// barre de défilement d'une autre. C'est ce que l'ancien ApplyUiMode
+        /// faisait pour la page unique, appliqué ici par section.
+        /// </summary>
+        private void ShowView(string key)
         {
-            _advancedMode = advanced;
+            const int marge = 12;
+            const int sectionGap = 20;
 
-            // 105 (pas 75) depuis l'ajout du bouton Diagnostic (2.3) sur une
-            // troisième rangée de la barre du haut, puis 111 depuis le passage
-            // de ces boutons de 24 à 26 px de haut (jambages rognés) : les trois
-            // rangées descendent de 2 px chacune, la dernière finissant 6 px plus
-            // bas. Garde la même gouttière de 12 px sous la barre du haut.
-            const int grpRecordY = 111;
-            // 218 (et non 172) depuis l'ajout du minuteur (87.0) sur une deuxième
-            // rangée d'options : advancedOptionsPanel est passé de 66 à 112 px.
-            const int grpRecordHeightAdvanced = 218;
-            const int grpRecordHeightSimple = 110;
-            const int sectionGap = 20; // 7.3 : espacement moderne entre sections (20-24px)
-
-            advancedOptionsPanel.Visible = advanced;
-            tutorialButton.Visible = advanced;
-            checkUpdateButton.Visible = advanced;
-            reportBugButton.Visible = advanced;
-            diagnosticButton.Visible = advanced;
-            grpHistory.Visible = advanced;
-            grpFavorites.Visible = advanced;
-            grpWatch.Visible = advanced;
-            grpDonate.Visible = advanced;
-            grpLogs.Visible = advanced;
-
-            grpRecord.Location = new Point(12, grpRecordY);
-            grpRecord.Height = advanced ? grpRecordHeightAdvanced : grpRecordHeightSimple;
-
-            var progressY = grpRecordY + grpRecord.Height + sectionGap;
-            grpProgress.Location = new Point(12, progressY);
-
-            int naturalHeight;
-            if (advanced)
+            var vues = new (string Key, Panel Vue)[]
             {
-                grpHistory.Location = new Point(12, progressY + grpProgress.Height + sectionGap);
-                grpFavorites.Location = new Point(12, grpHistory.Bottom + sectionGap);
-                grpWatch.Location = new Point(12, grpFavorites.Bottom + sectionGap);
-                grpDonate.Location = new Point(12, grpWatch.Bottom + sectionGap);
-                grpLogs.Location = new Point(12, grpDonate.Bottom + sectionGap);
-                naturalHeight = grpLogs.Bottom + sectionGap;
-            }
-            else
+                ("streams", viewStreams), ("history", viewHistory),
+                ("settings", viewSettings), ("support", viewSupport),
+            };
+
+            foreach (var (k, vue) in vues) vue.Visible = k == key;
+
+            int hauteur;
+            switch (key)
             {
-                naturalHeight = progressY + grpProgress.Height + sectionGap;
+                case "history":
+                    grpHistory.Location = new Point(marge, marge);
+                    hauteur = grpHistory.Bottom + marge;
+                    break;
+
+                case "settings":
+                    // Les six boutons qui peuplaient la barre du haut : ils y
+                    // occupaient trois rangées et rognaient la fenêtre en
+                    // permanence, pour des actions qu'on déclenche une fois par
+                    // mois. Empilés ici, ils ne coûtent plus rien à personne.
+                    var y = marge;
+                    foreach (var b in new[] { paramsButton, tutorialButton, checkUpdateButton, legalButton, diagnosticButton, reportBugButton })
+                    {
+                        b.Location = new Point(marge, y);
+                        b.Size = new Size(240, 30);
+                        y += 38;
+                    }
+                    hauteur = y + marge;
+                    break;
+
+                case "support":
+                    grpDonate.Location = new Point(marge, marge);
+                    hauteur = grpDonate.Bottom + marge;
+                    break;
+
+                default:
+                    grpRecord.Location = new Point(marge, marge);
+                    grpRecord.Height = 218;
+                    grpProgress.Location = new Point(marge, grpRecord.Bottom + sectionGap);
+                    grpFavorites.Location = new Point(marge, grpProgress.Bottom + sectionGap);
+                    grpWatch.Location = new Point(marge, grpFavorites.Bottom + sectionGap);
+                    grpLogs.Location = new Point(marge, grpWatch.Bottom + sectionGap);
+                    hauteur = grpLogs.Bottom + marge;
+                    break;
             }
 
-            // Taille "naturelle" du contenu : appliquée à la fenêtre pour un
-            // confort immédiat au changement de mode, et comme plancher de
-            // défilement (AutoScrollMinSize) si l'utilisateur réduit ensuite
-            // la fenêtre manuellement en dessous de cette taille.
-            ClientSize = new Size(700, naturalHeight);
-            contentPanel.AutoScrollMinSize = new Size(700, naturalHeight);
-
-            // Par Localization (pas de littéral français en dur) : ce texte doit
-            // rester dans la langue active même quand on change de mode après
-            // avoir choisi l'anglais — bug corrigé au passage (19.0).
-            modeToggleButton.Text = advanced
-                ? Localization.Get("mode.switchToSimple", _currentLanguage)
-                : Localization.Get("mode.switchToAdvanced", _currentLanguage);
-
-            _settings.AdvancedMode = advanced;
-            SettingsManager.Save(_settings);
-
-            if (animate) PulseOpacity();
+            var vueCourante = Array.Find(vues, v => v.Key == key).Vue ?? viewStreams;
+            vueCourante.AutoScrollMinSize = new Size(660 + 2 * marge, hauteur);
+            advancedOptionsPanel.Visible = true;
         }
 
         private async void OnCheckUpdateClick(object? sender, EventArgs e)
@@ -2555,7 +2567,6 @@ namespace ChaturbateRecorderApp
             paramsButton = new ThemedButton { Location = new Point(12, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
             paramsButton.Click += (s, e) => ShowSettingsDialog();
 
-            modeToggleButton = new ThemedButton { Location = new Point(152, topBarRow1Y), Size = new Size(130, topBarButtonHeight) };
 
             // 98.0 — rangee 1 (toujours visible), et non rangee 3 avec
             // Diagnostic : la confusion que ce texte dissipe concerne
@@ -2567,7 +2578,6 @@ namespace ChaturbateRecorderApp
                 using var dialog = new LegalForm(_currentTheme, _currentLanguage);
                 dialog.ShowDialog(this);
             };
-            modeToggleButton.Click += (s, e) => ApplyUiMode(!_advancedMode);
 
             tutorialButton = new ThemedButton { Text = "Guide de démarrage", Location = new Point(12, topBarRow2Y), Size = new Size(190, topBarButtonHeight) };
             tutorialButton.Click += (s, e) => ShowTutorial();
@@ -2933,11 +2943,59 @@ namespace ChaturbateRecorderApp
             foreach (var caption in new Control[] { urlLabel, qualityLabel, codecLabel, formatLabel, durationLabel, donateLabel })
                 ThemeManager.SetTextRole(caption, TextRole.Caption);
 
-            contentPanel.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, modeToggleButton, legalButton, grpRecord, grpProgress, grpHistory, grpFavorites, grpWatch, grpDonate, grpLogs });
-            Controls.Add(contentPanel);
+            // --- 97.0 : charpente en barre latérale + vues ---
+            //
+            // Les panneaux ne changent NI de contenu NI de dimensions à cette
+            // étape : ils sont seulement reparentés dans la vue qui les
+            // accueille. C'est ce qui permet de refondre la structure sans
+            // toucher au fonctionnement, et de vérifier l'un avant l'autre.
+            //
+            // Le mode simple/avancé disparaît : il n'existait que pour MASQUER
+            // la moitié d'un écran unique, problème que la navigation supprime.
+            viewStreams = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
+            viewHistory = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
+            viewSettings = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
+            viewSupport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Visible = false };
 
-            // Ancrage des panneaux eux-mêmes, posé après leur ajout à
-            // contentPanel (même raison que ci-dessus : Parent doit être connu).
+            viewStreams.Controls.AddRange(new Control[] { grpRecord, grpProgress, grpFavorites, grpWatch, grpLogs });
+            viewHistory.Controls.Add(grpHistory);
+            viewSettings.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, legalButton });
+            viewSupport.Controls.Add(grpDonate);
+
+            sideBar = new SideBar { Dock = DockStyle.Left };
+            sideBar.AddEntry("streams", "camera");
+            sideBar.AddEntry("history", "folder");
+            sideBar.AddEntry("settings", "sliders");
+            sideBar.AddEntry("support", "heart");
+            sideBar.SelectionChanged += (s, e) => ShowView(sideBar.SelectedKey);
+
+            contentPanel.Controls.AddRange(new Control[] { viewStreams, viewHistory, viewSettings, viewSupport });
+            // La barre AVANT la zone de contenu dans l'ordre d'ajout : en
+            // docking WinForms, le dernier ajouté est le plus proche du bord,
+            // et Fill doit occuper ce qui reste APRÈS le Left.
+            Controls.Add(contentPanel);
+            Controls.Add(sideBar);
+
+            // FORCER la création des handles des deux ListView, bien qu'elles
+            // soient dans des vues masquées.
+            //
+            // Sans ça, la navigation RÉVEILLE le piège ImageList de 103.0 :
+            // `Images.Add` ne recopie l'image que si le handle EXISTE DÉJÀ,
+            // sinon la liste garde la référence. RefreshHistoryAsync ajoute les
+            // miniatures puis les libère (v1.29.0) — ce qui était sûr tant que
+            // tout vivait sur une page unique et visible. Avec des vues
+            // masquées, le handle n'apparaît qu'au premier affichage de la
+            // section, sur des bitmaps déjà détruits : ArgumentException
+            // « Parameter is not valid » dans OnHandleCreated, très loin de sa
+            // cause. Constaté à l'exécution en capturant les quatre sections.
+            //
+            // Lire `.Handle` le crée quelle que soit la visibilité, ce que
+            // CreateControl() ne fait pas.
+            _ = historyListView.Handle;
+            _ = watchListView.Handle;
+
+            // Ancrage des panneaux eux-mêmes, posé après leur ajout à leur vue
+            // (même raison que ci-dessus : Parent doit être connu).
             grpRecord.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpProgress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             grpHistory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;

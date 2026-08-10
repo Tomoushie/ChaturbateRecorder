@@ -15,6 +15,37 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**97.0 ÉTAPE 1 (2026-08-10) — charpente en barre latérale, mode simple SUPPRIMÉ** :
+- **Périmètre tranché avec le mainteneur AVANT d'écrire** (leçon de 39.0) :
+  table unifiée à venir, quatre sections (Enregistrer / Historique / Réglages /
+  Soutenir), et **suppression du mode simple/avancé**. Ce mode n'existait que
+  pour MASQUER la moitié d'un écran unique ; une navigation supprime le besoin.
+- **Les panneaux ne changent NI de contenu NI de taille à cette étape** : ils
+  sont seulement reparentés dans la vue qui les accueille. C'est ce qui permet
+  de refondre la structure sans toucher au fonctionnement.
+- **Les six boutons de la barre du haut** occupaient trois rangées en
+  permanence pour des actions déclenchées une fois par mois. Ils vivent
+  désormais dans la section Réglages.
+- **`_ = historyListView.Handle;` N'EST PAS DU BRUIT** : masquer une vue retarde
+  la création du handle de sa ListView, ce qui **réveille le piège ImageList de
+  103.0**. `RefreshHistoryAsync` ajoute les miniatures puis les libère
+  (v1.29.0) — sûr tant que tout était visible, mortel dès que la vue est
+  masquée : ArgumentException « Parameter is not valid » dans `OnHandleCreated`,
+  au premier affichage de la section. Lire `.Handle` force la création quelle
+  que soit la visibilité, ce que `CreateControl()` ne fait pas.
+- **DANGER POUR LES CAPTURES PUBLIÉES, découvert ici** : `RefreshHistoryAsync`
+  est asynchrone et **écrase les données factices** d'un harnais de capture si
+  elle se termine après lui. Une capture a montré les VRAIS enregistrements du
+  mainteneur (noms de salons et miniatures). Les images publiées ce jour-là ont
+  été revérifiées une à une et sont propres — mais c'était une course, pas une
+  garantie. **Toujours regarder la capture avant de la committer.**
+- **Reste à faire** : la table unifiée (étape 2), les Réglages en page
+  sectionnée, et l'habillage lui-même. À cette étape la fenêtre est
+  restructurée, pas encore redessinée.
+- **Tests** : `Tests/SideBarTests.cs` (10, **270 au total**) sur la seule
+  arithmétique du contrôle — une erreur d'un pixel y sélectionnerait la
+  mauvaise section, défaut invisible sur une capture puisqu'il faut cliquer.
+
 **109.0 / 110.0 / 111.0 CONFIRMÉS EN USAGE RÉEL le 2026-08-10** par le
 mainteneur, aucun bug constaté. C'étaient des défauts d'INTERACTION (survol
 d'une liste déroulante, actualisation de l'historique) qu'aucun test ni aucune

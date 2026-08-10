@@ -304,6 +304,18 @@ namespace ChaturbateRecorderApp.UI
                 // intermédiaire entre les deux, et l'interpolation le donne
                 // juste dans les deux thèmes sans deux champs de plus à animer
                 // pendant la transition clair/sombre.
+                // 97.0 — la barre de navigation prend la couleur de CARTE et
+                // non celle du fond : c'est ce décalage d'un cran qui la
+                // détache de la zone de contenu, sans bordure épaisse.
+                case SideBar sb:
+                    sb.SurfaceColor = p.Card;
+                    sb.TextColor = p.Fg;
+                    sb.MutedColor = p.FgMuted;
+                    sb.AccentColor = p.Accent;
+                    sb.BorderColor = p.Border;
+                    sb.Invalidate();
+                    break;
+
                 case ThemedScrollBar tsb:
                     tsb.TrackColor = p.Input;
                     tsb.ThumbColor = Lerp(p.Input, p.Fg, 0.35f);
