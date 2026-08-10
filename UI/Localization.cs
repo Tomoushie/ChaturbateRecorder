@@ -110,8 +110,8 @@ namespace ChaturbateRecorderApp.UI
                 "La liste est vide pour l'instant.\n\nLe projet n'a encore reçu aucun don — et il fonctionne très bien ainsi.",
                 "The list is empty for now.\n\nThe project has not received any donation yet — and it works perfectly well that way."),
             ["thanks.consent"] = (
-                "Aucun montant n'est affiché. Un nom n'est ajouté qu'avec l'accord de la personne concernée.",
-                "No amount is ever shown. A name is only added with that person's consent."),
+                "Aucun montant n'est affiché. Pseudonymes publiés avec l'accord des personnes concernées.",
+                "No amount is ever shown. Pseudonyms published with the consent of the people concerned."),
             ["thanks.refreshing"] = ("Actualisation de la liste…", "Refreshing the list…"),
             ["thanks.upToDate"] = ("Liste à jour, récupérée sur le site du projet.", "List up to date, fetched from the project website."),
             ["thanks.offline"] = ("Liste embarquée : le site du projet n'a pas répondu.", "Built-in list: the project website did not answer."),

@@ -1,6 +1,7 @@
 {
   "_lisezmoi": "104.0 — Liste des personnes ayant soutenu le projet, lue par l'application quand l'utilisateur ouvre la fenetre Remerciements. Ajouter un nom ici et pousser suffit : il apparait sans attendre une nouvelle version. Recopier ensuite la liste dans Config/Supporters.cs au prochain bump, pour qu'elle reste affichable hors ligne.",
-  "_regles": "Pseudonymes de preference, jamais de montant, jamais d'ordre qui en tienne lieu (l'application trie alphabetiquement). N'ajouter un nom qu'avec l'accord de la personne : un don PayPal transporte son nom reel, le publier sans le lui avoir demande serait une divulgation.",
+  "_regles": "PSEUDONYME et jamais nom + prenom : le pseudo GitHub s'il existe, sinon celui que la personne utilise. Un don PayPal transporte son etat civil, le publier serait une divulgation. N'ajouter personne sans son accord.",
+  "_ordre": "Jamais de montant, ni d'ordre qui en tienne lieu. Deux ordres sont acceptables : alphabetique (celui que l'application applique) ou chronologique par date de don.",
   "_limites": "500 noms au maximum, 40 caracteres par nom, 64 Ko de fichier. Au-dela, l'application ignore le surplus.",
   "updated": "2026-08-10",
   "supporters": []

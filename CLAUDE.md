@@ -21,16 +21,21 @@ de version**, au même titre que `<Version>` dans le csproj et l'entrée de
   servi par le site. Ajouter un nom au JSON et pousser suffit — pas besoin
   d'attendre une release ; recopier la liste dans `Supporters.Embedded` au
   prochain bump pour qu'elle reste affichable sans connexion.
-- **Le tri alphabétique fait partie de la consigne, pas de l'esthétique.** La
-  demande dit « on ne mentionne pas la somme » : un ordre d'ajout ou un ordre
-  choisi à la main finirait par se lire comme un classement par montant.
-  `SupportersProvider` trie, donc la question ne se pose plus.
-- **Consentement écrit dans l'interface ET dans les deux fichiers de données** :
-  un don PayPal transporte le NOM RÉEL du payeur. La fenêtre affiche « un nom
-  n'est ajouté qu'avec l'accord de la personne concernée », et les en-têtes de
-  `Supporters.cs` / `supporters.json` disent de préférer un pseudonyme. Ce
-  n'était pas demandé, mais publier une identité sans accord serait une
-  divulgation, pas un remerciement.
+- **Le tri fait partie de la consigne, pas de l'esthétique.** La demande dit
+  « on ne mentionne pas la somme » : un ordre choisi à la main finirait par se
+  lire comme un classement par montant. **Deux ordres tranchés par le
+  mainteneur** : alphabétique (celui qui est appliqué par
+  `SupportersProvider`) ou chronologique par date de don. Passer au second
+  demanderait une date par entrée dans `supporters.json` — pas fait, personne
+  n'ayant encore donné.
+- **PSEUDONYME, jamais nom + prénom** — règle explicite du mainteneur, le
+  pseudo GitHub de préférence. Un don PayPal transporte l'état civil du
+  payeur. Écrit dans l'interface (« Pseudonymes publiés avec l'accord des
+  personnes concernées ») ET dans les en-têtes de `Supporters.cs` et
+  `supporters.json`, qui sont les endroits où quelqu'un ajoute un nom.
+- **La liste est DANS L'APPLICATION**, `docs/supporters.json` n'en est que la
+  source de données distante — point qui a prêté à confusion une fois. Le site
+  n'a, lui, aucune page de remerciements.
 - **C'est le SEUL texte de l'application qui vienne du réseau**, d'où
   l'assainissement : catégories Unicode Cc/Cf/Co supprimées (U+202E inverse le
   rendu de ce qui suit, les espaces de largeur nulle déjouent la

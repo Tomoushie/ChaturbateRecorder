@@ -89,10 +89,13 @@ namespace ChaturbateRecorderApp.UI
             // Largeur 380 et non 496 : à pleine largeur cette mention passait
             // SOUS le bouton Fermer, qui en masquait la fin. Elle s'arrête donc
             // avant lui plutôt que de lui disputer la place.
+            // Trois lignes de place pour un texte qui en occupe deux : les
+            // deux langues n'ont pas la même longueur, et c'est exactement
+            // cette marge qui manquait à la première version.
             consentLabel = new Label
             {
-                Location = new Point(12, 386),
-                Size = new Size(380, 40),
+                Location = new Point(12, 382),
+                Size = new Size(380, 58),
                 Text = Localization.Get("thanks.consent", language),
             };
 

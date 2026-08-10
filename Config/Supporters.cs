@@ -14,13 +14,15 @@ namespace ChaturbateRecorderApp.Config
     /// JSON du site, pour que les deux ne divergent pas indéfiniment.
     ///
     /// **AUCUN MONTANT, jamais**, et pas davantage un ordre qui en tiendrait
-    /// lieu : la liste est triée alphabétiquement à l'affichage, précisément
-    /// pour qu'on ne puisse pas lire un classement là où il n'y en a pas.
+    /// lieu. Deux ordres sont acceptables (décision du mainteneur) :
+    /// alphabétique — celui qui est appliqué, par
+    /// <c>Services/SupportersProvider.cs</c> — ou chronologique par date de
+    /// don. Tout autre ordre laisserait croire à un classement.
     ///
-    /// **Consentement** : n'inscrire ici un nom qu'avec l'accord de la
-    /// personne, et un pseudonyme plutôt que son état civil. Un don PayPal
-    /// transporte le nom réel du payeur ; le publier sans le lui avoir demandé
-    /// serait une divulgation, pas un remerciement.
+    /// **PSEUDONYME, jamais nom + prénom** (règle du mainteneur) : le pseudo
+    /// GitHub s'il existe, à défaut celui que la personne utilise. Un don
+    /// PayPal transporte son état civil ; le publier serait une divulgation,
+    /// pas un remerciement. Et n'inscrire personne sans son accord.
     /// </summary>
     public static class Supporters
     {
