@@ -15,6 +15,26 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**109.0 / 110.0 / 111.0 CONFIRMÉS EN USAGE RÉEL le 2026-08-10** par le
+mainteneur, aucun bug constaté. C'étaient des défauts d'INTERACTION (survol
+d'une liste déroulante, actualisation de l'historique) qu'aucun test ni aucune
+capture ne reproduit — seul son usage pouvait les valider. Le dossier est clos.
+
+**Jeton GitHub du relais de signalements : EXPIRE LE 2026-09-02.** Ce jour-là,
+le relais répondra 502 et l'application dira « réessaie plus tard » — **rien
+ne préviendra le mainteneur**, les signalements cesseront simplement
+d'arriver. Réparation : `wrangler secret put GITHUB_TOKEN` depuis
+`report-worker/`, avec un nouveau jeton fine-grained (Issues:write, ce dépôt
+seul).
+
+**Le backlog `A ajouter.txt` MENT sur au moins quatre items** (constaté le
+2026-08-10) : 69.0 (GitHub Sponsors, livré en 80.0), 79.0 (recherche horaire
+de mises à jour, déjà dans les Paramètres), 81.0 (protection de `main`,
+ruleset déjà actif) et 89.0 (logo, = 108.0). **Vérifier avant de créer** —
+c'est la leçon de 107.0, et elle a été repayée en créant un doublon de ruleset
+inutile. Corollaire pratique : quand le résultat d'une lecture peut annuler
+l'écriture qui suit, les séparer en deux appels.
+
 **96.0 partiel (2026-08-10) — publication sur itch.io** (CI uniquement, pas de
 bump) :
 - **Page** : `tomoushie.itch.io/chaturbate-recorder`, cible butler
