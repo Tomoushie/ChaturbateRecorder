@@ -147,6 +147,58 @@ jobs:
             ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json
             installer/ChaturbateRecorder-v${{ steps.version.outputs.version }}-setup.exe
 
+      # 96.0 — publication sur itch.io, canal SECONDAIRE.
+      #
+      # Placée APRÈS la création de la release GitHub et tolérante à l'échec :
+      # GitHub est le canal principal, dont dépendent l'installateur (qui y
+      # télécharge le ZIP portable) et le vérificateur de mise à jour de
+      # l'application. Une panne d'itch.io ne doit donc rien casser ici.
+      #
+      # Sans le secret BUTLER_API_KEY, l'étape se contente d'une note et sort :
+      # un fork du dépôt, ou le dépôt avant que la clé ne soit posée, ne doit
+      # pas voir ses releases échouer pour une intégration qui ne le concerne pas.
+      - name: Publier sur itch.io
+        if: ${{ github.event_name == 'push' && !contains(steps.version.outputs.tag, '-') }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if (-not $env:BUTLER_API_KEY) {
+            Write-Host "::notice::BUTLER_API_KEY absent : publication itch.io ignoree."
+            exit 0
+          }
+
+          $v = "${{ steps.version.outputs.version }}"
+          # Doit correspondre EXACTEMENT au slug de la page itch.io (le champ
+          # URL sous le titre). butler ne cree pas la page : si le slug change
+          # la-bas, cette ligne doit changer ici, sinon l'envoi part dans le vide.
+          $target = "tomoushie/chaturbate-recorder"
+
+          # butler recupere depuis le serveur officiel d'itch.io plutot que par
+          # une action tierce du Marketplace. Ce depot verifie les empreintes de
+          # yt-dlp et de ffmpeg avant de les lancer ; introduire un intermediaire
+          # non verifie dans la chaine de PUBLICATION serait incoherent.
+          Invoke-WebRequest -Uri "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default" -OutFile butler.zip
+          Expand-Archive butler.zip -DestinationPath butler-bin -Force
+          $butler = Join-Path "butler-bin" "butler.exe"
+          & $butler -V
+
+          # Le nom du canal contenant "windows" fait reconnaitre la plateforme
+          # par l'application itch.io, qui propose alors le bon fichier au lieu
+          # de tout lister.
+          #
+          # L'installateur d'abord, et c'est voulu : le ZIP portable NE CONTIENT
+          # PAS yt-dlp ni ffmpeg (licence GPL), il est donc inutilisable seul.
+          # Seul setup.exe va les chercher. Sur une plateforme ou personne ne lit
+          # les notes de version, proposer le portable en premier livrerait un
+          # logiciel qui ne demarre pas.
+          & $butler push "installer\ChaturbateRecorder-v$v-setup.exe" "${target}:windows-installer" --userversion $v
+          if ($LASTEXITCODE -ne 0) { throw "Envoi de l'installateur refuse par itch.io." }
+
+          & $butler push "ChaturbateRecorder-v$v-portable.zip" "${target}:windows-portable" --userversion $v
+          if ($LASTEXITCODE -ne 0) { throw "Envoi du portable refuse par itch.io." }
+
   # Appel direct plutôt que de compter sur l'évènement "release: published" :
   # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun
   # workflow (protection anti-boucle de GitHub), donc docs/latest.json restait
