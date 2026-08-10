@@ -15,6 +15,38 @@ v1.16.0 Diagnostic Mode, puis v1.19.0. **Le mettre à jour fait partie du bump
 de version**, au même titre que `<Version>` dans le csproj et l'entrée de
 `Config/Changelog.cs` — voir la section Conventions en bas de fichier.)
 
+**96.0 partiel (2026-08-10) — publication sur itch.io** (CI uniquement, pas de
+bump) :
+- **Page** : `tomoushie.itch.io/chaturbate-recorder`, cible butler
+  `tomoushie/chaturbate-recorder`. **Le slug d'origine était
+  `httpsgithubcomtomoushiechaturbaterecorder`** — le champ titre avait reçu
+  l'URL GitHub. Corrigé pendant que la page était en *draft* et sans fichier :
+  après, le changement casse la cible butler ET les liens déjà partagés.
+- **Étape placée APRÈS la release GitHub et `continue-on-error`** : GitHub est
+  le canal principal (l'installateur y télécharge le ZIP portable, le
+  vérificateur de mise à jour y lit la version). Une panne d'itch.io ne doit
+  rien casser. Sans le secret `BUTLER_API_KEY`, l'étape note et sort.
+- **L'installateur est poussé EN PREMIER** : le ZIP portable ne contient ni
+  yt-dlp ni ffmpeg (GPL), il est donc inutilisable seul. Sur une plateforme où
+  personne ne lit les notes, le mettre en tête livrerait un logiciel qui ne
+  démarre pas.
+- **Le portable est poussé comme DOSSIER, jamais comme ZIP** — butler l'avertit
+  lui-même : il diffe fichier par fichier, et un ZIP change entièrement dès
+  qu'un octet bouge. itch.io reconstruit l'archive de son côté.
+- **`broth.itch.ovh` NE RÉSOUT PLUS**, c'est `broth.itch.zone` (vérifié : 307
+  vers le miroir, butler 15.30.0). Récupéré depuis là plutôt que par une action
+  tierce du Marketplace : ce dépôt vérifie les empreintes de yt-dlp et ffmpeg,
+  un intermédiaire non vérifié dans la chaîne de publication serait incohérent.
+- **Éprouvé en poussant réellement** (build #1871732, canal
+  `windows-installer`). Le push du DOSSIER portable, lui, n'a pas été exercé —
+  c'est le mode par défaut de butler, et `continue-on-error` fait que le pire
+  cas est une release qui réussit sans la copie itch.io.
+- **Les trois autres plateformes de 96.0 restent manuelles ou hors de portée** :
+  Softpedia/MajorGeeks sont des catalogues à relecture humaine (et l'exe non
+  signé y déclenchera des faux positifs, cf. 1.1) ; Patreon demande identité et
+  coordonnées bancaires ; F-Droid ne distribue que des APK, or il n'existe
+  aucun portage Android et WinForms n'y tourne pas — ce serait une réécriture.
+
 **v1.35.0 (2026-08-10) — 102.0 : la fenêtre de signalement.** Le relais est
 **DÉPLOYÉ et PROUVÉ** : `https://chaturbate-recorder-reports.tom-nowak.workers.dev`
 - **Chaîne vérifiée deux fois, et la seconde comptait** : d'abord par `curl`
