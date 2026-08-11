@@ -29,7 +29,7 @@ namespace ChaturbateRecorderApp
         private ThemedButton startButton = null!;
         private ThemedButton stopAllButton = null!;
         private ThemedButton addRoomButton = null!;
-        private FlowLayoutPanel roomsListPanel = null!;
+        private RoomListPanel roomsListPanel = null!;
         private Label roomsEmptyLabel = null!;
         // Une seule instance pour toutes les cartes : un ToolTip par bouton
         // ferait autant de fenêtres natives que de salons.
@@ -589,7 +589,7 @@ namespace ChaturbateRecorderApp
             _cardTips.SetToolTip(open, Localization.Get("job.open", _currentLanguage));
             _cardTips.SetToolTip(remove, Localization.Get("job.remove", _currentLanguage));
 
-            card.Controls.AddRange(new Control[] { primary, open, remove });
+            card.SetActions(primary, open, remove);
 
             var row = new RoomRow
             {
@@ -631,7 +631,6 @@ namespace ChaturbateRecorderApp
             // remonte la chaîne des parents pour savoir sur quelle surface il
             // peint. Une carte encore orpheline recevrait le fond de la FENÊTRE.
             roomsListPanel.Controls.Add(card);
-            LayoutCardActions(row);
             RefreshCard(row);
             ThemeManager.Apply(card, _currentTheme);
             return row;
@@ -656,24 +655,22 @@ namespace ChaturbateRecorderApp
         /// droite quand la liste est courte ; c'est le prix d'une largeur qui ne
         /// dépend pas de ce qu'elle provoque.
         /// </summary>
+        /// <summary>
+        /// Ramène la liste en haut dès que tout tient.
+        ///
+        /// Sans ça, une carte qui s'ÉTEND au démarrage d'un enregistrement fait
+        /// défiler le panneau pour la garder en vue, et la première carte se
+        /// retrouve à moitié sous le titre — constaté sur capture en usage réel,
+        /// alors que la place ne manquait plus.
+        ///
+        /// La LARGEUR des cartes ne se règle plus ici : `RoomListPanel` la pose
+        /// lui-même pendant sa mise en page, avant de calculer ses ascenseurs.
+        /// </summary>
         private void ResizeRoomCards()
         {
-            var largeur = Math.Max(320,
-                roomsListPanel.Width - SystemInformation.VerticalScrollBarWidth - 6);
-
             var total = 0;
-            foreach (var row in _roomRows)
-            {
-                row.Card.Width = largeur;
-                LayoutCardActions(row);
-                total += row.Card.Height + row.Card.Margin.Bottom;
-            }
+            foreach (var row in _roomRows) total += row.Card.Height + row.Card.Margin.Bottom;
 
-            // Ramener la liste en haut dès que tout tient. Sans ça, une carte
-            // qui s'ÉTEND au démarrage d'un enregistrement fait défiler le
-            // FlowLayoutPanel pour la garder en vue, et la première carte se
-            // retrouve à moitié sous le titre du panneau — constaté sur capture
-            // en usage réel, alors que la place ne manquait plus.
             if (total <= roomsListPanel.ClientSize.Height)
                 roomsListPanel.AutoScrollPosition = new Point(0, 0);
         }
@@ -703,21 +700,10 @@ namespace ChaturbateRecorderApp
                 Math.Max(150, historyListView.ClientSize.Width - fixes - 4);
         }
 
-        private static void LayoutCardActions(RoomRow row)
-        {
-            const int marge = 14;
-            const int ecart = 6;
-            var y = (RoomCard.CompactHeight - row.PrimaryButton.Height) / 2;
-
-            var x = row.Card.Width - marge - row.RemoveButton.Width;
-            row.RemoveButton.Location = new Point(x, y);
-
-            x -= ecart + row.OpenButton.Width;
-            row.OpenButton.Location = new Point(x, y);
-
-            x -= ecart + row.PrimaryButton.Width;
-            row.PrimaryButton.Location = new Point(x, y);
-        }
+        // LayoutCardActions a disparu : c'est la CARTE qui place ses boutons
+        // désormais (RoomCard.SetActions / OnResize). Les placer depuis
+        // l'extérieur imposait de reparcourir la liste après chaque
+        // redimensionnement, donc toujours un temps trop tard.
 
         private void OpenRoomPage(RoomRow row)
         {
@@ -3206,7 +3192,7 @@ namespace ChaturbateRecorderApp
             // 264 — mesuré sur la première capture, où l'ascenseur vertical
             // apparaissait dès la quatrième carte. 276 laisse 4 px de garde.
             grpRooms = new RoundedGroupPanel { Title = "Mes salons", Location = new Point(12, 320), Size = new Size(660, 314) };
-            roomsListPanel = new FlowLayoutPanel
+            roomsListPanel = new RoomListPanel
             {
                 Location = new Point(12, 22),
                 Size = new Size(636, 276),

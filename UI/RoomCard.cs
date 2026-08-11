@@ -48,7 +48,56 @@ namespace ChaturbateRecorderApp.UI
         private System.Windows.Forms.Timer? _pulseTimer;
         private Bitmap? _preview;
 
+        private Control? _primary, _open, _remove;
+
         internal event EventHandler? AutoRecordToggled;
+
+        /// <summary>
+        /// Confie ses boutons d'action à la carte, qui les place elle-même et
+        /// les replace à chaque redimensionnement.
+        ///
+        /// **C'est la carte qui doit posséder cette géométrie**, pas son
+        /// conteneur : quand la liste redimensionne ses cartes, chacune se
+        /// réagence dans la foulée, sans qu'un tiers ait à parcourir la liste
+        /// après coup. C'est ce décalage d'un temps qui faisait clignoter un
+        /// ascenseur pendant le redimensionnement de la fenêtre.
+        /// </summary>
+        internal void SetActions(Control primary, Control open, Control remove)
+        {
+            _primary = primary;
+            _open = open;
+            _remove = remove;
+            Controls.AddRange(new[] { primary, open, remove });
+            PlaceActions();
+        }
+
+        /// <summary>
+        /// Boutons calés sur le bord droit, centrés sur la bande COMPACTE — pour
+        /// qu'ils ne descendent pas avec la carte quand elle s'étend.
+        /// </summary>
+        private void PlaceActions()
+        {
+            if (_primary == null || _open == null || _remove == null) return;
+
+            const int marge = 14;
+            const int ecart = 6;
+            var y = (CompactHeight - _primary.Height) / 2;
+
+            var x = Width - marge - _remove.Width;
+            _remove.Location = new Point(x, y);
+
+            x -= ecart + _open.Width;
+            _open.Location = new Point(x, y);
+
+            x -= ecart + _primary.Width;
+            _primary.Location = new Point(x, y);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            PlaceActions();
+        }
 
         /// <summary>
         /// Vignette du direct, fournie par le composant premium. Nulle pour qui
