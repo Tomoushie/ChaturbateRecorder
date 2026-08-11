@@ -32,6 +32,10 @@ namespace ChaturbateRecorderApp.UI
         private const int Radius = 10;
         private const int PadX = 14;
         private const int IconSize = 18;
+        // 16/9 exact, comme les miniatures de l'historique : une vignette
+        // déformée se remarque tout de suite sur une image de webcam.
+        private const int PreviewWidth = 64;
+        private const int PreviewHeight = 36;
         private const int ToggleWidth = 34;
         private const int ToggleHeight = 18;
 
@@ -42,8 +46,32 @@ namespace ChaturbateRecorderApp.UI
         private bool _indeterminate;
         private int _pulse;
         private System.Windows.Forms.Timer? _pulseTimer;
+        private Bitmap? _preview;
 
         internal event EventHandler? AutoRecordToggled;
+
+        /// <summary>
+        /// Vignette du direct, fournie par le composant premium. Nulle pour qui
+        /// n'a pas de licence — la carte se dessine alors exactement comme avant.
+        ///
+        /// **La carte devient PROPRIÉTAIRE de l'image** : elle libère la
+        /// précédente à chaque remplacement, et la sienne à sa destruction. Une
+        /// vignette rafraîchie toutes les deux minutes sur vingt salons ferait
+        /// fuir des centaines de bitmaps en une soirée — c'est le même piège que
+        /// les miniatures d'historique en v1.29.0.
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        internal Bitmap? Preview
+        {
+            get => _preview;
+            set
+            {
+                if (ReferenceEquals(_preview, value)) return;
+                _preview?.Dispose();
+                _preview = value;
+                Invalidate();
+            }
+        }
 
         public RoomCard()
         {
@@ -235,6 +263,24 @@ namespace ChaturbateRecorderApp.UI
             }
             x += IconSize + 12;
 
+            // La vignette s'insère APRÈS le pictogramme de plateforme, elle ne
+            // le remplace pas : savoir d'où vient un salon reste utile même
+            // quand on voit ce qu'il diffuse, et le perdre serait une régression
+            // payée par les seuls acheteurs.
+            if (_preview is { } vignette)
+            {
+                var cadre = new Rectangle(x, (Math.Min(Height, CompactHeight) - PreviewHeight) / 2,
+                                          PreviewWidth, PreviewHeight);
+                using (var chemin = Arrondi(cadre, 4))
+                {
+                    var ancien = g.Clip;
+                    g.SetClip(chemin);
+                    g.DrawImage(vignette, cadre);
+                    g.Clip = ancien;
+                }
+                x += PreviewWidth + 12;
+            }
+
             using (var texte = new SolidBrush(p.Fg))
             using (var gras = new Font(Font, FontStyle.Bold))
                 g.DrawString(RoomName, gras, texte, x, 11);
@@ -329,6 +375,8 @@ namespace ChaturbateRecorderApp.UI
                 _pulseTimer?.Stop();
                 _pulseTimer?.Dispose();
                 _pulseTimer = null;
+                _preview?.Dispose();
+                _preview = null;
             }
             base.Dispose(disposing);
         }

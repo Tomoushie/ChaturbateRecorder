@@ -34,6 +34,18 @@ namespace ChaturbateRecorderApp.Config
         public static string LogDir            = DefaultLogDir();
 
         /// <summary>
+        /// Vignettes d'aperçu du premium (97.0). Rangées avec les données de
+        /// l'application et NON dans le dossier de capture : ce sont des
+        /// fichiers jetables, régénérés à chaque sondage, et les mêler aux
+        /// enregistrements les ferait apparaître dans l'historique.
+        ///
+        /// Calculé et non stocké : le dossier de logs est déplaçable, celui-ci
+        /// doit le suivre.
+        /// </summary>
+        public static string PreviewDir => Path.Combine(
+            Path.GetDirectoryName(LogDir) ?? AppDir, "previews");
+
+        /// <summary>
         /// Dossier de capture par defaut : "Vidéos" de l'utilisateur. Repli sur
         /// le dossier de l'application si le profil est indisponible (compte de
         /// service, profil temporaire), cas rare mais qui ne doit pas empecher

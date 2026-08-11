@@ -746,6 +746,64 @@ namespace ChaturbateRecorderApp
             RefreshCard(row);
         }
 
+        /// <summary>
+        /// Demande une vignette au composant premium et la pose sur la carte.
+        ///
+        /// **L'extraction tourne sur un thread de fond** (`Task.Run`) : elle
+        /// enchaîne deux processus — yt-dlp pour résoudre le flux, ffmpeg pour
+        /// en tirer une image — et prend plusieurs secondes. Appelée directement,
+        /// elle figerait la fenêtre à chaque salon en ligne, pendant que des
+        /// captures tournent.
+        ///
+        /// Silencieuse en cas d'échec : sans licence, sans composant, ou si le
+        /// flux ne rend rien, la carte reste telle quelle. C'est le cas de la
+        /// quasi-totalité des utilisateurs, ce n'est pas une anomalie.
+        /// </summary>
+        private async Task RefreshPreviewAsync(RoomRow row)
+        {
+            if (!_premium.IsLicensed) return;
+
+            // Nom de fichier dérivé de l'URL normalisée : un nom de salon peut
+            // contenir n'importe quoi, y compris des caractères interdits en
+            // chemin, et deux salons de plateformes différentes peuvent porter
+            // le même nom lisible.
+            var cle = Convert.ToHexString(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(RoomStore.Normalize(row.Url))))[..16];
+            var chemin = Path.Combine(AppConfig.PreviewDir, $"{cle}.jpg");
+
+            var url = row.Url;
+            var ok = await Task.Run(() => _premium.TryCapturePreview(url, chemin)).ConfigureAwait(true);
+            if (!ok || IsDisposed || !_roomRows.Contains(row)) return;
+
+            var image = LoadPreview(chemin);
+            if (image == null) return;
+
+            // La carte devient propriétaire : elle libère la précédente.
+            row.Card.Preview = image;
+        }
+
+        /// <summary>
+        /// Charge une vignette en mémoire SANS garder le fichier ouvert.
+        /// `Image.FromFile` le verrouillerait tant que l'image vit, ce qui
+        /// empêcherait le prochain rafraîchissement de la réécrire — même
+        /// raison qu'à l'historique (v1.29.0).
+        /// </summary>
+        private static Bitmap? LoadPreview(string chemin)
+        {
+            try
+            {
+                using var flux = File.OpenRead(chemin);
+                using var source = Image.FromStream(flux);
+                return new Bitmap(source);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Vignette illisible ({chemin}) : {ex.Message}", LogLevel.WARN);
+                return null;
+            }
+        }
+
         private RoomRow? FindRoomRow(string url)
         {
             var cle = RoomStore.Normalize(url);
@@ -1853,6 +1911,14 @@ namespace ChaturbateRecorderApp
                     row.PollStatus = status;
                     row.Polled = true;
                     RefreshCard(row);
+
+                    // Vignette : seulement pour un salon EN LIGNE, et seulement
+                    // si le composant premium est là et sous licence. Demandée
+                    // ici plutôt que sur un minuteur à part, parce que le
+                    // passage de surveillance vient justement d'établir que le
+                    // salon diffuse — sonder deux fois pour la même information
+                    // doublerait les appels au site.
+                    if (status == RoomStatus.Online) await RefreshPreviewAsync(row);
 
                     if (status == RoomStatus.NotFound)
                         AppendLog($"[{DateTime.Now:HH:mm:ss}] Surveillance : {RoomNameFromUrl(row.Url)} n'existe pas — vérifie l'adresse.");
