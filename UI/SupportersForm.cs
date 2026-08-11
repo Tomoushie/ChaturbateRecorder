@@ -29,19 +29,25 @@ namespace ChaturbateRecorderApp.UI
         private TextBox namesTextBox = null!;
         private Label statusLabel = null!;
         private Label consentLabel = null!;
+        private Label licenceLabel = null!;
         private ThemedButton closeButton = null!;
 
-        public SupportersForm(AppTheme theme, AppLanguage language)
+        /// <param name="licensedTo">
+        /// Nom signé dans la licence premium, vide si aucune. Passé en simple
+        /// chaîne et non via le composant : cette fenêtre n'a aucune raison de
+        /// savoir qu'un système de licences existe, elle affiche un nom.
+        /// </param>
+        public SupportersForm(AppTheme theme, AppLanguage language, string licensedTo = "")
         {
             _language = language;
-            InitializeComponent(language);
+            InitializeComponent(language, licensedTo);
             Render(SupportersProvider.FromEmbedded(), refreshing: true);
             ThemeManager.Apply(this, theme);
         }
 
         private string L(string key) => Localization.Get(key, _language);
 
-        private void InitializeComponent(AppLanguage language)
+        private void InitializeComponent(AppLanguage language, string licensedTo)
         {
             SuspendLayout();
 
@@ -64,6 +70,31 @@ namespace ChaturbateRecorderApp.UI
                 Text = Localization.Get("thanks.intro", language),
             };
 
+            // 97.0 premium — le nom SIGNÉ dans la licence, affiché pour qui en
+            // possède une. Rangé ici et pas dans un panneau technique : c'est
+            // la fenêtre où l'on remercie les gens qui soutiennent le projet, et
+            // un acheteur en fait partie.
+            //
+            // **La mise en page reste déterministe** : la ligne existe toujours,
+            // seule sa visibilité change, et le champ des noms est placé en
+            // conséquence. Réserver la place en permanence laisserait un trou
+            // de 26 px chez la quasi-totalité des utilisateurs, qui n'ont pas de
+            // licence — un défaut servi au plus grand nombre pour un cas rare.
+            var licencie = licensedTo.Length > 0;
+            licenceLabel = new Label
+            {
+                Location = new Point(12, 88),
+                Size = new Size(496, 22),
+                // Get(key, language) + string.Format, et NON Localization.Format :
+                // celui-ci n'a pas de surcharge avec langue, il aurait avalé
+                // `language` dans le premier trou et ignoré le nom. Le piège est
+                // documenté au-dessus de Format() — et payé ici quand même.
+                Text = licencie
+                    ? string.Format(Localization.Get("thanks.licence", language), licensedTo)
+                    : "",
+                Visible = licencie,
+            };
+
             // Même choix que LegalForm : un TextBox en lecture seule plutôt
             // qu'une ListBox. Une liste sélectionnable inviterait à cliquer sur
             // des noms qui ne mènent nulle part, alors qu'un texte se copie —
@@ -71,8 +102,8 @@ namespace ChaturbateRecorderApp.UI
             // remerciements.
             namesTextBox = new TextBox
             {
-                Location = new Point(12, 92),
-                Size = new Size(496, 262),
+                Location = new Point(12, licencie ? 114 : 92),
+                Size = new Size(496, licencie ? 240 : 262),
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
@@ -108,7 +139,7 @@ namespace ChaturbateRecorderApp.UI
             closeButton.Role = ButtonRole.Primary; // seul accent de la fenêtre (39.0)
             closeButton.Click += (s, e) => Close();
 
-            Controls.AddRange(new Control[] { introLabel, namesTextBox, statusLabel, consentLabel, closeButton });
+            Controls.AddRange(new Control[] { introLabel, licenceLabel, namesTextBox, statusLabel, consentLabel, closeButton });
 
             // Ancrage APRÈS Controls.Add — piège documenté en bas de CLAUDE.md.
             introLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;

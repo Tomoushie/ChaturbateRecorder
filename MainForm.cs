@@ -2943,7 +2943,7 @@ namespace ChaturbateRecorderApp
             reportBugButton.Click += OnReportBugClick;
 
             diagnosticButton = new ThemedButton { Location = new Point(12, topBarRow3Y), Size = new Size(160, topBarButtonHeight) };
-            diagnosticButton.Click += (s, e) => new DiagnosticForm(_currentTheme).ShowDialog(this);
+            diagnosticButton.Click += (s, e) => new DiagnosticForm(_currentTheme, _premium).ShowDialog(this);
 
             // --- Panel : Enregistrement ---
             // Ancrage Left+Right (fenêtre redimensionnable, v1.7.0) : le panneau
@@ -3231,7 +3231,7 @@ namespace ChaturbateRecorderApp
             thanksButton = new ThemedButton { Text = "Remerciements", Location = new Point(340, 128), Size = new Size(316, 26) };
             thanksButton.Click += (s, e) =>
             {
-                using var dialog = new SupportersForm(_currentTheme, _currentLanguage);
+                using var dialog = new SupportersForm(_currentTheme, _currentLanguage, _premium.LicensedTo);
                 dialog.ShowDialog(this);
             };
 

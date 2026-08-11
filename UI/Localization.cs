@@ -120,6 +120,12 @@ namespace ChaturbateRecorderApp.UI
             ["thanks.consent"] = (
                 "Aucun montant n'est affiché. Pseudonymes publiés avec l'accord des personnes concernées.",
                 "No amount is ever shown. Pseudonyms published with the consent of the people concerned."),
+            // 97.0 premium — le nom de l'acheteur est SIGNÉ dans sa licence et
+            // affiché ici. C'est la seule mesure anti-partage retenue : une clé
+            // qui circule dit à qui elle appartient.
+            ["thanks.licence"] = (
+                "Licence « Stream Recorder Pro » au nom de {0}. Merci.",
+                "“Stream Recorder Pro” licence in the name of {0}. Thank you."),
             ["thanks.refreshing"] = ("Actualisation de la liste…", "Refreshing the list…"),
             ["thanks.upToDate"] = ("Liste à jour, récupérée sur le site du projet.", "List up to date, fetched from the project website."),
             ["thanks.offline"] = ("Liste embarquée : le site du projet n'a pas répondu.", "Built-in list: the project website did not answer."),

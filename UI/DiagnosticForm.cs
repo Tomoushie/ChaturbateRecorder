@@ -30,14 +30,20 @@ namespace ChaturbateRecorderApp.UI
     {
         private TextBox _reportBox = null!;
         private ThemedButton _refreshButton = null!;
+        private readonly Services.PremiumBridge? _premium;
 
         /// <param name="theme">
         /// Thème de l'application. Comme le Guide de démarrage, cette fenêtre
         /// ne l'appliquait pas : elle restait claire en thème sombre, et ses
         /// boutons masquaient leurs coins avec une couleur système (111.0).
         /// </param>
-        public DiagnosticForm(AppTheme theme = AppTheme.Light)
+        /// <param name="premium">
+        /// Passerelle vers le composant payant, ou null si l'appelant n'en a
+        /// pas. Null est le cas normal : le composant est optionnel.
+        /// </param>
+        public DiagnosticForm(AppTheme theme = AppTheme.Light, Services.PremiumBridge? premium = null)
         {
+            _premium = premium;
             InitializeComponent();
             ThemeManager.Apply(this, theme);
             _ = RefreshReportAsync();
@@ -113,7 +119,7 @@ namespace ChaturbateRecorderApp.UI
             }
         }
 
-        private static string BuildStaticReport()
+        private string BuildStaticReport()
         {
             var sb = new StringBuilder();
             sb.AppendLine($"Application : v{typeof(DiagnosticForm).Assembly.GetName().Version?.ToString(3)}");
@@ -124,6 +130,14 @@ namespace ChaturbateRecorderApp.UI
             sb.AppendLine("--- Intégrité des binaires (hash SHA256) ---");
             sb.AppendLine($"yt-dlp.exe : {DescribeHash("yt-dlp", AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256)}");
             sb.AppendLine($"ffmpeg.exe : {DescribeHash("ffmpeg", AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256)}");
+            sb.AppendLine();
+
+            // Rangé juste après l'intégrité des binaires : c'est le même sujet,
+            // quel code tourne réellement sur cette machine. Un composant
+            // premium chargé sans laisser de trace ici serait le seul angle mort
+            // d'un panneau fait exactement pour répondre à cette question.
+            sb.AppendLine("--- Composant premium (Stream Recorder Pro) ---");
+            sb.AppendLine(DecrirePremium());
             sb.AppendLine();
 
             sb.AppendLine("--- Dossier d'exécution ---");
@@ -140,6 +154,25 @@ namespace ChaturbateRecorderApp.UI
             sb.AppendLine();
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// État du composant payant. **Trois situations bien distinctes**, que
+        /// « premium indisponible » confondrait : pas installé (le cas de la
+        /// quasi-totalité des gens, et ce n'est PAS une anomalie), installé mais
+        /// sans licence acceptée, installé et actif. Sans cette distinction, un
+        /// acheteur dont la licence est refusée et quelqu'un qui n'a rien acheté
+        /// enverraient le même rapport.
+        /// </summary>
+        private string DecrirePremium()
+        {
+            if (_premium is not { } premium) return "État indisponible.";
+            if (!premium.IsLoaded)
+                return $"Non installé (normal) — {(premium.LicenceProblem.Length > 0 ? premium.LicenceProblem : "aucun StreamRecorderPro.dll à côté de l'application")}.";
+
+            return premium.IsLicensed
+                ? $"Actif, v{premium.Version} — licence au nom de {premium.LicensedTo}."
+                : $"Installé (v{premium.Version}) mais INACTIF — {premium.LicenceProblem}.";
         }
 
         private static string DescribeHash(string binaryKey, string path, string expectedHash)
