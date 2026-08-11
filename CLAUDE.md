@@ -95,6 +95,56 @@ de version**, au même titre que `<Version>` dans le csproj et l'entrée de
   **Règle qui en découle : on fait payer ce que les gens veulent EN PLUS,
   jamais ce qui les empêche d'utiliser le produit.**
 
+**PREMIUM — architecture tranchée le 2026-08-11, avant tout code** :
+- **Le composant fermé s'appelle `StreamRecorderPro.dll`**, type
+  `StreamRecorderPro.PremiumModule`, et vit dans un dépôt PRIVÉ à
+  `E:\Corpus\Chaturbate Record\Projet logiciel\StreamRecorderPro` — **hors** du
+  dossier `ChaturbateRecorderApp\`, dont le csproj globalise tout son contenu
+  (il retire déjà `Tests\**` et `SentinelGuard\**` ; un projet posé dedans
+  réveillerait les 28 `CS0579`).
+- **Liage par RÉFLEXION, pas par interface partagée** (`Services/PremiumBridge.cs`).
+  Une interface obligerait le composant à référencer l'assembly de l'app, or la
+  variante portable est publiée en `PublishSingleFile` auto-contenue : le liage
+  d'un greffon sur une identité d'assembly embarquée ne casse qu'à l'exécution,
+  chez l'utilisateur, sur la variante la moins testée. Prix payé : aucun
+  contrôle à la compilation — d'où une surface minuscule, en types primitifs
+  seulement, et `Tests/PremiumBindingTests.cs` (6, **322 au total**) qui éprouve
+  chaque cas de refus SÉPARÉMENT, y compris un constructeur qui lève (sans
+  capture, un composant optionnel ferait tomber l'application GRATUITE).
+- **L'app libre ne vérifie AUCUNE licence.** Elle demande au composant s'il est
+  en règle et le croit. Mettre le contrôle dans du code MIT reviendrait à
+  publier le mode d'emploi du contournement avec le produit.
+- **Clé HORS LIGNE signée (ECDSA P-256, `System.Security.Cryptography`, sans
+  dépendance), pas d'activation en ligne.** Trois raisons : une dépendance
+  serveur tombe en silence (le jeton du relais en est la preuve vivante, cf. le
+  2026-09-02) et casserait alors un produit PAYÉ ; un logiciel d'enregistrement
+  de contenu adulte qui appelle un serveur à chaque lancement est un problème de
+  confiance ; l'achat doit survivre à l'arrêt de l'infrastructure.
+- **Anti-partage : le nom de l'acheteur est DANS la charge signée**, et affiché
+  dans l'application. Une clé qui circule dit à qui elle appartient. **Pas de
+  liaison à la machine** : ça casse au changement d'ordinateur et transforme un
+  client en demande d'assistance.
+- **Livraison par fichier `licence.key`** déposé à côté de l'app, pas une chaîne
+  à recopier : une signature P-256 fait ~167 caractères en base32.
+- **L'empreinte SHA-256 du composant est journalisée à chaque chargement.**
+  Cette application vérifie le hash de yt-dlp et ffmpeg avant de les lancer ;
+  charger du CODE sans trace serait le seul angle mort de la chaîne.
+- **Première charge utile : l'aperçu en IMAGE FIXE**, pas en vidéo. `yt-dlp -g`
+  donne l'URL du flux, puis l'appel ffmpeg que `GenerateThumbnail` fait déjà —
+  les deux binaires sont livrés, la carte a la place. La vidéo en direct demande
+  un décodage continu pendant qu'on enregistre : c'est la v2, une fois la chaîne
+  éprouvée.
+- **L'extension navigateur est ÉCARTÉE du premium** : une extension se
+  distribue publiquement et gratuitement par le Chrome Web Store, et une
+  extension dont la fonction est d'enregistrer des directs adultes passe mal la
+  revue. Gratuite elle a du sens, vendue non.
+- **Page de vente : `tomoushie.itch.io/stream-recorder-pro`** (créée le
+  2026-08-11), distincte de `chaturbate-recorder` — vendre depuis une page
+  portant le nom d'une plateforme adulte reconstruirait le risque de gel du
+  compte qui encaisse.
+- **La clé privée de signature ne doit JAMAIS entrer dans une conversation ni
+  dans un dépôt.** Si elle fuite, n'importe qui fabrique des licences valides.
+
 **Inspirations** (`E:\Corpus\Chaturbate Record\Inspirations`) : Olived Pro
 (barre latérale, cartes, interrupteurs) et Stream Download Manager (table avec
 colonne AUTO et aperçu). **Sur le plagiat** : les conventions d'interface ne

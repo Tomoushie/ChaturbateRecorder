@@ -159,6 +159,10 @@ namespace ChaturbateRecorderApp
         // WatchListManager. Les deux anciens fichiers sont lus une dernière
         // fois par RoomStore.Load(), qui migre puis les laisse en place.
         private readonly RoomStore _rooms = new();
+        // 97.0 — « Stream Recorder Pro », composant fermé et OPTIONNEL. Absent
+        // chez la quasi-totalité des utilisateurs : rien ici ne doit jamais
+        // empêcher l'application libre de démarrer.
+        private readonly PremiumBridge _premium = new();
         private System.Windows.Forms.Timer? _watchTimer;
         // Empêche deux passages de se chevaucher : un contrôle prend quelques
         // secondes par salon, une liste fournie peut dépasser l'intervalle.
@@ -262,6 +266,10 @@ namespace ChaturbateRecorderApp
             WarnIfBroadWriteAccess(AppConfig.LogDir);
 
             ApplySafeMode();
+
+            // Cherché APRÈS le Safe Mode et AVANT les salons : s'il est là, la
+            // liste doit pouvoir lui demander des vignettes dès sa construction.
+            _premium.Load();
 
             // 97.0 — un seul chargement pour les deux anciennes listes. Load()
             // migre favorites.json + watchlist.json vers rooms.json au premier
