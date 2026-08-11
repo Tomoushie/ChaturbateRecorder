@@ -46,6 +46,10 @@ namespace ChaturbateRecorderApp
         private ThemedButton openHistoryFileButton = null!;
         private ImageList historyThumbnails = null!;
         private RoundedGroupPanel grpDonate = null!;
+        // 97.0 — annonce du complément payant, dans la section « Soutenir ».
+        private RoundedGroupPanel grpPro = null!;
+        private Label proLabel = null!;
+        private ThemedButton proButton = null!;
         private RoundedGroupPanel grpLogs = null!;
         private Label qualityLabel = null!;
         private ThemedComboBox qualityCombo = null!;
@@ -2331,6 +2335,13 @@ namespace ChaturbateRecorderApp
             sideBar.SetLabel("settings", L("nav.settings"));
             sideBar.SetLabel("support", L("nav.support"));
 
+            // Deux publics, deux textes : une annonce pour qui n'a rien acheté,
+            // un remerciement pour qui a acheté.
+            grpPro.Title = L("panel.pro");
+            proLabel.Text = _premium.IsLicensed ? L("pro.owned") : L("pro.body");
+            proButton.Text = L("button.proLearnMore");
+            proButton.Visible = !_premium.IsLicensed;
+
             grpDonate.Title = L("panel.donate");
             sponsorButton.Text = L("button.sponsor");
             donateButton.Text = L("button.donate");
@@ -2589,7 +2600,10 @@ namespace ChaturbateRecorderApp
 
                 case "support":
                     grpDonate.Bounds = new Rectangle(marge, marge, largeur, grpDonate.Height);
-                    hauteur = grpDonate.Bottom + marge;
+                    // Sous les dons, pas au-dessus : ce qui soutient le projet
+                    // gratuitement passe avant ce qui se vend.
+                    grpPro.Bounds = new Rectangle(marge, grpDonate.Bottom + sectionGap, largeur, grpPro.Height);
+                    hauteur = grpPro.Bottom + marge;
                     break;
 
                 default:
@@ -3370,7 +3384,52 @@ namespace ChaturbateRecorderApp
             viewStreams.Controls.AddRange(new Control[] { grpRecord, grpRooms, toggleLogsButton, grpLogs });
             viewHistory.Controls.Add(grpHistory);
             viewSettings.Controls.AddRange(new Control[] { paramsButton, tutorialButton, checkUpdateButton, reportBugButton, diagnosticButton, legalButton });
-            viewSupport.Controls.Add(grpDonate);
+            // --- Panel : Stream Recorder Pro (97.0) ---
+            //
+            // **Ici et nulle part ailleurs.** Une mention sur chaque carte de
+            // salon serait une réclame répétée vingt fois sur l'écran principal,
+            // vue en permanence par des gens qui n'ont rien demandé. « Soutenir »
+            // est la section où la relation commerciale a sa place, et où on la
+            // cherche.
+            //
+            // Le panneau s'adresse à DEUX publics : celui qui n'a rien acheté y
+            // lit une annonce sans date, celui qui a acheté y lit un merci. Une
+            // réclame servie à un acheteur est le meilleur moyen de lui faire
+            // croire que son paiement n'a pas pris.
+            // Hauteurs MESURÉES, pas estimées : à 636 px de large, le texte
+            // français demande 95 px et l'anglais 76 (TextRenderer.MeasureText).
+            // Le premier jet donnait 76 au label — le français y était tronqué,
+            // et l'anglais tenait à zéro marge, donc tombait au premier
+            // changement de police ou de mise à l'échelle. 110 laisse la garde
+            // qui manquait. Un Label ne signale JAMAIS qu'il tronque : c'est
+            // exactement le défaut déjà payé sur la fenêtre Remerciements.
+            grpPro = new RoundedGroupPanel { Title = "Stream Recorder Pro", Location = new Point(12, 12), Size = new Size(660, 190) };
+            proLabel = new Label
+            {
+                Location = new Point(12, 34),
+                Size = new Size(636, 110),
+                AutoSize = false,
+            };
+            proButton = new ThemedButton { Text = "En savoir plus", Location = new Point(12, 152), Size = new Size(220, 26) };
+            proButton.IconName = "globe";
+            proButton.IconSize = 14;
+            proButton.Click += (s, e) =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(AppConfig.ProUrl) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(Localization.Format("error.cannotOpenPage", ex.Message),
+                        Localization.Get("dialog.error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            grpPro.Controls.AddRange(new Control[] { proLabel, proButton });
+            // Ancrage APRÈS AddRange — piège documenté en bas de CLAUDE.md.
+            proLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            viewSupport.Controls.AddRange(new Control[] { grpPro, grpDonate });
 
             sideBar = new SideBar { Dock = DockStyle.Left };
             sideBar.AddEntry("streams", "camera");

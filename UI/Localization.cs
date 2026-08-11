@@ -100,6 +100,21 @@ namespace ChaturbateRecorderApp.UI
             ["button.load"] = ("Charger", "Load"),
             ["button.removeFavorite"] = ("Supprimer favori", "Remove favorite"),
 
+            // 97.0 — annonce du complément payant. **Aucune date n'est
+            // promise** : le chantier est long, et une date manquée coûte plus
+            // cher que pas de date du tout. Le texte dit d'abord ce qui ne
+            // change pas — l'application reste gratuite et complète — parce que
+            // la première crainte devant « version Pro » est d'y perdre quelque
+            // chose.
+            ["panel.pro"] = ("Stream Recorder Pro", "Stream Recorder Pro"),
+            ["pro.body"] = (
+                "Un complément payant est en préparation : aperçu des directs depuis ta liste de salons, et d'autres capacités ensuite.\n\nAucune date n'est annoncée. L'application, elle, reste gratuite et complète — rien de ce qu'elle fait aujourd'hui ne passera derrière un paiement.",
+                "A paid add-on is in the works: live previews right inside your room list, and more capabilities later.\n\nNo date is announced. The application itself stays free and complete — nothing it does today will ever move behind a payment."),
+            ["pro.owned"] = (
+                "Ton complément est actif. Merci — c'est ce qui finance la suite.",
+                "Your add-on is active. Thank you — that is what funds what comes next."),
+            ["button.proLearnMore"] = ("En savoir plus", "Learn more"),
+
             ["panel.donate"] = ("Soutenir le projet", "Support the project"),
             ["button.sponsor"] = ("Sponsoriser (GitHub)", "Sponsor (GitHub)"),
             ["button.donate"] = ("Faire un don (PayPal)", "Donate (PayPal)"),

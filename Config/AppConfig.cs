@@ -77,6 +77,10 @@ namespace ChaturbateRecorderApp.Config
         // Parrainage récurrent (80.0), distinct du don ponctuel PayPal ci-dessus.
         public static string SponsorUrl        = "https://github.com/sponsors/Tomoushie";
         public static string WebsiteUrl        = "https://tomoushie.github.io/ChaturbateRecorder/";
+        // 97.0 — page du complément payant. Volontairement DISTINCTE de la page
+        // itch.io de l'application libre : un compte qui encaisse ne doit pas
+        // porter le nom d'une plateforme adulte, sous peine de gel.
+        public static string ProUrl            = "https://tomoushie.itch.io/stream-recorder-pro";
         // 102.0 — relais qui crée l'issue à la place de l'utilisateur, pour
         // qui n'a pas de compte GitHub. Le code source du service est dans
         // report-worker/. Chaîne VIDE = fonctionnalité désactivée : la fenêtre
