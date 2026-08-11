@@ -311,6 +311,14 @@ namespace ChaturbateRecorderApp.Config
                 "Correction : après un arrêt manuel, la vignette de l'enregistrement n'apparaissait pas dans l'historique. Elle était bien créée, mais la liste se rafraîchissait avant qu'elle n'existe, et plus rien ne la rejouait ensuite.",
                 "Correction : un enregistrement plus court que dix secondes n'obtenait jamais de vignette.",
             }),
+            ("1.36.0", new[]
+            {
+                "Les panneaux \"Enregistrements en cours\", \"Favoris\" et \"Surveillance\" sont réunis en une seule liste, \"Mes salons\" : une carte par salon, qu'il diffuse ou non. Ils décrivaient les mêmes salons sous trois angles, et un même salon pouvait figurer aux trois endroits à la fois.",
+                "Chaque carte porte une bande de couleur qui dit son état d'un coup d'œil, un interrupteur pour enregistrer automatiquement dès la mise en ligne, et ses propres boutons Démarrer, Ouvrir et Retirer.",
+                "Tes favoris et ta liste de surveillance sont repris automatiquement au premier lancement. Les anciens fichiers ne sont pas supprimés : revenir à une version antérieure reste possible.",
+                "Ajouter un salon à la liste ne le met plus sous surveillance : c'est l'interrupteur de sa carte qui l'active, comme avant.",
+                "Retirer un salon en cours d'enregistrement demande maintenant confirmation.",
+            }),
         };
 
         /// <summary>
@@ -499,6 +507,14 @@ namespace ChaturbateRecorderApp.Config
                 "Fix: the application could stop at startup on a “Parameter is not valid” error. The cause was in the history, whose thumbnails were released before being copied. The fault came down to timing, so it did not happen on every launch.",
                 "Fix: after a manual stop, the recording's thumbnail did not appear in the history. It was created, but the list refreshed before it existed, and nothing replayed it afterwards.",
                 "Fix: a recording shorter than ten seconds never got a thumbnail.",
+            },
+            ["1.36.0"] = new[]
+            {
+                "The \"Active recordings\", \"Favorites\" and \"Monitoring\" panels are merged into a single list, \"My rooms\": one card per room, whether it is streaming or not. They described the same rooms from three angles, and one room could appear in all three at once.",
+                "Each card carries a colour strip telling its state at a glance, a switch to record automatically as soon as it goes online, and its own Start, Open and Remove buttons.",
+                "Your favorites and your monitoring list are carried over automatically on first launch. The old files are not deleted: going back to an earlier version stays possible.",
+                "Adding a room to the list no longer puts it under monitoring: the switch on its card does that, as before.",
+                "Removing a room while it is recording now asks for confirmation.",
             },
         };
 

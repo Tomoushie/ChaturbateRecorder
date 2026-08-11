@@ -4,11 +4,21 @@ App WinForms .NET 10, portage d'un script PowerShell (`legacy-powershell/`).
 Dépôt public : https://github.com/Tomoushie/ChaturbateRecorder (branche `main`).
 Site : https://tomoushie.github.io/ChaturbateRecorder/
 
-## État au 2026-08-11 — v1.35.1 (correctifs de plantage) ; 97.0 (refonte graphique) EN COURS sur `main`, non publiée ; SentinelGuard 1.2.0 sur nuget.org ; relais de signalements déployé (102.0) ; itch.io en ligne (96.0)
+## État au 2026-08-11 — v1.35.1 PUBLIÉE ; `main` est en **1.36.0 NON PUBLIÉE** (97.0 refonte graphique TERMINÉE + premium démarré) ; SentinelGuard 1.2.0 sur nuget.org ; relais déployé (102.0) ; itch.io en ligne (96.0)
 
-**REPRENDRE ICI : 97.0 étape 2c** — remplacer les trois panneaux par la liste
-de cartes. Tout le reste de la refonte est fait et poussé. Voir la section
-97.0 ci-dessous pour le cadre commercial déjà tranché et les pièges rencontrés.
+**97.0 EST TERMINÉE** — étapes 1, 2a, 2b et 2c faites, vérifiées à l'écran. La
+liste de cartes « Mes salons » remplace les trois panneaux.
+
+**LE BUMP EN 1.36.0 EST DÉLIBÉRÉ, et il répare une confusion réelle** : `main`
+et le tag `v1.35.1` déclaraient la MÊME version pour deux interfaces
+différentes, si bien qu'une capture titrée « v1.35.1 » pouvait être l'une ou
+l'autre. C'est arrivé une fois. Ne jamais laisser `main` porter le numéro d'un
+tag existant.
+
+**RESTE NON ÉPROUVÉ, faute de direct réel** : la carte ÉTENDUE pendant un
+enregistrement (barre indéterminée, décompte), la confirmation au retrait d'un
+salon en cours, et l'extraction de vignette du premium. Tout le reste a été
+peint et regardé.
 
 **v1.35.1 (2026-08-11) — DEUX PLANTAGES, dont un dans la version PUBLIÉE.**
 
