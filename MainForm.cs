@@ -661,11 +661,46 @@ namespace ChaturbateRecorderApp
             var largeur = Math.Max(320,
                 roomsListPanel.Width - SystemInformation.VerticalScrollBarWidth - 6);
 
+            var total = 0;
             foreach (var row in _roomRows)
             {
                 row.Card.Width = largeur;
                 LayoutCardActions(row);
+                total += row.Card.Height + row.Card.Margin.Bottom;
             }
+
+            // Ramener la liste en haut dès que tout tient. Sans ça, une carte
+            // qui s'ÉTEND au démarrage d'un enregistrement fait défiler le
+            // FlowLayoutPanel pour la garder en vue, et la première carte se
+            // retrouve à moitié sous le titre du panneau — constaté sur capture
+            // en usage réel, alors que la place ne manquait plus.
+            if (total <= roomsListPanel.ClientSize.Height)
+                roomsListPanel.AutoScrollPosition = new Point(0, 0);
+        }
+
+        /// <summary>
+        /// Donne à la colonne « Fichier » toute la largeur que les trois autres
+        /// n'utilisent pas.
+        ///
+        /// **Les largeurs d'une ListView ne suivent PAS son redimensionnement.**
+        /// Elles restaient donc à leur valeur d'origine, calibrée pour une
+        /// fenêtre de 470 px : sur une fenêtre agrandie, les noms de fichiers
+        /// étaient tronqués par des points de suspension pendant qu'une bande
+        /// grise de 150 px s'étalait à droite de la colonne Date. Visible sur
+        /// n'importe quelle capture plein écran, et invisible autrement.
+        /// </summary>
+        private void AjusterColonnesHistorique()
+        {
+            if (historyListView.Columns.Count < 4) return;
+
+            var fixes = historyListView.Columns[1].Width
+                      + historyListView.Columns[2].Width
+                      + historyListView.Columns[3].Width;
+
+            // ClientSize exclut déjà l'ascenseur vertical ; les 4 px de garde
+            // évitent de déclencher un ascenseur HORIZONTAL pour un pixel.
+            historyListView.Columns[0].Width =
+                Math.Max(150, historyListView.ClientSize.Width - fixes - 4);
         }
 
         private static void LayoutCardActions(RoomRow row)
@@ -2567,6 +2602,14 @@ namespace ChaturbateRecorderApp
         /// « parent pas encore dimensionné » du piège Anchor noté en bas de ce
         /// fichier : le parent existe, ce qui suffit à tromper.
         /// </summary>
+        /// <summary>
+        /// Plancher de la liste de salons : trois cartes compactes (68 px
+        /// chacune) plus le titre du panneau. En dessous, la liste ne montre
+        /// plus assez pour servir à quelque chose, et il vaut mieux que la vue
+        /// défile.
+        /// </summary>
+        private const int HauteurMiniSalons = 3 * 68 + 38;
+
         private void LayoutCurrentView()
         {
             const int marge = 12;
@@ -2585,6 +2628,7 @@ namespace ChaturbateRecorderApp
                     // d'un écran vide n'avait aucun sens.
                     grpHistory.Bounds = new Rectangle(marge, marge, largeur,
                         Math.Max(220, vue.ClientSize.Height - 2 * marge));
+                    AjusterColonnesHistorique();
                     hauteur = grpHistory.Bottom + marge;
                     break;
 
@@ -2608,7 +2652,19 @@ namespace ChaturbateRecorderApp
 
                 default:
                     grpRecord.Bounds = new Rectangle(marge, marge, largeur, 218);
-                    grpRooms.Bounds = new Rectangle(marge, grpRecord.Bottom + sectionGap, largeur, grpRooms.Height);
+
+                    // **La liste OCCUPE la hauteur restante**, comme
+                    // l'historique dans sa section. Une hauteur fixe laissait
+                    // près de 300 px de vide sous elle sur une fenêtre agrandie
+                    // PENDANT qu'elle faisait défiler dès le quatrième salon —
+                    // signalé en usage réel, et visible sur capture : la carte
+                    // en cours d'enregistrement passait à moitié sous le titre.
+                    var hautListe = grpRecord.Bottom + sectionGap;
+                    var dessous = sectionGap + toggleLogsButton.Height + marge
+                                  + (grpLogs.Visible ? 10 + grpLogs.Height : 0);
+                    grpRooms.Bounds = new Rectangle(marge, hautListe, largeur,
+                        Math.Max(HauteurMiniSalons, vue.ClientSize.Height - hautListe - dessous));
+
                     toggleLogsButton.Location = new Point(marge, grpRooms.Bottom + sectionGap);
                     if (grpLogs.Visible)
                     {
@@ -3225,6 +3281,12 @@ namespace ChaturbateRecorderApp
             refreshHistoryButton = new ThemedButton { Text = "Actualiser", Location = new Point(492, 22), Size = new Size(150, 26) };
             openHistoryFolderButton = new ThemedButton { Text = "Ouvrir dossier", Location = new Point(492, 54), Size = new Size(150, 26) };
             openHistoryFileButton = new ThemedButton { Text = "Ouvrir fichier", Location = new Point(492, 86), Size = new Size(150, 26) };
+
+            // Les colonnes suivent la ListView, qui suit le panneau, qui suit la
+            // fenêtre. Câblé sur son propre évènement et pas seulement depuis
+            // LayoutCurrentView : la ListView bouge aussi quand son ancrage la
+            // redimensionne, sans que la vue soit remise en page.
+            historyListView.SizeChanged += (s, e) => AjusterColonnesHistorique();
 
             refreshHistoryButton.Click += (s, e) => RefreshHistoryAsync();
             openHistoryFolderButton.Click += OnOpenHistoryFolderClick;
