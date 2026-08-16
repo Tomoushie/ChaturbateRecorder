@@ -60,6 +60,25 @@ namespace ChaturbateRecorderApp.ViewModels
                 carte.Indeterminate = pourcent <= 0;
             };
 
+            _enregistrement.ReconnexionProgrammee += (url, secondes, tentative, total) =>
+            {
+                if (Trouver(url) is not { } carte) return;
+
+                // La carte reste EN CHARGE du salon : `IsRecording` n'est pas
+                // remis à faux, parce que le bouton doit rester « Arrêter » —
+                // c'est le seul moyen d'annuler une reconnexion en attente.
+                carte.State = RoomRowState.Reconnecting;
+                carte.StateLabel = Localization.Format("job.reconnectIn", secondes);
+                carte.Indeterminate = true;
+                carte.Progress = 0;
+            };
+
+            _enregistrement.Decompte += (url, restant) =>
+            {
+                if (Trouver(url) is not { } carte) return;
+                carte.Detail = restant;
+            };
+
             // La surveillance est lancee EN DERNIER : elle peut declencher un
             // enregistrement des le premier tour, et les abonnements ci-dessus
             // doivent donc etre en place avant qu'elle ne parte.
@@ -149,7 +168,15 @@ namespace ChaturbateRecorderApp.ViewModels
 
             try
             {
-                _enregistrement.Demarrer(carte.Url);
+                // La reconnexion suit le réglage persisté, comme en WinForms
+                // (`UserSettings.AutoReconnectDefault`). Le minuteur reste à 0 :
+                // le choix de durée par enregistrement n'a pas encore sa place
+                // dans l'interface, et poser une valeur en dur couperait des
+                // captures que personne n'a demandé de borner.
+                _enregistrement.Demarrer(
+                    carte.Url,
+                    reconnexionAuto: SettingsManager.Load().AutoReconnectDefault,
+                    minutesMinuteur: 0);
                 carte.IsRecording = true;
             }
             catch (Exception ex)
