@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 20 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 21 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.
@@ -69,8 +69,8 @@ l'application WinForms.
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
 
-**Dette restante** : l'interrupteur « auto » d'une carte est une `CheckBox`
-standard et non l'interrupteur 34×18 dessiné du WinForms. Le dossier `Models\`
+**Plus de dette ouverte.** L'interrupteur « auto » est désormais le vrai
+interrupteur 34×18. Le dossier `Models\`
 du squelette a été SUPPRIMÉ (quatre classes mortes, dont un `AppSettings` qui
 rangeait sous `%AppData%\StreamRecorderPro` au lieu de
 `%LocalAppData%\ChaturbateRecorder`).
@@ -90,7 +90,16 @@ rangeait sous `%AppData%\StreamRecorderPro` au lieu de
    Un `<Style TargetType="TextBlock">` posant `Foreground` volait sa couleur à
    tout bouton Primary et Danger. `Foreground` s'hérite déjà du style de
    `Window` : ne pas le reposer.
-4. `System.Windows.Localization` est homonyme de la table de chaînes du projet :
+4. **L'ORDRE DE FUSION DES DICTIONNAIRES COMPTE** : un `StaticResource` ne voit
+   QUE ce qui a été fusionné AVANT lui. `Natifs.xaml` placé en dernier faisait
+   planter l'application au PREMIER affichage d'une carte — build vert, rien ne
+   vérifie ces clés à la compilation.
+5. **Le rapporteur de plantage peut TUER le processus.** Si l'affichage de la
+   fenêtre lève, l'exception ne remonte pas dans son `try` : WPF la route par
+   `Dispatcher.CatchException` vers le gestionnaire, qui redemande la fenêtre.
+   Récursion infinie → STACK OVERFLOW, qui ne se rattrape pas. D'où le garde-fou
+   `_affichageEnCours` dans `CrashWindow`.
+6. `System.Windows.Localization` est homonyme de la table de chaînes du projet :
    alias obligatoire, sinon `CS0104` partout.
 
 **COROLLAIRE DE MÉTHODE, la leçon la plus chère** : relever la valeur d'une

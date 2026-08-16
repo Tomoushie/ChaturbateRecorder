@@ -30,7 +30,42 @@ namespace ChaturbateRecorderApp.Views
             // constructeur : une fenêtre modale posée avant que la principale
             // existe apparaît seule, sans parent, et se retrouve derrière elle
             // au premier clic.
-            Loaded += (s, e) => AfficherLesNouveautes();
+            Loaded += (s, e) =>
+            {
+                AfficherLeGuide();
+                AfficherLesNouveautes();
+            };
+        }
+
+        /// <summary>
+        /// Montre le guide au PREMIER lancement seulement.
+        ///
+        /// `UserSettings.HasSeenTutorial` existait depuis le WinForms et
+        /// PERSONNE ne le lisait dans la version WPF : le guide ne s'affichait
+        /// jamais. Le drapeau est pose APRES l'affichage, comme
+        /// `LastSeenVersion` : si la fenetre echoue a s'ouvrir, le guide
+        /// reviendra au prochain lancement plutot que d'etre perdu.
+        ///
+        /// Avant les nouveautes : quelqu'un qui decouvre l'application n'a que
+        /// faire d'un journal des versions, et les deux modales enchainees dans
+        /// l'autre sens donneraient le changelog en premier.
+        /// </summary>
+        private void AfficherLeGuide()
+        {
+            try
+            {
+                var reglages = SettingsManager.Load();
+                if (reglages.HasSeenTutorial) return;
+
+                new TutorialWindow { Owner = this }.ShowDialog();
+
+                reglages.HasSeenTutorial = true;
+                SettingsManager.Save(reglages);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Affichage du guide impossible : {ex.Message}", LogLevel.WARN);
+            }
         }
 
         /// <summary>

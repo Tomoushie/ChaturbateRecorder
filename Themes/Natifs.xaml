@@ -166,6 +166,61 @@
         </Setter>
     </Style>
 
+    <!-- ===================== INTERRUPTEUR =====================
+
+      L'interrupteur « auto » d'une carte de salon. Il remplace la CheckBox
+      standard qui tenait sa place depuis la tranche « carte de salon », et
+      reprend les mesures du contrôle WinForms dessiné à la main : 34x18, pouce
+      de 14 px, 2 px de garde.
+
+      **Un interrupteur et non une case, et ce n'est pas cosmétique** : une case
+      dit « ce champ est vrai », un interrupteur dit « cette fonction est
+      ARMÉE ». C'est bien de cela qu'il s'agit — une ligne n'est qu'un salon
+      connu, c'est ce réglage qui engage la surveillance.
+    -->
+    <Style x:Key="Interrupteur" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="Piste" Width="34" Height="18"
+                                CornerRadius="9" BorderThickness="1"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource Brush.Input}"
+                                BorderBrush="{DynamicResource Brush.Border}">
+                            <Ellipse x:Name="Pouce" Width="14" Height="14"
+                                     HorizontalAlignment="Left"
+                                     Margin="2,0,0,0"
+                                     Fill="{DynamicResource Brush.FgMuted}" />
+                        </Border>
+                        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Piste" Property="Background" Value="{DynamicResource Brush.Accent}" />
+                            <Setter TargetName="Piste" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                            <!-- Le pouce glisse a DROITE par son alignement, pas
+                                 par une marge negative : la piste reste de
+                                 largeur fixe quel que soit l'etat. -->
+                            <Setter TargetName="Pouce" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Pouce" Property="Margin" Value="0,0,2,0" />
+                            <Setter TargetName="Pouce" Property="Fill" Value="{DynamicResource Brush.AccentFg}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Piste" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===================== BARRES DE PROGRESSION ===================== -->
 
     <Style TargetType="ProgressBar">

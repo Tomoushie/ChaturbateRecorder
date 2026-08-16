@@ -28,5 +28,14 @@ namespace ChaturbateRecorderApp.Views
         private void Legalite_Click(object sender, System.Windows.RoutedEventArgs e) =>
             new LegalWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog();
 
+
+        /// <summary>
+        /// Le guide s'ouvre aussi a la demande, et pas seulement au premier
+        /// lancement : son propre texte annonce qu'on peut le rouvrir a tout
+        /// moment. Sans ce bouton, il mentirait.
+        /// </summary>
+        private void Guide_Click(object sender, System.Windows.RoutedEventArgs e) =>
+            new TutorialWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog();
+
     }
 }

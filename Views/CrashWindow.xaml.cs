@@ -39,6 +39,23 @@ namespace ChaturbateRecorderApp.Views
         }
 
         /// <summary>
+        /// Vrai pendant qu'une fenêtre de plantage est à l'écran.
+        ///
+        /// **SANS CE GARDE-FOU, LE RAPPORTEUR DE PLANTAGE TUE LE PROCESSUS.**
+        /// Mesuré : si l'affichage de cette fenêtre lève — bureau indisponible,
+        /// ressource manquante, interface trop abîmée — l'exception ne remonte
+        /// PAS dans le `try` ci-dessous. WPF la route par
+        /// `Dispatcher.CatchException`, donc vers
+        /// `Application_DispatcherUnhandledException`, donc vers
+        /// `CrashReporter.HandleDispatcher`, qui redemande d'afficher la
+        /// fenêtre. La récursion est infinie et se termine en STACK OVERFLOW —
+        /// qui ne se rattrape pas : le processus meurt sans écrire le moindre
+        /// rapport, c'est-à-dire que le mécanisme censé signaler les plantages
+        /// en provoque un pire.
+        /// </summary>
+        private static bool _affichageEnCours;
+
+        /// <summary>
         /// Pose le point d'accroche. Appelé une fois au démarrage.
         ///
         /// L'affichage est marshalé : une exception non gérée peut venir de
@@ -50,8 +67,16 @@ namespace ChaturbateRecorderApp.Views
         {
             CrashReporter.ShowCrashDialog = (ex, fichier, fatale) =>
             {
+                if (_affichageEnCours)
+                {
+                    // Le rapport est déjà écrit sur disque par CrashReporter :
+                    // renoncer à l'afficher ne perd rien d'autre que la fenêtre.
+                    Debug.WriteLine($"Plantage pendant l'affichage d'un plantage, ignoré : {ex.Message}");
+                    return;
+                }
                 var afficher = new Action(() =>
                 {
+                    _affichageEnCours = true;
                     try
                     {
                         new CrashWindow(ex, fichier, fatale).ShowDialog();
@@ -62,6 +87,10 @@ namespace ChaturbateRecorderApp.Views
                         // trop abîmé pour créer une fenêtre — on ne bloque pas
                         // plus longtemps la fermeture ou la poursuite.
                         Debug.WriteLine($"Fenêtre de plantage indisponible : {affichageEx.Message}");
+                    }
+                    finally
+                    {
+                        _affichageEnCours = false;
                     }
                 });
 

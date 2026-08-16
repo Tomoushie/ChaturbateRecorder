@@ -81,7 +81,8 @@
                              surveillance — sans quoi la fusion des favoris et
                              de la surveillance ferait sonder le site pour
                              chaque favori. -->
-                        <CheckBox IsChecked="{Binding AutoRecord, Mode=TwoWay}"
+                        <CheckBox Style="{StaticResource Interrupteur}"
+                                  IsChecked="{Binding AutoRecord, Mode=TwoWay}"
                                   VerticalAlignment="Center"
                                   ToolTip="Enregistrer automatiquement"
                                   Foreground="{DynamicResource Brush.FgMuted}"

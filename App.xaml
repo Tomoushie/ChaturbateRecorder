@@ -8,14 +8,23 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- L'ordre compte : Palette d'abord (les autres s'y réfèrent),
-                     Icons avant SideBar (qui résout ses pictogrammes). -->
+                <!-- L'ORDRE COMPTE, et il n'est pas cosmétique : un
+                     `StaticResource` ne voit QUE ce qui a été fusionné AVANT
+                     lui. Palette d'abord (tout s'y réfère), Icons avant SideBar
+                     et RoomCard qui résolvent leurs pictogrammes, Natifs avant
+                     RoomCard qui utilise son style `Interrupteur`.
+
+                     Mesuré : avec Natifs en dernier, l'application plantait au
+                     PREMIER affichage d'une carte de salon — « Impossible de
+                     trouver la ressource nommée Interrupteur » — et le build
+                     était vert, puisque rien ne vérifie ces clés à la
+                     compilation. -->
                 <ResourceDictionary Source="Themes/Palette.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
                 <ResourceDictionary Source="Themes/Icons.xaml" />
+                <ResourceDictionary Source="Themes/Natifs.xaml" />
                 <ResourceDictionary Source="Themes/SideBar.xaml" />
                 <ResourceDictionary Source="Themes/RoomCard.xaml" />
-                <ResourceDictionary Source="Themes/Natifs.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!--
@@ -41,6 +50,7 @@
             <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
 
         </ResourceDictionary>
     </Application.Resources>
