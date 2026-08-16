@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 12 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 17 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.
@@ -37,16 +37,26 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 
 ## Reste
 
+**LANCER L'APPLICATION** : `dotnet publish -c Release -r win-x64
+--self-contained false -o "..\Apercu-WPF"`. Le csproj copie yt-dlp et ffmpeg
+depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
+`settings.json` sont PARTAGÉS avec l'app WinForms** : si celle-ci tourne, la
+WPF sort en silence.
+
 Par ordre de valeur :
-1. **Les 8 fenêtres de dialogue** (~1 500 l.) : Nouveautés, Remerciements,
-   Signalement, Diagnostic, Rapport de plantage, Légalité, Guide de démarrage.
-   La fenêtre Paramètres, elle, est devenue une SECTION et n'a plus lieu d'être.
-2. **Contrôles `Themed*` en `ControlTemplate`** (~1 200 l.) : listes, barres de
-   progression et listes déroulantes portent encore l'habillage par défaut de
-   WPF au lieu de celui du projet.
-3. Icône de zone de notification et instance unique qui réveille la fenêtre
-   (`ShowWindowEventName` est déclaré mais personne ne l'écoute encore).
-4. La dette `Models/Settings.cs`.
+1. **Les 4 dialogues restants** (~1 500 l.) : Nouveautés, Remerciements,
+   Signalement, Légalité, Guide de démarrage, et le panneau des journaux.
+   Faits : Nouveautés, Rapport de plantage, Diagnostic. La fenêtre Paramètres
+   est devenue une SECTION et n'a plus lieu d'être.
+2. **Icône de zone de notification** : le WinForms se MASQUE dans la zone de
+   notification au lieu de se fermer (19.0), et `ShowWindowEventName` est
+   déclaré mais personne ne l'écoute — la seconde instance signale un évènement
+   que rien ne reçoit. WPF n'a pas de NotifyIcon : il faut trancher entre
+   `<UseWindowsForms>true</UseWindowsForms>` et une dépendance NuGet, **décision
+   du mainteneur**.
+3. La dette `Models/Settings.cs`.
+
+Les contrôles `Themed*` sont FAITS (`Themes/Natifs.xaml`).
 
 **Toute la logique d'enregistrement est portée** : démarrage, arrêt, sondage
 d'état, déclenchement automatique, reconnexion et minuteur avec son sélecteur
