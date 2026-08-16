@@ -57,6 +57,38 @@
 
   <ItemGroup>
     <!--
+      yt-dlp.exe ET ffmpeg.exe COPIÉS À CÔTÉ DE L'EXÉCUTABLE, sans quoi
+      l'application démarre mais ne peut RIEN faire : `AppConfig` les cherche
+      dans `AppContext.BaseDirectory`, et le sondage comme la capture échouent
+      en silence si le fichier manque.
+
+      Ils sont pris dans le dossier `Tools\` du dépôt WinForms, PAS recopiés
+      ici : ffmpeg pèse 242 Mo, en garder deux exemplaires sur le disque n'a
+      aucun sens pendant la migration, et leurs empreintes SHA-256 sont tenues
+      à jour dans un seul `AppConfig.cs`.
+
+      Ne JAMAIS les inclure dans un ZIP de release : ffmpeg est sous licence
+      GPL — c'est la règle du dépôt public.
+    -->
+    <None Include="..\ChaturbateRecorderApp\Tools\yt-dlp.exe"
+          Condition="Exists('..\ChaturbateRecorderApp\Tools\yt-dlp.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>yt-dlp.exe</Link>
+    </None>
+    <None Include="..\ChaturbateRecorderApp\Tools\ffmpeg.exe"
+          Condition="Exists('..\ChaturbateRecorderApp\Tools\ffmpeg.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg.exe</Link>
+    </None>
+    <None Include="..\ChaturbateRecorderApp\Assets\donate_qr.png"
+          Condition="Exists('..\ChaturbateRecorderApp\Assets\donate_qr.png')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>donate_qr.png</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
       AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
       payant est chargé par RÉFLEXION (`Services/PremiumModuleService.cs`).
       Une référence de compilation obligerait le module à connaître l'identité
