@@ -1,0 +1,89 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      LES TREIZE PINCEAUX DU THÈME, et le seul endroit où l'interface doit
+      chercher une couleur. Toute référence se fait par DynamicResource :
+      `ThemeManager.Apply` anime la propriété Color de CES pinceaux-ci, si bien
+      qu'un changement de thème repeint la fenêtre entière sans parcourir un
+      seul contrôle — là où la version WinForms descendait récursivement tout
+      l'arbre en interpolant les couleurs à la main (LerpPalette, 9.2).
+
+      CES PINCEAUX SONT REMPLACÉS À CHAQUE IMAGE, JAMAIS MODIFIÉS — et ce n'est
+      pas un choix : un ResourceDictionary d'application SCELLE tout Freezable
+      qu'on lui confie. Mesuré sur cinq chemins, un pinceau lu d'ici, un clone
+      modifiable qu'on repose, un pinceau construit en code, et jusqu'à un
+      dictionnaire créé en code puis fusionné ressortent TOUS `IsFrozen = true`.
+      Un pinceau gelé n'est ni animable (`BeginAnimation` lève) ni assignable.
+
+      Le premier essai animait leur couleur : il compilait sans une alerte, et
+      à l'exécution le passage en thème sombre ne changeait pas un octet. Seul
+      le lancement pouvait le dire. `ThemeManager.SetBrush` repose donc un
+      pinceau neuf, et les DynamicResource se réévaluent d'eux-mêmes.
+
+      Les valeurs ci-dessous sont celles du thème CLAIR. Elles ne font que
+      donner un état de départ cohérent (et un aperçu correct dans le
+      concepteur) : `ThemeManager.Apply` les écrase au démarrage depuis
+      `GetPalette`, qui reste la source de vérité unique — c'est là que vivent
+      les mesures de contraste WCAG qui ont dicté chaque teinte.
+    -->
+
+    <!-- Surfaces : la fenêtre est un fond (Bg) sur lequel sont posées des
+         cartes (Card), qui portent elles-mêmes champs et listes (Input). -->
+    <SolidColorBrush x:Key="Brush.Bg"       Color="#EFEFEF" />
+    <SolidColorBrush x:Key="Brush.Card"     Color="#FBFBFB" />
+    <SolidColorBrush x:Key="Brush.Input"    Color="#FFFFFF" />
+
+    <!-- Texte : Fg pour le contenu, FgMuted pour les intitulés et légendes
+         (TextRole.Caption). Sans ce second niveau, un intitulé de champ et la
+         donnée qu'il annonce ont exactement le même poids à l'œil. -->
+    <SolidColorBrush x:Key="Brush.Fg"       Color="#1A1A1A" />
+    <SolidColorBrush x:Key="Brush.FgMuted"  Color="#5D5D5D" />
+
+    <!-- Accent et son texte. AccentFg n'est pas toujours blanc : en thème
+         sombre l'accent est un bleu clair, sur lequel du blanc tombe à 3,2 de
+         contraste. -->
+    <SolidColorBrush x:Key="Brush.Accent"   Color="#0078D4" />
+    <SolidColorBrush x:Key="Brush.AccentFg" Color="#FFFFFF" />
+
+    <SolidColorBrush x:Key="Brush.Neutral"  Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Danger"   Color="#B01F12" />
+    <SolidColorBrush x:Key="Brush.Border"   Color="#E0E0E0" />
+    <SolidColorBrush x:Key="Brush.Shadow"   Color="#18000000" />
+
+    <!-- Couleurs d'ÉTAT (97.0), jamais décoratives : Success dit « en ligne »,
+         Warning dit « reconnexion en cours ». Une couleur qui ne porte pas
+         d'information rend illisibles celles qui en portent. -->
+    <SolidColorBrush x:Key="Brush.Success"  Color="#0F7B4F" />
+    <SolidColorBrush x:Key="Brush.Warning"  Color="#9A5B00" />
+
+    <!--
+      COULEURS DE BOUTON DÉRIVÉES, publiées par ThemeManager.PublishButtonBrushes
+      à partir de ResolveButtonColors. Les valeurs ci-dessous sont le résultat de
+      ce calcul sur le thème clair : elles n'existent que pour donner un état de
+      départ, et sont écrasées au démarrage. NE PAS les ajuster ici — la règle
+      qui les produit est en C#, où elle est testable.
+
+      Danger ne remplit PAS le bouton de rouge : « Stop », « Tout arrêter »,
+      « Supprimer favori » et « Ne plus surveiller » sont visibles en même temps,
+      et quatre aplats rouges crieraient à l'écran en permanence.
+    -->
+    <SolidColorBrush x:Key="Brush.Btn.Primary.Fill"      Color="#0078D4" />
+    <SolidColorBrush x:Key="Brush.Btn.Primary.Hover"     Color="#006AC6" />
+    <SolidColorBrush x:Key="Brush.Btn.Primary.Pressed"   Color="#005CB8" />
+    <SolidColorBrush x:Key="Brush.Btn.Primary.Border"    Color="Transparent" />
+    <SolidColorBrush x:Key="Brush.Btn.Primary.Fg"        Color="#FFFFFF" />
+
+    <SolidColorBrush x:Key="Brush.Btn.Secondary.Fill"    Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Btn.Secondary.Hover"   Color="#F1F1F1" />
+    <SolidColorBrush x:Key="Brush.Btn.Secondary.Pressed" Color="#E3E3E3" />
+    <SolidColorBrush x:Key="Brush.Btn.Secondary.Border"  Color="#E0E0E0" />
+    <SolidColorBrush x:Key="Brush.Btn.Secondary.Fg"      Color="#1A1A1A" />
+
+    <SolidColorBrush x:Key="Brush.Btn.Danger.Fill"       Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Btn.Danger.Hover"      Color="#F7E8E7" />
+    <SolidColorBrush x:Key="Brush.Btn.Danger.Pressed"    Color="#F0D6D4" />
+    <SolidColorBrush x:Key="Brush.Btn.Danger.Border"     Color="#CA8983" />
+    <SolidColorBrush x:Key="Brush.Btn.Danger.Fg"         Color="#B01F12" />
+
+</ResourceDictionary>

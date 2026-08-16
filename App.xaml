@@ -7,6 +7,10 @@
              DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Palette.xaml" />
+                <ResourceDictionary Source="Themes/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
             <!--
               LES DICTIONNAIRES MATERIAL DESIGN ONT ÉTÉ RETIRÉS ICI, décision à
