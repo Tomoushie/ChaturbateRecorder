@@ -7,6 +7,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Zone d'ajout. Le champ d'URL est en haut parce que c'est là que se
@@ -60,5 +61,41 @@
             <ItemsControl ItemsSource="{Binding Rooms}"
                           ItemTemplate="{StaticResource RoomCard.Template}" />
         </ScrollViewer>
+        <!-- PANNEAU DES JOURNAUX, masque par defaut (UserSettings.ShowLogs) :
+             il occupait de la place en permanence pour une information qu'on
+             ne consulte que quand quelque chose ne va pas. -->
+        <Border Grid.Row="3" Margin="0,12,0,0" Height="160"
+                Style="{StaticResource Surface.Card}"
+                DataContext="{Binding Journaux}"
+                Visibility="{Binding Visible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="Journaux" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Button Margin="12,0,0,0" Style="{StaticResource Button.Secondary}"
+                            Content="Vider" Command="{Binding ViderCommand}" />
+                    <Button Margin="8,0,0,0" Style="{StaticResource Button.Secondary}"
+                            Content="Ouvrir le dossier" Command="{Binding OuvrirDossierCommand}" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Lignes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Texte}"
+                                           FontFamily="Consolas" FontSize="11"
+                                           TextWrapping="NoWrap"
+                                           Foreground="{Binding CleCouleur, Converter={StaticResource ResourceKeyToBrushConverter}}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

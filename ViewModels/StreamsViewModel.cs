@@ -27,6 +27,12 @@ namespace ChaturbateRecorderApp.ViewModels
         /// </summary>
         private readonly RecordingCoordinator _enregistrement = new();
 
+        /// <summary>
+        /// Le panneau des journaux. Il s'abonne a Logger, qui est STATIQUE :
+        /// c'est pour cela qu'il est libere par Dispose ci-dessous.
+        /// </summary>
+        public LogPanelViewModel Journaux { get; } = new();
+
         public StreamsViewModel()
         {
             _store.Load();
@@ -194,6 +200,7 @@ namespace ChaturbateRecorderApp.ViewModels
         public void Dispose()
         {
             _surveillance.Dispose();
+            Journaux.Dispose();
             foreach (var carte in Rooms) carte.Detach();
         }
 
