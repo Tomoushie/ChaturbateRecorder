@@ -1,0 +1,144 @@
+<Window x:Class="ChaturbateRecorderApp.Views.ReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Signaler un problème"
+        Width="620" Height="620"
+        MinWidth="480" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <!-- Le formulaire disparaît une fois l'envoi réussi, et l'accusé prend
+             sa place : laisser le formulaire visible inviterait à renvoyer le
+             même rapport, ce que le quota du relais refuserait. -->
+        <Style x:Key="VisibleAvantEnvoi" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Envoye}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="VisibleApresEnvoi" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Envoye}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Style="{StaticResource VisibleAvantEnvoi}">
+            <TextBlock TextWrapping="Wrap"
+                       Style="{StaticResource Text.Caption}"
+                       Text="Décris ce qui s'est passé. Le rapport est transmis au dépôt du projet." />
+
+            <TextBlock Margin="0,12,0,0" Text="Type" Foreground="{DynamicResource Brush.Fg}" />
+            <ComboBox Margin="0,8,0,0" Width="220" HorizontalAlignment="Left"
+                      ItemsSource="{Binding Types}"
+                      SelectedItem="{Binding TypeChoisi, Mode=TwoWay}" />
+
+            <TextBlock Margin="0,12,0,0" Text="Résumé" Foreground="{DynamicResource Brush.Fg}" />
+            <TextBox Margin="0,8,0,0"
+                     Style="{StaticResource Surface.Input}"
+                     Text="{Binding Titre, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource VisibleAvantEnvoi}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Description" Foreground="{DynamicResource Brush.Fg}" />
+            <TextBox Grid.Row="1" Margin="0,8,0,0"
+                     Style="{StaticResource Surface.Input}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Text="{Binding Corps, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <StackPanel Grid.Row="2" Style="{StaticResource VisibleAvantEnvoi}">
+            <TextBlock Margin="0,12,0,0" Text="Informations techniques jointes"
+                       Foreground="{DynamicResource Brush.Fg}" />
+            <!-- LE CONTEXTE EST AFFICHÉ TEL QUEL, jamais résumé : c'est la seule
+                 chose qui parte sans avoir été tapée. Il est volontairement
+                 pauvre — système, présence de ffmpeg, mode d'interface — ni
+                 dossier de capture, ni proxy, ni nom de salon. -->
+            <Border Margin="0,8,0,0" Padding="8" CornerRadius="4"
+                    Background="{DynamicResource Brush.Input}"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <TextBlock Text="{Binding Contexte}" TextWrapping="Wrap"
+                           FontFamily="Consolas" FontSize="11"
+                           Foreground="{DynamicResource Brush.FgMuted}" />
+            </Border>
+
+            <!--
+              L'AVERTISSEMENT EST AVANT LE BOUTON D'ENVOI ET EN CONTRASTE PLEIN.
+              Les autres intitulés de cette fenêtre sont atténués ; atténuer
+              celui-ci en ferait la ligne la moins lue de l'écran, alors que
+              c'est la seule qui engage l'utilisateur. Le vrai sujet de cette
+              fenêtre est le CONSENTEMENT, pas le formulaire : ce qui part
+              devient une issue publique.
+            -->
+            <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource Brush.Fg}"
+                       Text="Ce rapport sera publié sur une page publique, avec tout ce qui est affiché ci-dessus. N'y mets aucune information personnelle." />
+        </StackPanel>
+
+        <!-- Accusé de réception -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" Style="{StaticResource VisibleApresEnvoi}">
+            <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Brush.Success}"
+                       Text="Rapport envoyé." />
+            <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"
+                       Style="{StaticResource Text.Caption}"
+                       Text="Le suivi se fait sur la page de l'issue. Aucune adresse de contact n'a été transmise." />
+            <Button Margin="0,12,0,0" HorizontalAlignment="Center"
+                    Style="{StaticResource Button.Secondary}"
+                    Content="Ouvrir l'issue"
+                    Command="{Binding OuvrirIssueCommand}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16,0,0">
+            <!-- Le Style est pose UNIQUEMENT par le bloc Button.Style ci-dessous :
+                 le declarer aussi en attribut le definirait deux fois (MC3024). -->
+            <Button Content="Envoyer"
+                    Command="{Binding EnvoyerCommand}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource Button.Primary}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Envoye}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding EnvoiEnCours}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RelaisDisponible}" Value="False">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <Button Margin="8,0,0,0"
+                    Style="{StaticResource Button.Secondary}"
+                    Content="Fermer" Click="Fermer_Click" />
+
+            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="330"
+                       Style="{StaticResource Text.Caption}"
+                       Text="{Binding Message}"
+                       Visibility="{Binding Message, Converter={StaticResource StringToVisibilityConverter}}" />
+        </StackPanel>
+    </Grid>
+</Window>

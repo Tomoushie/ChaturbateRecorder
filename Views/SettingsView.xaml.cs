@@ -20,5 +20,9 @@ namespace ChaturbateRecorderApp.Views
         private void Diagnostic_Click(object sender, System.Windows.RoutedEventArgs e) =>
             new DiagnosticWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog();
 
+
+        private void Signalement_Click(object sender, System.Windows.RoutedEventArgs e) =>
+            new ReportWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog();
+
     }
 }

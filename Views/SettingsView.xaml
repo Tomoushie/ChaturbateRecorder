@@ -115,6 +115,10 @@
                         <Button Style="{StaticResource Button.Secondary}"
                                 Content="Diagnostic..."
                                 Click="Diagnostic_Click" />
+                        <Button Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="Signaler un probleme..."
+                                Click="Signalement_Click" />
                     </StackPanel>
                     <TextBlock Margin="0,6,0,0" FontSize="11"
                                Style="{StaticResource Text.Caption}"
