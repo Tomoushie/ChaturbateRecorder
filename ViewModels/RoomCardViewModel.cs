@@ -59,6 +59,19 @@ namespace ChaturbateRecorderApp.ViewModels
         public bool IsExpanded => RoomCardVisuals.IsExpanded(State);
         public double CardHeight => RoomCardVisuals.HeightFor(State);
 
+        /// <summary>
+        /// Vrai tant qu'une capture tourne pour ce salon.
+        ///
+        /// Distinct de <c>State == Recording</c>, et ce n'est pas un doublon :
+        /// l'état décrit ce que la carte MONTRE (il passe par « terminé » ou
+        /// « échec »), celui-ci décrit ce que le bouton doit FAIRE. Les deux se
+        /// désynchronisent le temps que yt-dlp rende la main — c'est justement
+        /// l'instant où un second clic relancerait une capture par-dessus la
+        /// première.
+        /// </summary>
+        [ObservableProperty]
+        private bool _isRecording;
+
         public bool AutoRecord
         {
             get => _autoRecord;

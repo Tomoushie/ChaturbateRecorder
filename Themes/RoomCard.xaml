@@ -93,7 +93,17 @@
                                    FontSize="11"
                                    Foreground="{Binding StateBrushKey, Converter={StaticResource ResourceKeyToBrushConverter}}" />
 
-                        <Button Margin="12,0,0,0"
+                        <!-- UN SEUL bouton pour démarrer et arrêter. Deux
+                             boutons dont l'un est toujours inactif prendraient
+                             la place de la carte sans rien apprendre. -->
+                        <Button x:Name="ActionPrincipale"
+                                Margin="12,0,0,0" MinWidth="86"
+                                Style="{StaticResource Button.Primary}"
+                                Content="Démarrer"
+                                Command="{Binding DataContext.BasculerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}" />
+
+                        <Button Margin="8,0,0,0"
                                 Style="{StaticResource Button.Danger}"
                                 Content="Retirer"
                                 Command="{Binding DataContext.RetirerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -115,6 +125,17 @@
                              BorderThickness="0" />
             </Grid>
         </Border>
+
+        <DataTemplate.Triggers>
+            <!-- Le bouton change de LIBELLÉ et de RÔLE, pas seulement de texte :
+                 arrêter une capture est destructif au sens où l'on perd le
+                 direct qui suit, et le rouge est ce qui distingue les deux
+                 gestes au moment du clic. -->
+            <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                <Setter TargetName="ActionPrincipale" Property="Content" Value="Arrêter" />
+                <Setter TargetName="ActionPrincipale" Property="Style" Value="{StaticResource Button.Danger}" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
     </DataTemplate>
 
 </ResourceDictionary>
