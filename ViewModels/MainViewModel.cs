@@ -31,6 +31,13 @@ namespace ChaturbateRecorderApp.ViewModels
         /// </summary>
         public StreamsViewModel Streams { get; } = new();
 
+        /// <summary>
+        /// Modele de la section « Historique ». Construit une seule fois, comme
+        /// Streams : il relit le dossier a chaque commande Rafraichir, pas a
+        /// chaque navigation.
+        /// </summary>
+        public HistoryViewModel Historique { get; } = new();
+
         public void Dispose() => Streams.Dispose();
 
         public MainViewModel()
