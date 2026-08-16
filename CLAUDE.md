@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 25 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 26 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.

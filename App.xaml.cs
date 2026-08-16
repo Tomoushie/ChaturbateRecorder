@@ -53,8 +53,30 @@ namespace ChaturbateRecorderApp
         // Trouve par le JOURNAL DE DEMARRAGE, pas par raisonnement : deux
         // lignes « Demarrage » a 2 ms d'intervalle dans le meme processus.
 
+        /// <summary>
+        /// Vrai des que le demarrage a ete execute une fois.
+        ///
+        /// **FILET CONTRE UNE CLASSE D'ERREUR INVISIBLE.** Un gestionnaire
+        /// declare en attribut XAML ET reabonne par `+=` s'execute deux fois,
+        /// sans que rien ne le signale — ni le build, ni l'execution. C'est
+        /// arrive ici : le second passage voyait le Mutex du premier, croyait a
+        /// une autre instance, et fermait l'application une seconde apres son
+        /// ouverture. Le defaut ne se manifestait QUE sur un vrai bureau.
+        ///
+        /// Si cela recommence, l'application le DIRA au lieu de disparaitre.
+        /// </summary>
+        private bool _demarrageFait;
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (_demarrageFait)
+            {
+                Logger.Log("DEMARRAGE APPELE DEUX FOIS — gestionnaire inscrit en double "
+                           + "(attribut XAML et `+=` ?). Second passage ignore.", LogLevel.ERROR);
+                return;
+            }
+            _demarrageFait = true;
+
             // JOURNAL DE DEMARRAGE, permanent et non un harnais. Sans lui, une
             // application qui s'arrete pendant son demarrage ne laisse RIEN :
             // ni exception, ni trace, et le seul symptome est « elle se ferme
