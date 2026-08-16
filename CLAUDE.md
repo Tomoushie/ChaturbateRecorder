@@ -32,10 +32,16 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 
 ## Reste
 
-`MainForm.cs` (3 527 l.) garde la reconnexion automatique, le minuteur et le
-sondage d'état — c'est ce qui rendrait l'interrupteur « auto » réellement
-actif. Puis les vues Historique / Réglages / Soutenir, les 8 fenêtres de
-dialogue, les contrôles `Themed*` en `ControlTemplate`.
+Par ordre de valeur :
+1. **Reconnexion automatique + minuteur** (~150 l., encore dans `MainForm.cs`) —
+   un direct coupé doit reprendre seul, et « arrêter après 2 h » doit compter
+   le temps ÉCOULÉ, pas par tentative.
+2. Vues Historique / Réglages / Soutenir (~800 l.), encore en carton.
+3. Les 8 fenêtres de dialogue (~1 500 l.).
+4. Contrôles `Themed*` en `ControlTemplate` (~1 200 l.).
+
+Le sondage d'état et le déclenchement automatique sont FAITS
+(`Services/MonitorService.cs`).
 
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
