@@ -1,0 +1,86 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      PICTOGRAMMES VECTORIELS NATIFS.
+
+      Ils remplacent `UI/IconManager.cs` (136 lignes) ET la dépendance NuGet
+      `Svg` : celle-ci existait parce que WinForms ne sait afficher qu'un
+      Bitmap, donc chaque glyphe était un SVG en chaîne, re-teinté par
+      substitution de `{COLOR}` puis rasterisé À CHAQUE AFFICHAGE. WPF dessine
+      des tracés, la conversion n'a plus lieu d'être — et le piège `ImageList`
+      de 103.0, qui a coûté deux plantages en v1.35.0, n'a plus d'objet ici :
+      il n'y a plus de bitmap à libérer.
+
+      Les tracés sont repris tels quels des chaînes SVG d'origine : même
+      viewBox 24x24, mêmes coordonnées. La syntaxe `d` de SVG et le langage de
+      `StreamGeometry` coïncident sur ce qui est utilisé ici, arcs compris.
+
+      La couleur vient de `Foreground` par TemplateBinding — c'est ce qui rend
+      le glyphe retintable, comme l'était la substitution de `{COLOR}`.
+      Le `Viewbox` fait la mise à l'échelle : un pictogramme reste net à
+      n'importe quel DPI, ce que la rasterisation ne garantissait pas.
+
+      **Glyphes SIMPLIFIÉS, jamais les logos officiels** (103.0) : re-teinter un
+      logo YouTube ou Twitch est explicitement interdit par leurs chartes.
+    -->
+
+    <ControlTemplate x:Key="Icon.Camera">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Rectangle Canvas.Left="2.5" Canvas.Top="6" Width="13" Height="12"
+                           RadiusX="2" RadiusY="2" StrokeThickness="1.8"
+                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Path Data="M 17,10 L 21.5,7 L 21.5,17 L 17,14 Z"
+                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="Icon.Folder">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Rectangle Canvas.Left="3" Canvas.Top="5" Width="8" Height="4"
+                           RadiusX="1" RadiusY="1"
+                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Rectangle Canvas.Left="3" Canvas.Top="8" Width="18" Height="12"
+                           RadiusX="1.5" RadiusY="1.5"
+                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+    <!-- Curseurs de réglage plutôt qu'un engrenage (19.0) : plus lisible à
+         petite taille avec des primitives simples, tout aussi reconnaissable. -->
+    <ControlTemplate x:Key="Icon.Sliders">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Line X1="4" Y1="7" X2="20" Y2="7" StrokeThickness="2"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Ellipse Canvas.Left="12.5" Canvas.Top="4.5" Width="5" Height="5"
+                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Line X1="4" Y1="12" X2="20" Y2="12" StrokeThickness="2"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Ellipse Canvas.Left="6.5" Canvas.Top="9.5" Width="5" Height="5"
+                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Line X1="4" Y1="17" X2="20" Y2="17" StrokeThickness="2"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Ellipse Canvas.Left="14.5" Canvas.Top="14.5" Width="5" Height="5"
+                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+    <!-- Cœur plein (80.0) : deux arcs symétriques fermés par une pointe en bas,
+         dessinés à la courbe et non avec le caractère ❤ — le rendu reste net à
+         toute taille et suit la couleur du thème. -->
+    <ControlTemplate x:Key="Icon.Heart">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Path Data="M 12,20.8 L 4.2,13 A 4.6,4.6 0 0 1 4.2,6.5 A 4.6,4.6 0 0 1 10.7,6.5 L 12,7.8 L 13.3,6.5 A 4.6,4.6 0 0 1 19.8,6.5 A 4.6,4.6 0 0 1 19.8,13 Z"
+                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+</ResourceDictionary>

@@ -86,4 +86,11 @@
     <SolidColorBrush x:Key="Brush.Btn.Danger.Border"     Color="#CA8983" />
     <SolidColorBrush x:Key="Brush.Btn.Danger.Fg"         Color="#B01F12" />
 
+    <!-- Barre de navigation : surface de carte, plus deux fonds dérivés
+         (16 % vers l'accent pour la section active, 7 % vers le texte au
+         survol). Publiés par ThemeManager.PublishNavBrushes. -->
+    <SolidColorBrush x:Key="Brush.Nav.Surface"  Color="#FBFBFB" />
+    <SolidColorBrush x:Key="Brush.Nav.Selected" Color="#DCEAF6" />
+    <SolidColorBrush x:Key="Brush.Nav.Hover"    Color="#EEEEEE" />
+
 </ResourceDictionary>

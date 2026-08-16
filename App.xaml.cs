@@ -86,8 +86,10 @@ namespace ChaturbateRecorderApp
             // de comportement avec un portage.
             ThemeManager.Apply(AppTheme.Light, animate: false);
 
-
-            // TODO: La couche de vues est en cours de portage. Ne PAS instancier de fenetre.
+            // Le thème est posé AVANT la fenêtre : construire la fenêtre
+            // d'abord la ferait apparaître avec les couleurs de départ du
+            // dictionnaire, puis se repeindre — visible à l'ouverture.
+            new Views.MainWindow().Show();
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)

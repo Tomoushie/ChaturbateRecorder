@@ -1,16 +1,23 @@
-// Views/MainWindow.xaml.cs
 using System.Windows;
+using ChaturbateRecorderApp.ViewModels;
 
 namespace ChaturbateRecorderApp.Views
 {
+    /// <summary>
+    /// Fenêtre principale. Elle ne contient aucune logique : la navigation vit
+    /// dans <see cref="MainViewModel"/>, l'apparence dans les dictionnaires de
+    /// <c>Themes\</c>.
+    ///
+    /// C'est le contraste avec `MainForm.cs` et ses 3 527 lignes, où mise en
+    /// page, thème, traduction, enregistrement et surveillance cohabitaient
+    /// dans le même fichier.
+    /// </summary>
     public partial class MainWindow : Window
     {
-        // Le DataContext est injecté via App.xaml.cs, donc pas besoin de le créer ici
-        // ou de l'assigner manuellement sauf si vous avez une logique spécifique à la fenêtre.
         public MainWindow()
         {
             InitializeComponent();
-            // Le DataContext est automatiquement défini par WPF via l'injection dans le constructeur de la fenêtre via App.xaml.cs
+            DataContext = new MainViewModel();
         }
     }
 }

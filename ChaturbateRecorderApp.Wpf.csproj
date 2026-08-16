@@ -57,24 +57,6 @@
 
   <ItemGroup>
     <!--
-      ============ EXCLUSION TEMPORAIRE — TRANCHE 1 (socle) ============
-      Views\ et ViewModels\ sont encore le SQUELETTE GÉNÉRÉ : ils se lient à
-      des interfaces de services inventées (IMonitorService, IRecordingService,
-      ISettingsService) qui doublonnaient mal les services réels, lesquels sont
-      pour la plupart des classes STATIQUES qu'un conteneur d'injection n'a pas
-      à instancier. Les garder dans la compilation ferait échouer le build sur
-      la couche de vues et masquerait l'état réel du socle.
-
-      À RETIRER quand la tranche « fenêtre principale » atterrit. Tant que ce
-      bloc est là, `dotnet build` prouve les 21 services et rien d'autre.
-    -->
-    <Page Remove="Views\**" />
-    <Compile Remove="Views\**" />
-    <Compile Remove="ViewModels\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--
       AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
       payant est chargé par RÉFLEXION (`Services/PremiumModuleService.cs`).
       Une référence de compilation obligerait le module à connaître l'identité

@@ -8,8 +8,12 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- L'ordre compte : Palette d'abord (les autres s'y réfèrent),
+                     Icons avant SideBar (qui résout ses pictogrammes). -->
                 <ResourceDictionary Source="Themes/Palette.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
+                <ResourceDictionary Source="Themes/Icons.xaml" />
+                <ResourceDictionary Source="Themes/SideBar.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!--

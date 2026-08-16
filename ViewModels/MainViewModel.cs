@@ -1,92 +1,40 @@
-// ViewModels/MainViewModel.cs
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using ChaturbateRecorderApp.Services;
-using System;
-using System.Windows.Input;
+using ChaturbateRecorderApp.UI;
 
 namespace ChaturbateRecorderApp.ViewModels
 {
-    // Enum pour représenter les différentes vues principales
-    public enum MainViewType
+    public sealed partial class NavSection : ObservableObject
     {
-        Monitor,
-        History,
-        Settings
+        public required string Key { get; init; }
+        public required string IconKey { get; init; }
+        [ObservableProperty] private string _label = "";
     }
 
     public partial class MainViewModel : ObservableObject
     {
-        // Properties pour les données à afficher dans MainWindow
-        [ObservableProperty]
-        private string _statusMessage = "Prêt";
-
-        [ObservableProperty]
-        private string _licensedTo = ""; // Informations de licence potentiellement issues d'un service
-
-        // Propriété pour contrôler la vue affichée
-        [ObservableProperty]
-        private MainViewType _currentViewType = MainViewType.Monitor; // Vue par défaut
-
-        // Commands pour les actions de haut niveau (navigation, etc.)
-        public ICommand NavigateToHistoryCommand { get; }
-        public ICommand NavigateToMonitorCommand { get; }
-        public ICommand NavigateToSettingsCommand { get; }
-
-        // Injection d'un service pour gérer la licence (exemple)
-        private readonly Services.IPremiumModuleService? _premiumService;
-
-        public MainViewModel(Services.IPremiumModuleService? premiumService) // Injection du service
+        public ObservableCollection<NavSection> Sections { get; } = new()
         {
-            _premiumService = premiumService;
+            new NavSection { Key = "streams", IconKey = "Icon.Camera" },
+            new NavSection { Key = "history", IconKey = "Icon.Folder" },
+            new NavSection { Key = "settings", IconKey = "Icon.Sliders" },
+            new NavSection { Key = "support", IconKey = "Icon.Heart" }
+        };
 
-            // Initialiser les commandes
-            NavigateToHistoryCommand = new RelayCommand(NavigateToHistory);
-            NavigateToMonitorCommand = new RelayCommand(NavigateToMonitor);
-            NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
+        [ObservableProperty] private NavSection? _selectedSection;
 
-            // Mettre à jour les infos de licence si le service est disponible
-            UpdateLicenseInfo();
+        public MainViewModel()
+        {
+            RefreshLabels();
+            SelectedSection = Sections[0];
         }
 
-        private void UpdateLicenseInfo()
+        public void RefreshLabels()
         {
-            if (_premiumService != null && _premiumService.IsLoaded)
+            foreach (var section in Sections)
             {
-                LicensedTo = _premiumService.LicensedTo ?? "Licence invalide";
-                if (!string.IsNullOrEmpty(_premiumService.LicenceProblem))
-                {
-                    StatusMessage = $"Licence problème: {_premiumService.LicenceProblem}";
-                }
-                else
-                {
-                    StatusMessage = "Licence valide - Fonctionnalités premium activées";
-                }
+                section.Label = Localization.Get("nav." + section.Key);
             }
-            else
-            {
-                 LicensedTo = "Aucune licence";
-                 StatusMessage = "Fonctionnalités premium non disponibles";
-            }
-        }
-
-        // Méthodes de navigation : mettent simplement à jour CurrentViewType
-        private void NavigateToHistory()
-        {
-            CurrentViewType = MainViewType.History;
-            StatusMessage = "Navigation vers l'historique...";
-        }
-
-        private void NavigateToMonitor()
-        {
-            CurrentViewType = MainViewType.Monitor;
-            StatusMessage = "Navigation vers la surveillance...";
-        }
-
-        private void NavigateToSettings()
-        {
-            CurrentViewType = MainViewType.Settings;
-            StatusMessage = "Navigation vers les paramètres...";
         }
     }
 }

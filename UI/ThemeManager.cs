@@ -189,9 +189,36 @@ namespace ChaturbateRecorderApp.UI
             Lerp(a.Success, b.Success, t),
             Lerp(a.Warning, b.Warning, t));
 
-        /// <summary>Pose une palette complète, sans transition.</summary>
+        /// <summary>
+        /// Pose une palette complète, sans transition.
+        ///
+        /// **ON REMPLACE LE DICTIONNAIRE ENTIER, PAS SES ENTRÉES — et c'est la
+        /// seule chose qui repeint réellement l'interface.** Écrire
+        /// <c>Application.Current.Resources[cle] = pinceau</c> met bien la
+        /// ressource à jour, mais NE réévalue pas les `DynamicResource` posés
+        /// dans un Setter de Style : ceux-là résolvent une fois, quand le style
+        /// est appliqué, et gardent leur pinceau.
+        ///
+        /// Mesuré au pixel sur une capture en thème sombre : la ligne
+        /// sélectionnée de la barre valait (41,55,67), exactement le mélange
+        /// sombre attendu — parce qu'elle vient d'un DÉCLENCHEUR, qui se
+        /// réévalue — pendant que le fond de cette même barre et celui des
+        /// cartes restaient à (251,251,251), la valeur CLAIRE, parce qu'ils
+        /// viennent d'un SETTER. `Brush.Card` valait pourtant bien #262626 dans
+        /// le dictionnaire au même instant : **relever la ressource ne prouve
+        /// rien sur ce qui est affiché**, et c'est ce qui a d'abord fait croire
+        /// que le thème fonctionnait.
+        ///
+        /// Remplacer une entrée de `MergedDictionaries` invalide en revanche
+        /// tout l'arbre des ressources, et les Setters suivent.
+        /// </summary>
         private static void SetPalette(Palette p)
         {
+            var app = Application.Current;
+            if (app is null) return;
+
+            _enCours = new ResourceDictionary();
+
             SetBrush(BrushBg, p.Bg);
             SetBrush(BrushCard, p.Card);
             SetBrush(BrushInput, p.Input);
@@ -207,6 +234,37 @@ namespace ChaturbateRecorderApp.UI
             SetBrush(BrushWarning, p.Warning);
 
             PublishButtonBrushes(p);
+            PublishNavBrushes(p);
+
+            // Le dictionnaire de thème est ajouté EN DERNIER, donc il l'emporte
+            // sur les valeurs de départ de Themes\Palette.xaml.
+            var fusionnes = app.Resources.MergedDictionaries;
+            var position = _dicoTheme is null ? -1 : fusionnes.IndexOf(_dicoTheme);
+            if (position >= 0) fusionnes[position] = _enCours;
+            else fusionnes.Add(_enCours);
+
+            _dicoTheme = _enCours;
+            _enCours = null;
+        }
+
+        /// <summary>
+        /// Les deux fonds dérivés de la barre de navigation.
+        ///
+        /// Mêmes proportions que le contrôle WinForms qu'ils remplacent : une
+        /// teinte d'accent TRÈS diluée (16 %) pour la section active, parce
+        /// qu'un aplat coloré transformerait la barre en bandeau et que le
+        /// repère vertical de gauche fait déjà le gros du travail ; et 7 % vers
+        /// la couleur du texte au survol, assez pour répondre au pointeur, pas
+        /// assez pour se confondre avec la sélection.
+        ///
+        /// La barre prend la surface de CARTE et non le fond de fenêtre : c'est
+        /// une surface posée sur la fenêtre, pas la fenêtre elle-même.
+        /// </summary>
+        private static void PublishNavBrushes(Palette p)
+        {
+            SetBrush("Brush.Nav.Surface", p.Card);
+            SetBrush("Brush.Nav.Selected", Lerp(p.Card, p.Accent, 0.16f));
+            SetBrush("Brush.Nav.Hover", Lerp(p.Card, p.Fg, 0.07f));
         }
 
         /// <summary>
@@ -223,13 +281,21 @@ namespace ChaturbateRecorderApp.UI
         /// </summary>
         private static void SetBrush(string cle, Color couleur)
         {
-            var ressources = Application.Current?.Resources;
-            if (ressources is null) return;
+            if (_enCours is null) return;
 
             var pinceau = new SolidColorBrush(couleur);
             pinceau.Freeze();
-            ressources[cle] = pinceau;
+            _enCours[cle] = pinceau;
         }
+
+        /// <summary>Dictionnaire en cours de construction, le temps d'une pose.</summary>
+        private static ResourceDictionary? _enCours;
+
+        /// <summary>
+        /// Dictionnaire de thème courant, tenu parmi les dictionnaires fusionnés
+        /// de l'application et remplacé d'un bloc à chaque pose.
+        /// </summary>
+        private static ResourceDictionary? _dicoTheme;
 
         /// <summary>
         /// Publie les couleurs de bouton DÉRIVÉES, pour les trois rôles.
