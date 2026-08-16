@@ -11,7 +11,7 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty] private string _label = "";
     }
 
-    public partial class MainViewModel : ObservableObject
+    public partial class MainViewModel : ObservableObject, System.IDisposable
     {
         public ObservableCollection<NavSection> Sections { get; } = new()
         {
@@ -30,6 +30,8 @@ namespace ChaturbateRecorderApp.ViewModels
         /// champ d'URL en changeant d'onglet.
         /// </summary>
         public StreamsViewModel Streams { get; } = new();
+
+        public void Dispose() => Streams.Dispose();
 
         public MainViewModel()
         {

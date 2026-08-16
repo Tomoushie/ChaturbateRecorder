@@ -10,7 +10,7 @@ namespace ChaturbateRecorderApp.ViewModels
     using ChaturbateRecorderApp.UI;
     using SentinelGuard;
 
-    public partial class StreamsViewModel : ObservableObject
+    public partial class StreamsViewModel : ObservableObject, IDisposable
     {
         private readonly RoomStore _store = new();
         public ObservableCollection<RoomCardViewModel> Rooms { get; } = new();
@@ -30,6 +30,12 @@ namespace ChaturbateRecorderApp.ViewModels
         {
             _store.Load();
             Recharger();
+
+            // La FONCTION est relue à chaque tour de surveillance : un salon
+            // dont on arme l'interrupteur entre deux tours est pris au suivant,
+            // sans redémarrer quoi que ce soit.
+            _surveillance = new MonitorService(() =>
+                Rooms.Where(c => c.AutoRecord).Select(c => c.Url).ToList());
 
             // Les évènements arrivent déjà marshalés sur le fil d'interface :
             // le coordinateur s'en charge une fois pour tous ses abonnés.
@@ -53,6 +59,73 @@ namespace ChaturbateRecorderApp.ViewModels
                 // une progression que personne ne peut calculer.
                 carte.Indeterminate = pourcent <= 0;
             };
+
+            // La surveillance est lancee EN DERNIER : elle peut declencher un
+            // enregistrement des le premier tour, et les abonnements ci-dessus
+            // doivent donc etre en place avant qu'elle ne parte.
+            DemarrerLaSurveillance();
+        }
+
+        /// <summary>
+        /// La surveillance. Elle ne sonde QUE les salons dont l'interrupteur
+        /// « auto » est armé — c'est la règle du produit : une ligne n'est
+        /// qu'un salon connu, et sonder tout le monde ferait interroger le site
+        /// pour chaque favori, ce que la séparation favoris/surveillance
+        /// évitait justement avant leur fusion.
+        /// </summary>
+        private readonly MonitorService _surveillance;
+
+        /// <summary>
+        /// Branche la surveillance sur les cartes. Appelé par le constructeur,
+        /// après que la liste est peuplée.
+        /// </summary>
+        private void DemarrerLaSurveillance()
+        {
+            _surveillance.IntervalleSecondes = SettingsManager.Load().WatchIntervalSeconds;
+
+            _surveillance.StatutObtenu += (url, statut) =>
+            {
+                if (Trouver(url) is not { } carte) return;
+
+                // `RoomStore.Resolve` porte une règle qu'il ne faut PAS
+                // réécrire ici : l'ENREGISTREMENT PRIME SUR LE SONDAGE. Un
+                // sondage peut échouer pendant que la capture reçoit des
+                // données — afficher « hors ligne » sur un salon en cours
+                // d'enregistrement serait le pire des contresens.
+                carte.State = RoomStore.Resolve(
+                    statut,
+                    carte.IsRecording ? DownloadState.Running : null,
+                    reconnexionPrevue: false);
+
+                if (!carte.IsRecording)
+                    carte.StateLabel = statut switch
+                    {
+                        RoomStatus.Online => Localization.Get("watch.state.online"),
+                        RoomStatus.Offline => Localization.Get("watch.state.offline"),
+                        RoomStatus.NotFound => Localization.Get("watch.state.notfound"),
+                        _ => Localization.Get("watch.state.unknown"),
+                    };
+
+                // LE DÉCLENCHEMENT AUTOMATIQUE. Trois conditions, et les trois
+                // comptent : l'interrupteur armé, le salon réellement en ligne
+                // (jamais `Unknown`, qui veut dire « on n'a pas pu savoir »), et
+                // aucune capture déjà en cours pour ce salon.
+                if (carte.AutoRecord && statut == RoomStatus.Online && !carte.IsRecording)
+                    BasculerCommand.Execute(carte);
+            };
+
+            _surveillance.Demarrer();
+        }
+
+        /// <summary>
+        /// Arrête la surveillance. Sans cet appel, la boucle survivrait à la
+        /// fenêtre et continuerait de lancer un yt-dlp par salon armé, toutes
+        /// les deux minutes, sans que rien ne l'affiche.
+        /// </summary>
+        public void Dispose()
+        {
+            _surveillance.Dispose();
+            foreach (var carte in Rooms) carte.Detach();
         }
 
         private RoomCardViewModel? Trouver(string url) =>

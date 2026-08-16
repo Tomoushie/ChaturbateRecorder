@@ -18,6 +18,11 @@ namespace ChaturbateRecorderApp.Views
         {
             InitializeComponent();
             DataContext = new MainViewModel();
+
+            // La fenetre principale EST la duree de vie de l'application ici :
+            // sa fermeture doit arreter la surveillance, sinon la boucle
+            // continue de sonder dans un processus qui n'affiche plus rien.
+            Closed += (s, e) => (DataContext as System.IDisposable)?.Dispose();
         }
     }
 }
