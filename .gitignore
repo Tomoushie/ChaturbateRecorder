@@ -1,6 +1,7 @@
 # Build outputs
 bin/
 obj/
+TestResults/
 
 # Binaires tiers (yt-dlp.exe, ffmpeg.exe) — trop volumineux pour Git
 # (ffmpeg.exe dépasse la limite de 100 Mo de GitHub), à fournir soi-même

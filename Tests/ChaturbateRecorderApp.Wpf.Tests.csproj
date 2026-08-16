@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- Voir le csproj principal : nécessaire pour restaurer depuis un OS
+         non-Windows, ce projet référençant une application de bureau. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+
+    <!--
+      Les MÊMES alias que le projet principal. Sans eux, `Application`, `Color`
+      et compagnie redeviennent ambigus dans les tests dès qu'un fichier touche
+      au thème — et l'ambiguïté ne se verrait qu'ici, ce qui est le pire endroit
+      pour la découvrir.
+    -->
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System.Windows.Application" Alias="Application" />
+    <Using Include="System.Windows.Media.Color" Alias="Color" />
+    <Using Include="System.Windows.Media.Brush" Alias="Brush" />
+    <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
+    <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChaturbateRecorderApp.Wpf.csproj" />
+  </ItemGroup>
+
+</Project>

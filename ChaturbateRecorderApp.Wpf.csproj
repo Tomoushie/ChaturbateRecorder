@@ -127,6 +127,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Tests\ est un projet A PART. Sans ces retraits, le SDK globalise ses
+         .cs dans CE projet-ci, qui n'a ni xUnit ni ses paquets — c'est le meme
+         piege que le csproj WinForms documente pour Tests\ et SentinelGuard\. -->
+    <Compile Remove="Tests\**" />
+    <Page Remove="Tests\**" />
+    <Content Remove="Tests\**" />
+    <None Remove="Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
       payant est chargé par RÉFLEXION (`Services/PremiumModuleService.cs`).

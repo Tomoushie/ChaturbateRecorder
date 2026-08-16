@@ -10,7 +10,13 @@ namespace ChaturbateRecorderApp.ViewModels
     {
         public sealed record Etape(string Titre, string Corps);
 
-        private static readonly string[] Cles = { "welcome", "start", "quality", "saveDir", "privacy", "tracking", "support", "security" };
+        /// <summary>
+        /// `internal` et non `private` : c'est ce que verifie
+        /// `LocalizationTests.EveryTutorialStepKeyExists`. Une faute de frappe
+        /// dans une cle passerait au build et afficherait « tutorial.welcom.title »
+        /// en guise de titre d'etape.
+        /// </summary>
+        internal static readonly string[] Cles = { "welcome", "start", "quality", "saveDir", "privacy", "tracking", "support", "security" };
 
         public IReadOnlyList<Etape> Etapes { get; }
 
