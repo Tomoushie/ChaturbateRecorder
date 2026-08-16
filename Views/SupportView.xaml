@@ -1,0 +1,83 @@
+<UserControl x:Class="ChaturbateRecorderApp.Views.SupportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Surface.Card}">
+            <StackPanel>
+                <TextBlock Text="Soutenir le projet" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Fg}" />
+                <TextBlock Margin="0,8,0,0"
+                           Style="{StaticResource Text.Caption}"
+                           Text="Le logiciel est gratuit et le restera. Les dons couvrent le temps passé, pas l'accès." />
+
+                <!-- DEUX liens et non un : le don ponctuel et le parrainage
+                     récurrent ne répondent pas au même geste. -->
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Style="{StaticResource Button.Primary}"
+                            Content="Faire un don"
+                            Command="{Binding OuvrirDonCommand}" />
+                    <Button Margin="8,0,0,0"
+                            Style="{StaticResource Button.Secondary}"
+                            Content="Parrainer"
+                            Command="{Binding OuvrirParrainageCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource Surface.Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="Remerciements" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Button Margin="12,0,0,0"
+                            Style="{StaticResource Button.Secondary}"
+                            Content="Actualiser"
+                            Command="{Binding ActualiserCommand}" />
+                    <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{Binding Statut}"
+                               Visibility="{Binding Statut, Converter={StaticResource StringToVisibilityConverter}}" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" Margin="0,12,0,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Noms}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- textContent et jamais de balisage : ces noms
+                                     viennent d'un fichier de données distant. Un
+                                     TextBlock ne peut de toute façon rien
+                                     interpréter, ce qui est exactement ce qu'on
+                                     veut ici. -->
+                                <TextBlock Text="{Binding}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource Brush.Fg}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Mention de consentement en contraste PLEIN et non atténué :
+                     l'atténuer en ferait la ligne la moins lue de l'écran, or
+                     c'est celle qui engage le mainteneur. -->
+                <TextBlock Grid.Row="2" Margin="0,12,0,0"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.Fg}"
+                           Text="Pseudonymes publiés avec l'accord des personnes concernées." />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

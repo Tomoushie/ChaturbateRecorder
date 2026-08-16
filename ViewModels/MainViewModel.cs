@@ -41,6 +41,9 @@ namespace ChaturbateRecorderApp.ViewModels
         /// <summary>Modele de la section « Reglages ».</summary>
         public SettingsViewModel Reglages { get; } = new();
 
+        /// <summary>Modele de la section « Soutenir ».</summary>
+        public SupportViewModel Soutien { get; } = new();
+
         public void Dispose() => Streams.Dispose();
 
         public MainViewModel()

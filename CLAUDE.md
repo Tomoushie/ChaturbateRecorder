@@ -33,20 +33,25 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 ## Reste
 
 Par ordre de valeur :
-1. **Vue Réglages** — sans elle on ne peut pas changer le dossier de capture,
-   la langue, le thème ni l'intervalle de surveillance. C'est le dernier
-   manque qui empêche d'utiliser l'application au quotidien.
-2. **Sélecteur de durée** dans la vue Enregistrer : le minuteur EXISTE
-   (`RecordingCoordinator`) mais `minutesMinuteur` vaut toujours 0, faute
-   d'interface. Son événement `Decompte` écrase alors le détail de la carte
-   sans le restaurer — à traiter en même temps.
-3. Vue Soutenir (`SupportersProvider` est déjà porté).
-4. Les 8 fenêtres de dialogue (~1 500 l.).
-5. Contrôles `Themed*` en `ControlTemplate` (~1 200 l.).
+1. **Les 8 fenêtres de dialogue** (~1 500 l.) : Nouveautés, Remerciements,
+   Signalement, Diagnostic, Rapport de plantage, Légalité, Guide de démarrage.
+   La fenêtre Paramètres, elle, est devenue une SECTION et n'a plus lieu d'être.
+2. **Contrôles `Themed*` en `ControlTemplate`** (~1 200 l.) : listes, barres de
+   progression et listes déroulantes portent encore l'habillage par défaut de
+   WPF au lieu de celui du projet.
+3. Icône de zone de notification et instance unique qui réveille la fenêtre
+   (`ShowWindowEventName` est déclaré mais personne ne l'écoute encore).
+4. La dette `Models/Settings.cs`.
 
 **Toute la logique d'enregistrement est portée** : démarrage, arrêt, sondage
-d'état, déclenchement automatique, reconnexion et minuteur. `MainForm.cs` n'en
-garde plus rien. Les vues Enregistrer et Historique sont faites.
+d'état, déclenchement automatique, reconnexion et minuteur avec son sélecteur
+de durée. **Les QUATRE sections sont faites** — Enregistrer, Historique,
+Réglages, Soutenir. `MainForm.cs` n'a plus rien à céder.
+
+**Décision en attente du mainteneur** : le thème n'est pas mémorisé
+(`UserSettings` n'a pas de champ `Theme`). Le corriger ferait diverger les deux
+copies de `SettingsManager.cs`, puisque `settings.json` est PARTAGÉ avec
+l'application WinForms.
 
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
