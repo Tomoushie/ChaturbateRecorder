@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 23 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 25 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.
@@ -108,7 +108,16 @@ rangeait sous `%AppData%\StreamRecorderPro` au lieu de
    `Dispatcher.CatchException` vers le gestionnaire, qui redemande la fenêtre.
    Récursion infinie → STACK OVERFLOW, qui ne se rattrape pas. D'où le garde-fou
    `_affichageEnCours` dans `CrashWindow`.
-6. `System.Windows.Localization` est homonyme de la table de chaînes du projet :
+6. **UN GESTIONNAIRE DÉCLARÉ EN ATTRIBUT XAML *ET* EN `+=` S'EXÉCUTE DEUX
+   FOIS.** `App.xaml` déclare `Startup`, `Exit` et
+   `DispatcherUnhandledException` ; un constructeur qui les réabonne les double.
+   Conséquence vécue : au second passage, `Application_Startup` construisait un
+   Mutex que le PREMIER passage du MÊME processus détenait déjà, en concluait
+   « une autre instance tourne », et fermait l'application une seconde après son
+   ouverture. Invisible sans bureau interactif, invisible à la compilation, et
+   trouvée par le JOURNAL DE DÉMARRAGE — deux lignes « Demarrage » à 2 ms
+   d'intervalle. **C'est pour cela que ce journal existe : le garder.**
+7. `System.Windows.Localization` est homonyme de la table de chaînes du projet :
    alias obligatoire, sinon `CS0104` partout.
 
 **COROLLAIRE DE MÉTHODE, la leçon la plus chère** : relever la valeur d'une

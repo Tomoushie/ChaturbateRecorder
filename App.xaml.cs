@@ -34,12 +34,24 @@ namespace ChaturbateRecorderApp
         /// </summary>
         private bool _detientLeMutex;
 
-        public App()
-        {
-            this.Startup += Application_Startup;
-            this.Exit += Application_Exit;
-            this.DispatcherUnhandledException += Application_DispatcherUnhandledException;
-        }
+        // PAS DE CONSTRUCTEUR QUI S'ABONNE. Il en existait un, qui faisait
+        // `this.Startup += Application_Startup;` et les deux autres — alors que
+        // App.xaml les declare DEJA en attributs (`Startup="..."`). Les trois
+        // gestionnaires s'executaient donc DEUX FOIS.
+        //
+        // Consequence, fatale et invisible jusqu'a ce qu'un vrai bureau
+        // l'expose : au second passage, `Application_Startup` construisait un
+        // Mutex que le PREMIER passage du MEME processus detenait deja. Il en
+        // concluait « une autre instance tourne », appelait Shutdown(0), et
+        // fermait l'application une seconde apres son ouverture.
+        //
+        // Cela explique aussi retroactivement l'ObjectDisposedException sur
+        // ReleaseMutex traitee plus haut par `_detientLeMutex` : Application_Exit
+        // passait deux fois lui aussi. Ce drapeau reste — il est correct — mais
+        // il soignait le symptome, pas la cause.
+        //
+        // Trouve par le JOURNAL DE DEMARRAGE, pas par raisonnement : deux
+        // lignes « Demarrage » a 2 ms d'intervalle dans le meme processus.
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
