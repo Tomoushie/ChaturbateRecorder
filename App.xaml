@@ -1,0 +1,35 @@
+<Application x:Class="ChaturbateRecorderApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ChaturbateRecorderApp.Converters"
+             Startup="Application_Startup"
+             Exit="Application_Exit"
+             DispatcherUnhandledException="Application_DispatcherUnhandledException">
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <!--
+              LES DICTIONNAIRES MATERIAL DESIGN ONT ÉTÉ RETIRÉS ICI, décision à
+              confirmer : le projet a sa propre identité visuelle depuis 39.0 et
+              108.0, et `UI/ThemeManager.cs` porte une palette de 13 champs dont
+              les contrastes ont été MESURÉS au seuil WCAG 4,5 (deux candidates
+              évidentes tombaient à 3,97 et 4,17). Empiler Material Design
+              par-dessus ce travail donnerait deux sources de vérité pour les
+              couleurs, et le fondu clair/sombre interpolerait des valeurs qui ne
+              lui appartiennent pas.
+
+              Elles étaient de toute façon inutilisables en l'état : leurs URI
+              s'écrivaient `pack://application:+++$/...`, forme corrompue de
+              `pack://application:,,,/` — le build aurait échoué au premier
+              chargement du dictionnaire, pas à la compilation.
+            -->
+
+            <!-- Les converters sont des classes C#, donc instanciés comme
+                 ressources ; un ResourceDictionary.Source ne sait pas les charger. -->
+            <converters:StatusToVisibilityConverter x:Key="StatusToVisibilityConverter" />
+            <converters:FileSizeConverter x:Key="FileSizeConverter" />
+            <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

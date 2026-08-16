@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!--
+      MÊME AssemblyName que la version WinForms, et ce n'est pas cosmétique :
+      l'installateur (setup.exe) et le vérificateur de mise à jour interne
+      ciblent tous deux `ChaturbateRecorder.exe`. Renommer ici casserait la
+      mise à jour des installations existantes, en silence.
+    -->
+    <AssemblyName>ChaturbateRecorder</AssemblyName>
+
+    <!--
+      RootNamespace identique à celui de l'app WinForms : les 21 services
+      portés gardent alors `namespace ChaturbateRecorderApp.Services` mot pour
+      mot, ce qui supprime une passe de renommage sur ~3 000 lignes — et avec
+      elle le risque d'en manquer une.
+    -->
+    <RootNamespace>ChaturbateRecorderApp</RootNamespace>
+
+    <Version>1.36.0</Version>
+
+    <!-- Voir le csproj WinForms : permet à `dotnet restore` de résoudre les
+         FrameworkReference de bureau depuis un runner non-Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- X509Certificate.CreateFromSignedFile reste la seule API BCL qui
+         extrait le certificat Authenticode d'un PE signé (cf. csproj WinForms). -->
+    <NoWarn>SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <!-- L'ID est bien `.Wpf` : `Microsoft.Xaml.Behaviors` seul n'existe pas
+         sur nuget.org (NU1101), et c'est ce que déclarait le squelette. -->
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      ProjectReference et non PackageReference, pour la raison déjà tranchée
+      côté WinForms : la version publiée sur nuget.org est toujours en retard
+      d'un correctif sur le source du dépôt, et dépendre d'un paquet qu'on
+      publie soi-même imposerait de publier avant de pouvoir corriger.
+      Le projet vit dans le dépôt public, à côté ; c'est le même fichier que
+      consomme l'application WinForms — pas une copie.
+    -->
+    <ProjectReference Include="..\ChaturbateRecorderApp\SentinelGuard\SentinelGuard.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      ============ EXCLUSION TEMPORAIRE — TRANCHE 1 (socle) ============
+      Views\ et ViewModels\ sont encore le SQUELETTE GÉNÉRÉ : ils se lient à
+      des interfaces de services inventées (IMonitorService, IRecordingService,
+      ISettingsService) qui doublonnaient mal les services réels, lesquels sont
+      pour la plupart des classes STATIQUES qu'un conteneur d'injection n'a pas
+      à instancier. Les garder dans la compilation ferait échouer le build sur
+      la couche de vues et masquerait l'état réel du socle.
+
+      À RETIRER quand la tranche « fenêtre principale » atterrit. Tant que ce
+      bloc est là, `dotnet build` prouve les 21 services et rien d'autre.
+    -->
+    <Page Remove="Views\**" />
+    <Compile Remove="Views\**" />
+    <Compile Remove="ViewModels\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
+      payant est chargé par RÉFLEXION (`Services/PremiumModuleService.cs`).
+      Une référence de compilation obligerait le module à connaître l'identité
+      de cet assembly — or la variante portable est publiée en
+      PublishSingleFile auto-contenue, où ce liage ne casse qu'à l'exécution,
+      chez l'utilisateur, sur la variante la moins testée.
+    -->
+  </ItemGroup>
+
+</Project>

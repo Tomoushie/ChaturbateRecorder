@@ -1,0 +1,71 @@
+<!-- Views/MainWindow.xaml -->
+<Window x:Class="ChaturbateRecorderApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:ChaturbateRecorderApp.ViewModels" <!-- Namespace pour les VMs -->
+        xmlns:views="clr-namespace:ChaturbateRecorderApp.Views" <!-- Namespace pour les Views -->
+        xmlns:local="clr-namespace:ChaturbateRecorderApp.Views" <!-- Namespace local -->
+        xmlns:converters="clr-namespace:ChaturbateRecorderApp.Converters" <!-- Namespace pour les converters -->
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" <!-- Namespace MaterialDesign -->
+        mc:Ignorable="d"
+        Title="Stream Recorder Pro" Height="600" Width="1000"
+        Icon="../Resources/AppIcon.ico" <!-- Remplacez par le chemin de votre icône -->
+        WindowStartupLocation="CenterScreen"
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"> <!-- DataContext pour le designer -->
+
+    <Window.Resources>
+        <!-- Déclarez vos DataTemplates -->
+        <DataTemplate x:Key="MonitorViewTemplate">
+            <views:MonitorView />
+        </DataTemplate>
+        <DataTemplate x:Key="HistoryViewTemplate">
+            <views:HistoryView />
+        </DataTemplate>
+        <DataTemplate x:Key="SettingsViewTemplate">
+            <views:SettingsView />
+        </DataTemplate>
+
+        <!-- Déclarez le Selector et lui assignez les templates -->
+        <converters:MainViewTypeDataTemplateSelector x:Key="MainViewTypeSelector"
+                                                    MonitorViewTemplate="{StaticResource MonitorViewTemplate}"
+                                                    HistoryViewTemplate="{StaticResource HistoryViewTemplate}"
+                                                    SettingsViewTemplate="{StaticResource SettingsViewTemplate}"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Menu/Bandeau supérieur -->
+            <RowDefinition Height="*"/>   <!-- Contenu principal -->
+            <RowDefinition Height="Auto"/> <!-- Barre d'état inférieure -->
+        </Grid.RowDefinitions>
+
+        <!-- Bandeau supérieur avec navigation -->
+        <Border Grid.Row="0" Background="{DynamicResource PrimaryHueMidBrush}" Padding="10,5">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="Surveillance" Command="{Binding NavigateToMonitorCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                <Button Content="Historique" Command="{Binding NavigateToHistoryCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                <Button Content="Paramètres" Command="{Binding NavigateToSettingsCommand}" Margin="0,0,10,0" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                <!-- Ajoutez d'autres boutons de navigation ici -->
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding LicensedTo, StringFormat='Licencié à : {0}'}" VerticalAlignment="Center" Foreground="White" Margin="0,0,10,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Contenu principal - Affichage dynamique selon CurrentViewType -->
+        <!-- Utilisation du DataTemplateSelector -->
+        <ContentControl Grid.Row="1"
+                        Content="{Binding CurrentViewType}"
+                        ContentTemplateSelector="{StaticResource MainViewTypeSelector}"
+                        Margin="10"/>
+
+        <!-- Barre d'état inférieure -->
+        <StatusBar Grid.Row="2" Background="{DynamicResource MaterialDesignPaperForeground}" >
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
