@@ -79,16 +79,15 @@ namespace ChaturbateRecorderApp
             // RIEN : l'utilisateur voit l'application disparaitre.
             Views.CrashWindow.Brancher();
 
-            // Thème initial posé SANS animation : il n'y a rien à faire fondre
-            // au premier affichage, et un fondu depuis les valeurs de départ du
-            // dictionnaire se verrait à l'ouverture de la fenêtre.
+            // Theme initial pose SANS animation : il n'y a rien a faire
+            // fondre au premier affichage, et un fondu depuis les valeurs de
+            // depart du dictionnaire se verrait a l'ouverture de la fenetre.
             //
-            // Clair en dur, comme le WinForms (`MainForm._currentTheme`) : il
-            // n'existe AUCUN réglage de thème dans `UserSettings`, donc le choix
-            // fait dans les Paramètres ne survit pas à la fermeture. Défaut
-            // hérité, reproduit tel quel ici pour ne pas mélanger un correctif
-            // de comportement avec un portage.
-            ThemeManager.Apply(AppTheme.Light, animate: false);
+            // Il est desormais LU depuis les reglages : le WinForms repartait
+            // en clair a chaque lancement, faute d'un champ ou le ranger.
+            var themeChoisi = string.Equals(SettingsManager.Load().Theme, "dark",
+                StringComparison.OrdinalIgnoreCase) ? AppTheme.Dark : AppTheme.Light;
+            ThemeManager.Apply(themeChoisi, animate: false);
 
             // Le thème est posé AVANT la fenêtre : construire la fenêtre
             // d'abord la ferait apparaître avec les couleurs de départ du

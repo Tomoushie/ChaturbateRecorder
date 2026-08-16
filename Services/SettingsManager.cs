@@ -15,6 +15,21 @@ namespace ChaturbateRecorderApp.Services
         public bool? AdvancedMode { get; set; }
         // "fr" ou "en" (20.0) — absent/inconnu -> français par défaut.
         public string? Language { get; set; }
+
+        /// <summary>
+        /// « dark » ou « light ». Nul = clair, valeur par defaut historique.
+        ///
+        /// **CHAMP AJOUTE PAR LA VERSION WPF, ABSENT DU WINFORMS.** Le theme
+        /// choisi dans les Parametres ne survivait a aucune fermeture : le
+        /// WinForms n'a jamais eu ou le ranger. L'ajout est RETROCOMPATIBLE
+        /// dans les deux sens — un settings.json ecrit par la version WPF est
+        /// lu sans erreur par la WinForms, qui ignore simplement la cle, et
+        /// l'inverse retombe sur clair.
+        ///
+        /// Consequence assumee : les deux copies de ce fichier DIVERGENT tant
+        /// que la migration dure. Tranche avec le mainteneur le 2026-08-16.
+        /// </summary>
+        public string? Theme { get; set; }
         // Déplacée dans la fenêtre Paramètres (19.0) : désormais mémorisée
         // entre les lancements (ne l'était pas quand la case vivait dans le
         // formulaire principal).

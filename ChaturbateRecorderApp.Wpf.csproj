@@ -4,6 +4,23 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+
+    <!--
+      WinForms EST ACTIVE, uniquement pour `NotifyIcon` : .NET n'offre aucune
+      autre icône de zone de notification, et WPF n'en a pas.
+
+      Choix assumé face à la dépendance NuGet qui fait la même chose : c'est une
+      référence de FRAMEWORK, déjà installée avec le runtime, pas un paquet
+      tiers de plus dans un projet qui vérifie les empreintes de ses binaires et
+      publie un SBOM. L'ironie d'activer WinForms dans une migration qui le
+      quitte est réelle mais superficielle — aucune FENÊTRE WinForms n'existe
+      ici, seulement l'objet de zone de notification.
+
+      Conséquence à connaître : `Application` devient ambigu entre
+      `System.Windows.Application` et `System.Windows.Forms.Application`. Le
+      code qualifie donc complètement partout où les deux se rencontrent.
+    -->
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
@@ -34,6 +51,28 @@
          extrait le certificat Authenticode d'un PE signé (cf. csproj WinForms). -->
     <NoWarn>SYSLIB0057</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      LES QUATRE NOMS QUE WinForms REND AMBIGUS, tranches ICI et une seule fois.
+
+      Activer WinForms pour NotifyIcon fait entrer System.Drawing et
+      System.Windows.Forms par les usings implicites : `Application`, `Color`,
+      `Brush` et `UserControl` existent alors dans deux mondes. Un alias par
+      fichier aurait disperse la decision dans une dizaine d'endroits, et le
+      onzieme fichier ecrit l'aurait oublie.
+
+      DANS CE PROJET, CES QUATRE NOMS DESIGNENT TOUJOURS WPF. Un jour ou une
+      couleur System.Drawing serait reellement necessaire, il faudra la
+      qualifier completement — ce qui est exactement le bon rapport, vu qu'il
+      n'y en a aucune aujourd'hui.
+    -->
+    <Using Include="System.Windows.Application" Alias="Application" />
+    <Using Include="System.Windows.Media.Color" Alias="Color" />
+    <Using Include="System.Windows.Media.Brush" Alias="Brush" />
+    <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
+    <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />

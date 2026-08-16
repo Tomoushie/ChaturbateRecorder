@@ -42,7 +42,7 @@
                               IsChecked="{Binding Francais, Mode=TwoWay}" />
                     <TextBlock Margin="0,6,0,0" FontSize="11"
                                Style="{StaticResource Text.Caption}"
-                               Text="Thème et langue s'appliquent immédiatement. Le thème n'est pas encore mémorisé d'un lancement à l'autre." />
+                               Text="Thème et langue s'appliquent immédiatement. Le thème est mémorisé à l'enregistrement." />
                 </StackPanel>
             </Border>
 

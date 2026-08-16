@@ -115,6 +115,9 @@ namespace ChaturbateRecorderApp.ViewModels
             _reglages.AutoUpdateCheck = _autoUpdateCheck;
             _reglages.WatchIntervalSeconds = Math.Clamp(_watchIntervalSeconds, 30, 3600);
             _reglages.ShowLogs = _showLogs;
+            // Le theme suit la case, et il est desormais PERSISTE : c'etait le
+            // dernier reglage de cet ecran a ne pas survivre a une fermeture.
+            _reglages.Theme = Sombre ? "dark" : "light";
             _reglages.Language = _francais ? "fr" : "en";
 
             try

@@ -16,6 +16,8 @@ namespace ChaturbateRecorderApp.Views
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly TrayIcon? _zoneDeNotification;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -24,7 +26,16 @@ namespace ChaturbateRecorderApp.Views
             // La fenetre principale EST la duree de vie de l'application ici :
             // sa fermeture doit arreter la surveillance, sinon la boucle
             // continue de sonder dans un processus qui n'affiche plus rien.
-            Closed += (s, e) => (DataContext as System.IDisposable)?.Dispose();
+            // La zone de notification est construite APRES le DataContext :
+            // elle s'abonne a Closing sur cette fenetre, et doit pouvoir la
+            // masquer plutot que la fermer des le premier clic sur la croix.
+            _zoneDeNotification = new TrayIcon(this);
+
+            Closed += (s, e) =>
+            {
+                _zoneDeNotification?.Dispose();
+                (DataContext as System.IDisposable)?.Dispose();
+            };
 
             // Les nouveautés s'affichent APRÈS l'ouverture, pas dans le
             // constructeur : une fenêtre modale posée avant que la principale

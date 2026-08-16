@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 21 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 22 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.
@@ -37,8 +37,11 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 
 ## Reste
 
-**LANCER L'APPLICATION** : `dotnet publish -c Release -r win-x64
---self-contained false -o "..\Apercu-WPF"`. Le csproj copie yt-dlp et ffmpeg
+**LANCER L'APPLICATION** — deux variantes publiées :
+- `..\Apercu-WPF\` (250 Mo) exige le **.NET 10 Desktop Runtime** ;
+- `..\Apercu-WPF-autonome\` (422 Mo) n'exige RIEN (`--self-contained true`).
+Régénérer par `dotnet publish -c Release -r win-x64 --self-contained false|true
+-o "..\Apercu-WPF[-autonome]"`. Le csproj copie yt-dlp et ffmpeg
 depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
 `settings.json` sont PARTAGÉS avec l'app WinForms** : si celle-ci tourne, la
 WPF sort en silence.
@@ -61,10 +64,16 @@ d'état, déclenchement automatique, reconnexion et minuteur avec son sélecteur
 de durée. **Les QUATRE sections sont faites** — Enregistrer, Historique,
 Réglages, Soutenir. `MainForm.cs` n'a plus rien à céder.
 
-**Décision en attente du mainteneur** : le thème n'est pas mémorisé
-(`UserSettings` n'a pas de champ `Theme`). Le corriger ferait diverger les deux
-copies de `SettingsManager.cs`, puisque `settings.json` est PARTAGÉ avec
-l'application WinForms.
+**LES DEUX COPIES DE `SettingsManager.cs` DIVERGENT désormais**, tranché avec le
+mainteneur le 2026-08-16 : la version WPF a un champ `Theme` que la WinForms
+n'a pas. L'ajout est rétrocompatible dans les deux sens — chacune ignore ce
+qu'elle ne connaît pas.
+
+**WinForms est ACTIVÉ dans ce projet WPF** (`UseWindowsForms`), uniquement pour
+`NotifyIcon` : .NET n'offre rien d'autre. Conséquence : `Application`, `Color`,
+`Brush`, `UserControl` et `Clipboard` deviennent ambigus. Ils sont tranchés par
+des **alias globaux dans le csproj** — une seule fois, pas un alias par fichier
+que le onzième fichier écrit aurait oublié.
 
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
