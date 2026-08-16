@@ -68,7 +68,9 @@ namespace ChaturbateRecorderApp.Views
                 var reglages = SettingsManager.Load();
                 if (reglages.HasSeenTutorial) return;
 
+                Logger.Log("Premier lancement : ouverture du guide de demarrage.");
                 new TutorialWindow { Owner = this }.ShowDialog();
+                Logger.Log("Guide de demarrage referme.");
 
                 reglages.HasSeenTutorial = true;
                 SettingsManager.Save(reglages);
@@ -105,7 +107,9 @@ namespace ChaturbateRecorderApp.Views
                 // note la version et on se tait.
                 if (!string.IsNullOrEmpty(reglages.LastSeenVersion))
                 {
+                    Logger.Log($"Nouveautes depuis {reglages.LastSeenVersion} : ouverture.");
                     new ChangelogWindow(reglages.LastSeenVersion, courante) { Owner = this }.ShowDialog();
+                    Logger.Log("Nouveautes refermees.");
                 }
 
                 reglages.LastSeenVersion = courante;

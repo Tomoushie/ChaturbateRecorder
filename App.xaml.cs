@@ -43,11 +43,18 @@ namespace ChaturbateRecorderApp
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            // JOURNAL DE DEMARRAGE, permanent et non un harnais. Sans lui, une
+            // application qui s'arrete pendant son demarrage ne laisse RIEN :
+            // ni exception, ni trace, et le seul symptome est « elle se ferme
+            // toute seule ». Chaque sortie anticipee ci-dessous se journalise
+            // donc, et le demarrage reussi aussi.
+            Logger.Log($"Demarrage — v{typeof(App).Assembly.GetName().Version?.ToString(3)}, " +
+                       $"repertoire {AppConfig.AppDir}");
             Localization.Current = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("fr", StringComparison.OrdinalIgnoreCase) ? AppLanguage.French : AppLanguage.English;
 
             if (!WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir, out var locationReason))
             {
-                Logger.Log($"Emplacement d'execution refuse : {locationReason}", LogLevel.ERROR);
+                Logger.Log($"ARRET : emplacement d'execution refuse — {locationReason}", LogLevel.ERROR);
                 System.Windows.MessageBox.Show(Localization.Get("error.unauthorizedLocation"), Localization.Get("error.unauthorizedLocation.title"), MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown(1);
                 return;
@@ -69,9 +76,24 @@ namespace ChaturbateRecorderApp
                 {
                     Logger.Log($"Instance deja lancee, reveil impossible : {ex.Message}", LogLevel.WARN);
                 }
+                Logger.Log("ARRET : une autre instance tient deja le verrou, "
+                           + "l'evenement de reveil lui a ete signale.");
                 Shutdown(0);
                 return;
             }
+
+            // MODE D'ARRET EXPLICITE, et c'est le mode correct pour une
+            // application a zone de notification : la fenetre principale se
+            // MASQUE au lieu de se fermer, donc « arreter quand la derniere
+            // fenetre se ferme » ne veut plus rien dire ici.
+            //
+            // C'est aussi la cause la plus probable du defaut signale — « elle
+            // demarre puis se ferme une seconde apres » : avec
+            // OnLastWindowClose, une modale de premier lancement qui se referme
+            // peut etre comptee comme la derniere fenetre et arreter
+            // l'application. Le symptome n'apparait QUE sur un vrai bureau,
+            // ou ces dialogues s'affichent reellement.
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             CrashReporter.Install();
 
@@ -92,7 +114,16 @@ namespace ChaturbateRecorderApp
             // Le thème est posé AVANT la fenêtre : construire la fenêtre
             // d'abord la ferait apparaître avec les couleurs de départ du
             // dictionnaire, puis se repeindre — visible à l'ouverture.
-            new Views.MainWindow().Show();
+            var fenetre = new Views.MainWindow();
+            fenetre.Show();
+
+            // Ces deux traces encadrent l'affichage : si la seconde manque, la
+            // fenetre principale a echoue a s'ouvrir ; si les deux sont la et
+            // que l'application disparait quand meme, la cause est APRES le
+            // demarrage — un dialogue de premier lancement, ou la fermeture.
+            Logger.Log($"Fenetre principale affichee (theme {ThemeManager.Current}, "
+                       + $"mode d'arret {ShutdownMode}).");
+            Exit += (s2, e2) => Logger.Log($"Sortie de l'application, code {e2.ApplicationExitCode}.");
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)

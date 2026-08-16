@@ -103,6 +103,14 @@ namespace ChaturbateRecorderApp.Services
         {
             _fermetureDemandee = true;
             _fenetre.Close();
+
+            // Arret EXPLICITE : le mode d'arret de l'application est
+            // OnExplicitShutdown (voir App.xaml.cs), donc fermer la derniere
+            // fenetre ne suffit plus a terminer le processus — c'est
+            // precisement ce qui permet a l'application de vivre dans la zone
+            // de notification. Sans cette ligne, « Quitter » masquerait la
+            // fenetre et laisserait le processus tourner indefiniment.
+            Application.Current?.Shutdown();
         }
 
         /// <summary>
