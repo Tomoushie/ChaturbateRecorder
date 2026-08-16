@@ -33,15 +33,20 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 ## Reste
 
 Par ordre de valeur :
-1. **Reconnexion automatique + minuteur** (~150 l., encore dans `MainForm.cs`) —
-   un direct coupé doit reprendre seul, et « arrêter après 2 h » doit compter
-   le temps ÉCOULÉ, pas par tentative.
-2. Vues Historique / Réglages / Soutenir (~800 l.), encore en carton.
-3. Les 8 fenêtres de dialogue (~1 500 l.).
-4. Contrôles `Themed*` en `ControlTemplate` (~1 200 l.).
+1. **Vue Réglages** — sans elle on ne peut pas changer le dossier de capture,
+   la langue, le thème ni l'intervalle de surveillance. C'est le dernier
+   manque qui empêche d'utiliser l'application au quotidien.
+2. **Sélecteur de durée** dans la vue Enregistrer : le minuteur EXISTE
+   (`RecordingCoordinator`) mais `minutesMinuteur` vaut toujours 0, faute
+   d'interface. Son événement `Decompte` écrase alors le détail de la carte
+   sans le restaurer — à traiter en même temps.
+3. Vue Soutenir (`SupportersProvider` est déjà porté).
+4. Les 8 fenêtres de dialogue (~1 500 l.).
+5. Contrôles `Themed*` en `ControlTemplate` (~1 200 l.).
 
-Le sondage d'état et le déclenchement automatique sont FAITS
-(`Services/MonitorService.cs`).
+**Toute la logique d'enregistrement est portée** : démarrage, arrêt, sondage
+d'état, déclenchement automatique, reconnexion et minuteur. `MainForm.cs` n'en
+garde plus rien. Les vues Enregistrer et Historique sont faites.
 
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
