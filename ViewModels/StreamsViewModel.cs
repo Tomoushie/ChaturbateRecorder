@@ -1,6 +1,7 @@
 namespace ChaturbateRecorderApp.ViewModels
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,6 +32,11 @@ namespace ChaturbateRecorderApp.ViewModels
             _store.Load();
             Recharger();
 
+            // « Illimite » par defaut, jamais null : une liste deroulante vide
+            // se lit comme un reglage manquant, et `DureeChoisie?.Minutes ?? 0`
+            // donnerait le meme resultat sans que l'ecran le dise.
+            DureeChoisie = Durees[0];
+
             // La FONCTION est relue à chaque tour de surveillance : un salon
             // dont on arme l'interrupteur entre deux tours est pris au suivant,
             // sans redémarrer quoi que ce soit.
@@ -47,7 +53,14 @@ namespace ChaturbateRecorderApp.ViewModels
                 carte.IsRecording = _enregistrement.EnCours(url);
                 // La progression n'a plus de sens une fois la capture finie, et
                 // une barre laissée à 43 % se lit comme un enregistrement figé.
-                if (!carte.IsRecording) { carte.Progress = 0; carte.Indeterminate = false; }
+                if (!carte.IsRecording)
+                {
+                    carte.Progress = 0;
+                    carte.Indeterminate = false;
+                    // Le decompte rendait la place : on remet la plateforme et
+                    // la date, sinon la carte garderait « 0 s » pour toujours.
+                    carte.Detail = carte.DetailBase;
+                }
             };
 
             _enregistrement.Progression += (url, pourcent) =>
@@ -76,7 +89,7 @@ namespace ChaturbateRecorderApp.ViewModels
             _enregistrement.Decompte += (url, restant) =>
             {
                 if (Trouver(url) is not { } carte) return;
-                carte.Detail = restant;
+                carte.Detail = $"{carte.DetailBase} — {restant}";
             };
 
             // La surveillance est lancee EN DERNIER : elle peut declencher un
@@ -93,6 +106,34 @@ namespace ChaturbateRecorderApp.ViewModels
         /// évitait justement avant leur fusion.
         /// </summary>
         private readonly MonitorService _surveillance;
+
+        /// <summary>Une duree proposee au demarrage d'un enregistrement.</summary>
+        public sealed record OptionDuree(string Libelle, int Minutes);
+
+        /// <summary>
+        /// Les sept durees du WinForms, reprises telles quelles depuis
+        /// <see cref="RecordingTimer.PresetMinutes"/> — la liste des valeurs et
+        /// celle des libelles sont donc INDEXEES ENSEMBLE et ne peuvent pas
+        /// diverger, ce qu'un second tableau ecrit a la main aurait permis.
+        /// </summary>
+        public IReadOnlyList<OptionDuree> Durees { get; } = new[]
+        {
+            new OptionDuree(Localization.Get("duration.unlimited"), 0),
+            new OptionDuree(Localization.Get("duration.15min"), 15),
+            new OptionDuree(Localization.Get("duration.30min"), 30),
+            new OptionDuree(Localization.Get("duration.1h"), 60),
+            new OptionDuree(Localization.Get("duration.2h"), 120),
+            new OptionDuree(Localization.Get("duration.4h"), 240),
+            new OptionDuree(Localization.Get("duration.8h"), 480),
+        };
+
+        /// <summary>
+        /// Duree appliquee aux PROCHAINS demarrages. « Illimite » par defaut :
+        /// borner une capture que personne n'a demande de borner serait le pire
+        /// defaut possible pour un enregistreur.
+        /// </summary>
+        [ObservableProperty]
+        private OptionDuree? _dureeChoisie;
 
         /// <summary>
         /// Branche la surveillance sur les cartes. Appelé par le constructeur,
@@ -176,7 +217,7 @@ namespace ChaturbateRecorderApp.ViewModels
                 _enregistrement.Demarrer(
                     carte.Url,
                     reconnexionAuto: SettingsManager.Load().AutoReconnectDefault,
-                    minutesMinuteur: 0);
+                    minutesMinuteur: DureeChoisie?.Minutes ?? 0);
                 carte.IsRecording = true;
             }
             catch (Exception ex)
@@ -209,6 +250,8 @@ namespace ChaturbateRecorderApp.ViewModels
                 RoomName = Platforms.DisplayName(entree.Url),
                 PlatformIconKey = CleDePictogramme(Platforms.Badge(Platforms.Detect(entree.Url)).Icon)
             };
+            carte.DetailBase = Platforms.Badge(Platforms.Detect(entree.Url)).Label;
+            carte.Detail = carte.DetailBase;
             return carte;
         }
 

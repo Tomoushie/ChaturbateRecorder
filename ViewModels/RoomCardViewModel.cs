@@ -72,6 +72,16 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private bool _isRecording;
 
+        /// <summary>
+        /// Le detail « de repos » de la carte — plateforme et date d'ajout.
+        ///
+        /// Il est garde a part parce que le DECOMPTE du minuteur s'affiche au
+        /// meme endroit : sans copie, la premiere seconde de compte a rebours
+        /// ecraserait definitivement la plateforme et la date, qui ne
+        /// reviendraient qu'au prochain rechargement de la liste.
+        /// </summary>
+        public string DetailBase { get; set; } = "";
+
         public bool AutoRecord
         {
             get => _autoRecord;

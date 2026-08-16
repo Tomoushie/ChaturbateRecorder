@@ -18,6 +18,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <TextBox Grid.Column="0"
@@ -25,7 +26,17 @@
                          VerticalAlignment="Center"
                          Text="{Binding NewRoomUrl, UpdateSourceTrigger=PropertyChanged}" />
 
-                <Button Grid.Column="1"
+                <!-- La duree est choisie AVANT le demarrage et s'applique aux
+                     prochaines captures : c'est un reglage par enregistrement
+                     dans le WinForms, pose au meme moment que la qualite. -->
+                <ComboBox Grid.Column="1" Width="130" Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding Durees}"
+                          SelectedItem="{Binding DureeChoisie, Mode=TwoWay}"
+                          DisplayMemberPath="Libelle"
+                          ToolTip="Duree maximale d'enregistrement" />
+
+                <Button Grid.Column="2"
                         Margin="8,0,0,0"
                         Style="{StaticResource Button.Primary}"
                         Content="Ajouter"
