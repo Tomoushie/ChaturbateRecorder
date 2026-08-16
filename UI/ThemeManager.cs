@@ -98,6 +98,17 @@ namespace ChaturbateRecorderApp.UI
 
         public static AppTheme Current { get; private set; } = AppTheme.Light;
 
+        /// <summary>
+        /// Levé une fois le thème POSÉ — à la fin du fondu, pas à chaque image.
+        ///
+        /// Il existe pour ce que les `DynamicResource` ne couvrent pas : une
+        /// liaison qui passe par un convertisseur de CLÉ vers pinceau (la
+        /// couleur d'état d'une carte de salon, par exemple) rend une valeur
+        /// figée, et rien ne la réévalue si seul le thème change. Les modèles
+        /// de vue concernés s'y abonnent pour resignaler leur propriété.
+        /// </summary>
+        public static event Action? Applied;
+
         /// <summary>Durée du fondu clair/sombre, reprise telle quelle du WinForms (9.2).</summary>
         private const int TransitionMs = 220;
 
@@ -140,6 +151,7 @@ namespace ChaturbateRecorderApp.UI
             if (!animate || Application.Current is null)
             {
                 SetPalette(arrivee);
+                Applied?.Invoke();
                 return;
             }
 
@@ -161,6 +173,9 @@ namespace ChaturbateRecorderApp.UI
                     // arrondis en octet, et un composant pourrait finir à une
                     // unité de la valeur de la palette.
                     SetPalette(arrivee);
+                    // Une seule fois, à la fin : resignaler à chaque image
+                    // ferait recalculer toutes les liaisons ~15 fois pour rien.
+                    Applied?.Invoke();
                 }
             };
             _transition = timer;

@@ -89,7 +89,9 @@ namespace ChaturbateRecorderApp
             // Le thème est posé AVANT la fenêtre : construire la fenêtre
             // d'abord la ferait apparaître avec les couleurs de départ du
             // dictionnaire, puis se repeindre — visible à l'ouverture.
-            new Views.MainWindow().Show();
+            var fenetre = new Views.MainWindow();
+
+            fenetre.Show();
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)

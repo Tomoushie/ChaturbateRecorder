@@ -1,0 +1,120 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:conv="clr-namespace:ChaturbateRecorderApp.Converters">
+
+    <!--
+      CARTE DE SALON (97.0 étape 2b).
+
+      **Adaptative, et c'est le choix central** : compacte au repos (60 px),
+      étendue (92 px) seulement pour les états qui ont une progression à
+      montrer. Des cartes de hauteur fixe ne laissent voir que quatre salons ;
+      une simple ligne de tableau ne loge pas de barre de progression.
+      La règle vit dans `UI/RoomCardVisuals.cs`, où elle reste testable — pas
+      ici sous forme de déclencheur.
+
+      **La couleur porte l'état, jamais la décoration**, et elle se lit sur un
+      LISERÉ VERTICAL à gauche plutôt que sur une pastille : lisible en un seul
+      balayage de la liste, là où une pastille oblige à lire chaque ligne.
+    -->
+
+    <conv:ResourceKeyToBrushConverter x:Key="ResourceKeyToBrushConverter" />
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    <!-- Déclaré ici et pas seulement dans SideBar.xaml : un StaticResource ne
+         doit dépendre ni de l'ordre de fusion des dictionnaires, ni de la
+         présence d'un autre. Deux clés identiques dans deux dictionnaires
+         fusionnés sont licites. -->
+    <conv:IconTemplateConverter x:Key="IconTemplateConverter" />
+
+    <DataTemplate x:Key="RoomCard.Template">
+        <Border Height="{Binding CardHeight}"
+                Margin="0,0,0,8"
+                CornerRadius="10"
+                Background="{DynamicResource Brush.Card}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                SnapsToDevicePixels="True">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Liseré d'état. Arrondi seulement à gauche, pour épouser le
+                     coin de la carte au lieu de le trancher. -->
+                <Border Grid.RowSpan="2" Width="4"
+                        HorizontalAlignment="Left"
+                        CornerRadius="10,0,0,10"
+                        Background="{Binding StateBrushKey, Converter={StaticResource ResourceKeyToBrushConverter}}" />
+
+                <Grid Grid.Row="0" Margin="14,0,14,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Le pictogramme de plateforme reste même quand une
+                         vignette est disponible : savoir d'où vient un salon
+                         est utile même quand on voit ce qu'il diffuse. -->
+                    <ContentControl Grid.Column="0"
+                                    Width="18" Height="18"
+                                    VerticalAlignment="Center"
+                                    Focusable="False" IsTabStop="False"
+                                    Foreground="{DynamicResource Brush.FgMuted}"
+                                    Template="{Binding PlatformIconKey, Converter={StaticResource IconTemplateConverter}}" />
+
+                    <StackPanel Grid.Column="1" Margin="12,0,12,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding RoomName}"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Brush.Fg}" />
+                        <TextBlock Text="{Binding Detail}"
+                                   Margin="0,2,0,0"
+                                   FontSize="11"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Brush.FgMuted}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- L'interrupteur « auto » : faux par défaut. Une ligne
+                             n'est qu'un salon CONNU, c'est lui qui engage la
+                             surveillance — sans quoi la fusion des favoris et
+                             de la surveillance ferait sonder le site pour
+                             chaque favori. -->
+                        <CheckBox IsChecked="{Binding AutoRecord, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  ToolTip="Enregistrer automatiquement"
+                                  Foreground="{DynamicResource Brush.FgMuted}"
+                                  Content="auto" />
+
+                        <TextBlock Text="{Binding StateLabel}"
+                                   Margin="12,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{Binding StateBrushKey, Converter={StaticResource ResourceKeyToBrushConverter}}" />
+
+                        <Button Margin="12,0,0,0"
+                                Style="{StaticResource Button.Danger}"
+                                Content="Retirer"
+                                Command="{Binding DataContext.RetirerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Progression : visible uniquement quand la carte est
+                     étendue, donc pour « enregistre » et « reconnexion ». -->
+                <ProgressBar Grid.Row="1"
+                             Height="6" Margin="18,0,14,12"
+                             VerticalAlignment="Center"
+                             Minimum="0" Maximum="100"
+                             Value="{Binding Progress}"
+                             IsIndeterminate="{Binding Indeterminate}"
+                             Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
+                             Background="{DynamicResource Brush.Input}"
+                             Foreground="{DynamicResource Brush.Accent}"
+                             BorderThickness="0" />
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+</ResourceDictionary>

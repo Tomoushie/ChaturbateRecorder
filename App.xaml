@@ -14,6 +14,7 @@
                 <ResourceDictionary Source="Themes/Controls.xaml" />
                 <ResourceDictionary Source="Themes/Icons.xaml" />
                 <ResourceDictionary Source="Themes/SideBar.xaml" />
+                <ResourceDictionary Source="Themes/RoomCard.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!--
@@ -37,6 +38,7 @@
             <converters:StatusToVisibilityConverter x:Key="StatusToVisibilityConverter" />
             <converters:FileSizeConverter x:Key="FileSizeConverter" />
             <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
+            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
 
         </ResourceDictionary>
     </Application.Resources>

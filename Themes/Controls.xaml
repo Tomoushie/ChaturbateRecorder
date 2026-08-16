@@ -150,8 +150,20 @@
         <Setter Property="Background" Value="{DynamicResource Brush.Bg}"/>
         <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
     </Style>
-    <!-- Sans ce style implicite, tout TextBlock non stylise resterait NOIR en theme sombre — invisible sur le fond. -->
-    <Style TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
-    </Style>
+    <!--
+      IL N'Y A VOLONTAIREMENT PAS DE STYLE IMPLICITE SUR TextBlock, et le
+      retirer était un CORRECTIF, pas un allègement.
+
+      Il en existait un, posé pour que « tout TextBlock non stylisé ne reste
+      pas noir en thème sombre ». Le raisonnement était faux : `Foreground` est
+      une propriété HÉRITÉE, et le style de `Window` ci-dessus la pose déjà
+      pour tout l'arbre. En revanche un Setter explicite BAT l'héritage — donc
+      ce style volait sa couleur à tout texte placé dans un conteneur qui en
+      impose une autre.
+
+      Mesuré au pixel sur le libellé « Retirer » d'un bouton Danger : (26,26,26)
+      en thème clair et (232,232,232) en sombre, c'est-à-dire `Brush.Fg` dans
+      les deux cas — au lieu du rouge du rôle. Tous les boutons Primary et
+      Danger étaient touchés, et rien ne le signalait.
+    -->
 </ResourceDictionary>

@@ -1,0 +1,53 @@
+<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Zone d'ajout. Le champ d'URL est en haut parce que c'est là que se
+             pose la question « qu'est-ce que je peux coller ici ? » — les
+             pictogrammes de plateforme prises en charge lui répondent juste
+             à côté (103.0). -->
+        <Border Grid.Row="0" Style="{StaticResource Surface.Card}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0"
+                         Style="{StaticResource Surface.Input}"
+                         VerticalAlignment="Center"
+                         Text="{Binding NewRoomUrl, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Style="{StaticResource Button.Primary}"
+                        Content="Ajouter"
+                        Command="{Binding AjouterCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Le motif de refus vient du bac à sable d'URL, et il est AFFICHÉ tel
+             quel : « URL invalide » sans dire pourquoi laisse coller la même
+             adresse trois fois de suite. -->
+        <TextBlock Grid.Row="1"
+                   Margin="12,8,0,0"
+                   Text="{Binding AddError}"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource Brush.Danger}"
+                   Visibility="{Binding AddError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Rooms}"
+                          ItemTemplate="{StaticResource RoomCard.Template}" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>

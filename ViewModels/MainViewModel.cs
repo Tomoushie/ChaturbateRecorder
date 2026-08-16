@@ -23,6 +23,14 @@ namespace ChaturbateRecorderApp.ViewModels
 
         [ObservableProperty] private NavSection? _selectedSection;
 
+        /// <summary>
+        /// Modèle de la section « Enregistrer ». Construit une seule fois et
+        /// gardé : le reconstruire à chaque navigation relirait le fichier des
+        /// salons et perdrait ce que l'utilisateur vient de taper dans le
+        /// champ d'URL en changeant d'onglet.
+        /// </summary>
+        public StreamsViewModel Streams { get; } = new();
+
         public MainViewModel()
         {
             RefreshLabels();

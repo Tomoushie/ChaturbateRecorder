@@ -4,7 +4,28 @@
         Title="Chaturbate Recorder"
         Width="896" Height="720"
         MinWidth="500" MinHeight="300"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        xmlns:vues="clr-namespace:ChaturbateRecorderApp.Views">
+
+    <Window.Resources>
+        <DataTemplate x:Key="Section.Streams">
+            <vues:StreamsView DataContext="{Binding Streams}" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="Section.APorter">
+            <Border Margin="16" Style="{StaticResource Surface.Card}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Style="{StaticResource Text.Body}"
+                               FontSize="20" FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Text="{Binding SelectedSection.Label}" />
+                    <TextBlock Style="{StaticResource Text.Caption}"
+                               Margin="0,8,0,0" HorizontalAlignment="Center"
+                               Text="{Binding SelectedSection.Key, StringFormat='section « {0} » — vue à porter'}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
 
     <!--
       896 = 196 (barre) + 700 (contenu), et 720 de haut : ce sont les mesures
@@ -24,21 +45,21 @@
                  SelectedItem="{Binding SelectedSection, Mode=TwoWay}" />
 
         <!--
-          ZONE DE CONTENU — provisoire. Les quatre vues (Enregistrer,
-          Historique, Réglages, Soutenir) sont la tranche suivante ; en
-          attendant, l'écran affiche quelle section est active, ce qui suffit à
-          éprouver la navigation, le thème et la bascule de langue.
+          ZONE DE CONTENU. Seule « Enregistrer » est portée ; les trois autres
+          affichent encore leur carton. Le contenu est choisi par la CLÉ de la
+          section et non par son libellé, qui change avec la langue.
         -->
-        <Border Grid.Column="1" Margin="16" Style="{StaticResource Surface.Card}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Style="{StaticResource Text.Body}"
-                           FontSize="20" FontWeight="SemiBold"
-                           HorizontalAlignment="Center"
-                           Text="{Binding SelectedSection.Label}" />
-                <TextBlock Style="{StaticResource Text.Caption}"
-                           Margin="0,8,0,0" HorizontalAlignment="Center"
-                           Text="{Binding SelectedSection.Key, StringFormat='section « {0} » — vue à porter'}" />
-            </StackPanel>
-        </Border>
+        <ContentControl Grid.Column="1" Content="{Binding}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate" Value="{StaticResource Section.APorter}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="streams">
+                            <Setter Property="ContentTemplate" Value="{StaticResource Section.Streams}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
     </Grid>
 </Window>

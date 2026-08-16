@@ -71,6 +71,48 @@
         </Viewbox>
     </ControlTemplate>
 
+    <!-- Twitch : l'écran de discussion et ses deux pupilles. -->
+    <ControlTemplate x:Key="Icon.Twitch">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Path Data="M 5,3 H 21 V 15 L 16.5,19.5 H 12.5 L 9,23 V 19.5 H 5 Z"
+                      StrokeThickness="1.8" StrokeLineJoin="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Rectangle Canvas.Left="11" Canvas.Top="7.5" Width="1.8" Height="6"
+                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Rectangle Canvas.Left="15.5" Canvas.Top="7.5" Width="1.8" Height="6"
+                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+    <!-- YouTube : l'écran arrondi et sa flèche de lecture. -->
+    <ControlTemplate x:Key="Icon.YouTube">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Rectangle Canvas.Left="2.5" Canvas.Top="5.5" Width="19" Height="13"
+                           RadiusX="3.5" RadiusY="3.5" StrokeThickness="1.8"
+                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Path Data="M 10,9.5 L 16,12 L 10,14.5 Z"
+                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
+    <!-- TikTok : la note de musique. -->
+    <ControlTemplate x:Key="Icon.TikTok">
+        <Viewbox Stretch="Uniform">
+            <Canvas Width="24" Height="24">
+                <Path Data="M 14,3 V 13.5 A 3.5,3.5 0 1 1 11.5,10.14"
+                      StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+                <Path Data="M 14,3 C 14.6,5.6 16.4,7.2 19,7.5"
+                      StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}" />
+            </Canvas>
+        </Viewbox>
+    </ControlTemplate>
+
     <!-- Cœur plein (80.0) : deux arcs symétriques fermés par une pointe en bas,
          dessinés à la courbe et non avec le caractère ❤ — le rendu reste net à
          toute taille et suit la couleur du thème. -->

@@ -1,0 +1,84 @@
+using System;
+using CommunityToolkit.Mvvm.ComponentModel;
+using ChaturbateRecorderApp.Services;
+using ChaturbateRecorderApp.UI;
+
+namespace ChaturbateRecorderApp.ViewModels
+{
+    public partial class RoomCardViewModel : ObservableObject
+    {
+        private readonly RoomEntry _entree;
+        private RoomRowState _state = RoomRowState.Idle;
+        private bool _autoRecord;
+
+        public RoomCardViewModel(RoomEntry entree)
+        {
+            _entree = entree;
+            Url = entree.Url;
+            AutoRecord = entree.AutoRecord;
+            RoomName = entree.Url;
+            _state = RoomRowState.Idle;
+            ThemeManager.Applied += OnThemeApplied;
+        }
+
+        public string Url { get; }
+
+        [ObservableProperty]
+        private string _roomName;
+
+        [ObservableProperty]
+        private string _platformIconKey;
+
+        [ObservableProperty]
+        private string _detail;
+
+        [ObservableProperty]
+        private string _stateLabel;
+
+        [ObservableProperty]
+        private int _progress;
+
+        [ObservableProperty]
+        private bool _indeterminate;
+
+        public RoomRowState State
+        {
+            get => _state;
+            set
+            {
+                if (SetProperty(ref _state, value))
+                {
+                    OnPropertyChanged(nameof(StateBrushKey));
+                    OnPropertyChanged(nameof(IsExpanded));
+                    OnPropertyChanged(nameof(CardHeight));
+                }
+            }
+        }
+
+        public string StateBrushKey => RoomCardVisuals.StateBrushKey(State);
+        public bool IsExpanded => RoomCardVisuals.IsExpanded(State);
+        public double CardHeight => RoomCardVisuals.HeightFor(State);
+
+        public bool AutoRecord
+        {
+            get => _autoRecord;
+            set
+            {
+                if (SetProperty(ref _autoRecord, value))
+                {
+                    _entree.AutoRecord = value;
+                }
+            }
+        }
+
+        public void Detach()
+        {
+            ThemeManager.Applied -= OnThemeApplied;
+        }
+
+        private void OnThemeApplied()
+        {
+            OnPropertyChanged(nameof(StateBrushKey));
+        }
+    }
+}
