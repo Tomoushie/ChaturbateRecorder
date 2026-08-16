@@ -104,6 +104,24 @@
                 </StackPanel>
             </Border>
 
+            <!-- Les boutons d'outillage vivent dans les Reglages depuis 97.0 :
+                 ils occupaient trois rangees en permanence dans la barre du
+                 haut pour des actions declenchees une fois par mois. -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Outils" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Style="{StaticResource Button.Secondary}"
+                                Content="Diagnostic..."
+                                Click="Diagnostic_Click" />
+                    </StackPanel>
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="Versions des binaires, empreintes SHA-256, droits des dossiers et joignabilite du reseau. C'est ce qu'il faut regarder quand une capture echoue." />
+                </StackPanel>
+            </Border>
+
             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                 <Button Style="{StaticResource Button.Primary}"
                         Content="Enregistrer"
