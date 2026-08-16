@@ -108,7 +108,16 @@ namespace ChaturbateRecorderApp.ViewModels
         private readonly MonitorService _surveillance;
 
         /// <summary>Une duree proposee au demarrage d'un enregistrement.</summary>
-        public sealed record OptionDuree(string Libelle, int Minutes);
+        public sealed record OptionDuree(string Libelle, int Minutes)
+        {
+            /// <summary>
+            /// Le ToString() genere d'un record liste tous ses membres — un
+            /// format de DEBOGAGE, pas d'affichage. Sans cette redefinition la
+            /// liste deroulante montrait « OptionDuree { Libelle = Illimite,
+            /// Minutes = 0 } », defaut vu a la capture et invisible autrement.
+            /// </summary>
+            public override string ToString() => Libelle;
+        }
 
         /// <summary>
         /// Les sept durees du WinForms, reprises telles quelles depuis
