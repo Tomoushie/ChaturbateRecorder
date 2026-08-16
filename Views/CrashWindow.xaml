@@ -1,0 +1,70 @@
+<Window x:Class="ChaturbateRecorderApp.Views.CrashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Erreur inattendue"
+        Width="620" Height="420"
+        MinWidth="480" MinHeight="320"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+
+    <!--
+      LIBELLÉS EN FRANÇAIS DANS LE CODE, comme le `CrashReportForm` WinForms
+      qu'elle remplace : cette fenêtre est la SEULE de l'application à ne pas
+      passer par la table de chaînes. Défaut hérité, reproduit tel quel — un
+      portage n'est pas l'endroit pour changer un comportement. À traduire
+      quand le sujet reviendra, avec les autres textes.
+    -->
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Fg}"
+                   Text="L'application a rencontré une erreur inattendue." />
+
+        <TextBlock Grid.Row="1" Margin="0,8,0,0" TextWrapping="Wrap"
+                   Style="{StaticResource Text.Caption}"
+                   x:Name="LigneFichier" />
+
+        <!-- La pile d'appel est AFFICHÉE et non résumée : c'est elle qu'on
+             demande de recopier dans un signalement, et un résumé oblige à
+             rouvrir le fichier pour l'obtenir. -->
+        <Border Grid.Row="2" Margin="0,12,0,0"
+                Background="{DynamicResource Brush.Input}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1" CornerRadius="4">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto">
+                <TextBox x:Name="Details"
+                         IsReadOnly="True"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Foreground="{DynamicResource Brush.Fg}"
+                         FontFamily="Consolas"
+                         FontSize="11"
+                         Padding="8"
+                         TextWrapping="NoWrap" />
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Style="{StaticResource Button.Secondary}"
+                    Content="Ouvrir le dossier des logs"
+                    Click="OuvrirDossier_Click" />
+            <Button x:Name="BoutonRedemarrer" Margin="8,0,0,0"
+                    Style="{StaticResource Button.Primary}"
+                    Content="Redémarrer"
+                    Click="Redemarrer_Click" />
+            <Button Margin="8,0,0,0"
+                    Style="{StaticResource Button.Secondary}"
+                    Content="Fermer"
+                    Click="Fermer_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

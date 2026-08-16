@@ -75,6 +75,10 @@ namespace ChaturbateRecorderApp
 
             CrashReporter.Install();
 
+            // Sans ce branchement, CrashReporter ecrit le rapport et n'affiche
+            // RIEN : l'utilisateur voit l'application disparaitre.
+            Views.CrashWindow.Brancher();
+
             // Thème initial posé SANS animation : il n'y a rien à faire fondre
             // au premier affichage, et un fondu depuis les valeurs de départ du
             // dictionnaire se verrait à l'ouverture de la fenêtre.
