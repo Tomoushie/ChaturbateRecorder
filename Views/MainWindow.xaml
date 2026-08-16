@@ -16,6 +16,10 @@
             <vues:HistoryView DataContext="{Binding Historique}" />
         </DataTemplate>
 
+        <DataTemplate x:Key="Section.Settings">
+            <vues:SettingsView DataContext="{Binding Reglages}" />
+        </DataTemplate>
+
         <DataTemplate x:Key="Section.APorter">
             <Border Margin="16" Style="{StaticResource Surface.Card}">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -63,6 +67,9 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding SelectedSection.Key}" Value="history">
                             <Setter Property="ContentTemplate" Value="{StaticResource Section.History}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="settings">
+                            <Setter Property="ContentTemplate" Value="{StaticResource Section.Settings}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>

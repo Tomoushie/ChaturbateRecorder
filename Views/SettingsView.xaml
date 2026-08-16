@@ -1,0 +1,119 @@
+<UserControl x:Class="ChaturbateRecorderApp.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16">
+
+            <!-- SECTION : où atterrissent les fichiers -->
+            <Border Style="{StaticResource Surface.Card}">
+                <StackPanel>
+                    <TextBlock Text="Dossier de capture" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <!-- 8 px minimum entre un intitulé et son champ : à 2 px le
+                         cadre du champ passait sous l'intitulé (défaut de rendu
+                         relevé à la capture en 102.0). -->
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource Surface.Input}"
+                                 VerticalAlignment="Center"
+                                 Text="{Binding CaptureDir, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="Parcourir..."
+                                Command="{Binding ChoisirDossierCommand}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : apparence et langue -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Apparence" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <CheckBox Margin="0,8,0,0" Content="Thème sombre"
+                              Foreground="{DynamicResource Brush.Fg}"
+                              IsChecked="{Binding Sombre, Mode=TwoWay}" />
+                    <CheckBox Margin="0,8,0,0" Content="Français"
+                              Foreground="{DynamicResource Brush.Fg}"
+                              IsChecked="{Binding Francais, Mode=TwoWay}" />
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="Thème et langue s'appliquent immédiatement. Le thème n'est pas encore mémorisé d'un lancement à l'autre." />
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : surveillance et enregistrement -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Enregistrement" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+
+                    <CheckBox Margin="0,8,0,0" Content="Reconnexion automatique par défaut"
+                              Foreground="{DynamicResource Brush.Fg}"
+                              IsChecked="{Binding AutoReconnect, Mode=TwoWay}" />
+
+                    <CheckBox Margin="0,8,0,0" Content="Vérifier les mises à jour au démarrage"
+                              Foreground="{DynamicResource Brush.Fg}"
+                              IsChecked="{Binding AutoUpdateCheck, Mode=TwoWay}" />
+
+                    <CheckBox Margin="0,8,0,0" Content="Afficher le panneau des journaux"
+                              Foreground="{DynamicResource Brush.Fg}"
+                              IsChecked="{Binding ShowLogs, Mode=TwoWay}" />
+
+                    <TextBlock Margin="0,12,0,0" Text="Intervalle de surveillance (secondes)"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Width="120" HorizontalAlignment="Left"
+                             Style="{StaticResource Surface.Input}"
+                             Text="{Binding WatchIntervalSeconds, UpdateSourceTrigger=LostFocus}" />
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="Borné entre 30 et 3600 à l'enregistrement. Sonder plus souvent lance un processus par salon et par tour sans rendre l'information plus fraîche." />
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : réseau et authentification -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Réseau" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+
+                    <TextBlock Margin="0,8,0,0" Text="Fichier cookies.txt"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource Surface.Input}"
+                                 VerticalAlignment="Center"
+                                 Text="{Binding CookiesFilePath, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="Parcourir..."
+                                Command="{Binding ChoisirCookiesCommand}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,12,0,0" Text="Proxy"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Style="{StaticResource Surface.Input}"
+                             Text="{Binding ProxyUrl, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Style="{StaticResource Button.Primary}"
+                        Content="Enregistrer"
+                        Command="{Binding EnregistrerCommand}" />
+                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                           Style="{StaticResource Text.Caption}"
+                           Text="{Binding Message}"
+                           Visibility="{Binding Message, Converter={StaticResource StringToVisibilityConverter}}" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
