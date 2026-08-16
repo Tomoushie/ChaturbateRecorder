@@ -21,6 +21,7 @@ namespace ChaturbateRecorderApp.Views
         public MainWindow()
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             DataContext = new MainViewModel();
 
             // La fenetre principale EST la duree de vie de l'application ici :

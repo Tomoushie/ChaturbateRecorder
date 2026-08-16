@@ -10,6 +10,7 @@ namespace ChaturbateRecorderApp.Views
         public LegalWindow()
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
 
             // Le texte vient de la table de chaines (`legal.body`), traduit FR
             // et EN depuis 98.0. Le recopier dans le XAML en aurait fait une

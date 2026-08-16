@@ -10,6 +10,7 @@ namespace ChaturbateRecorderApp.Views
         public DiagnosticWindow()
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             Rapport.Text = DiagnosticReport.Statique(null);
             _ = ChargerAsync();
         }

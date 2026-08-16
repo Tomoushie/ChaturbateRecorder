@@ -11,6 +11,7 @@ namespace ChaturbateRecorderApp.Views
         public TutorialWindow()
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             var vm = new TutorialViewModel();
             vm.Termine += Close;
             DataContext = vm;

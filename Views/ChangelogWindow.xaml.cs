@@ -11,6 +11,7 @@ namespace ChaturbateRecorderApp.Views
         public ChangelogWindow(string? depuisVersion, string jusquaVersion)
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             DataContext = new ChangelogViewModel(depuisVersion, jusquaVersion);
         }
 

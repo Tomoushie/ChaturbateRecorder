@@ -23,6 +23,7 @@ namespace ChaturbateRecorderApp.Views
         public CrashWindow(Exception ex, string? fichierRapport, bool fatale)
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             _fichierRapport = fichierRapport;
 
             LigneFichier.Text = fichierRapport is null

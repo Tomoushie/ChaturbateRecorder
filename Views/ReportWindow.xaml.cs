@@ -12,6 +12,7 @@ namespace ChaturbateRecorderApp.Views
         public ReportWindow()
         {
             InitializeComponent();
+            ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             DataContext = new ReportViewModel();
         }
 

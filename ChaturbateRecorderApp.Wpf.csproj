@@ -43,6 +43,16 @@
 
     <Version>1.36.0</Version>
 
+    <!--
+      ICONE DE L'APPLICATION. Elle manquait : l'executable, la barre des taches
+      et la zone de notification tombaient tous sur l'icone generique de
+      Windows. `TrayIcon.ExtraireIcone` lit justement celle de l'exe.
+
+      Prise dans les Assets du depot WinForms et NON dupliquee : c'est la meme
+      identite visuelle, et deux fichiers finiraient par diverger.
+    -->
+    <ApplicationIcon>..\ChaturbateRecorderApp\Assets\app.ico</ApplicationIcon>
+
     <!-- Voir le csproj WinForms : permet à `dotnet restore` de résoudre les
          FrameworkReference de bureau depuis un runner non-Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

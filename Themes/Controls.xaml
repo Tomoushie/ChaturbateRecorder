@@ -123,6 +123,19 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!--
+      STYLE IMPLICITE, en plus de la cle : un TextBox pose sans style gardait le
+      fond BLANC de WPF, invisible au build et bien visible en theme sombre.
+      Les fenetres qui veulent un fond transparent le posent en valeur LOCALE,
+      qui l'emporte sur un Setter de style — elles ne sont donc pas touchees.
+    -->
+    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="Background" Value="{DynamicResource Brush.Input}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    </Style>
+
     <Style x:Key="Surface.Input" TargetType="TextBox">
         <Setter Property="Background" Value="{DynamicResource Brush.Input}"/>
         <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
