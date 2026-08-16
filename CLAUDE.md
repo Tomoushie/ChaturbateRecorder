@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 17 commits, dépôt local **sans distant**, `dotnet build`
+**État au 2026-08-16** — 19 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
 L'application navigue, ajoute un salon, l'enregistre, le surveille, le
 reconnecte, tient un historique et se configure.
@@ -54,8 +54,6 @@ Par ordre de valeur :
    que rien ne reçoit. WPF n'a pas de NotifyIcon : il faut trancher entre
    `<UseWindowsForms>true</UseWindowsForms>` et une dépendance NuGet, **décision
    du mainteneur**.
-3. La dette `Models/Settings.cs`.
-
 Les contrôles `Themed*` sont FAITS (`Themes/Natifs.xaml`).
 
 **Toute la logique d'enregistrement est portée** : démarrage, arrêt, sondage
@@ -71,11 +69,11 @@ l'application WinForms.
 **NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
 réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
 
-**Dettes** : `Models/Settings.cs` double `UserSettings` de
-`Services/SettingsManager.cs` EN RANGEANT AILLEURS (`%AppData%\StreamRecorderPro`
-au lieu de `%LocalAppData%\ChaturbateRecorder`) — recopié tel quel, il rendrait
-invisibles les réglages de tous les utilisateurs actuels. L'interrupteur
-« auto » est une `CheckBox` standard et non l'interrupteur 34×18 dessiné.
+**Dette restante** : l'interrupteur « auto » d'une carte est une `CheckBox`
+standard et non l'interrupteur 34×18 dessiné du WinForms. Le dossier `Models\`
+du squelette a été SUPPRIMÉ (quatre classes mortes, dont un `AppSettings` qui
+rangeait sous `%AppData%\StreamRecorderPro` au lieu de
+`%LocalAppData%\ChaturbateRecorder`).
 
 ## Pièges WPF payés ici, tous MESURÉS
 
