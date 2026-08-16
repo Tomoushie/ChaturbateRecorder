@@ -4,8 +4,10 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 5 commits, dépôt local sans distant, `dotnet build`
+**État au 2026-08-16** — 12 commits, dépôt local **sans distant**, `dotnet build`
 à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
+L'application navigue, ajoute un salon, l'enregistre, le surveille, le
+reconnecte, tient un historique et se configure.
 
 ## Architecture
 
@@ -23,9 +25,12 @@ Ce fichier-ci ne couvre que la migration.
 ## Fait
 
 Les 21 services (19 copiés à l'identique), `UI/Localization.cs`, le thème
-complet (`Themes/`, `UI/ThemeManager.cs`), la fenêtre principale, la barre de
-navigation, la carte de salon, la vue « Enregistrer », et démarrer/arrêter un
-enregistrement (`Services/RecordingCoordinator.cs`).
+complet (`Themes/`, `UI/ThemeManager.cs`), la fenêtre principale et sa barre de
+navigation, la carte de salon dans ses huit états, et **les quatre sections** :
+Enregistrer, Historique, Réglages, Soutenir.
+
+Côté logique : `RecordingCoordinator` (démarrage, arrêt, reconnexion, minuteur),
+`MonitorService` (sondage et déclenchement automatique), `HistoryService`.
 
 `SideBar` (209 l.), `IconManager` (136 l.) et la dépendance NuGet `Svg` ont
 disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
