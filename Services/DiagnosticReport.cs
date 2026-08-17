@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -18,25 +18,25 @@ namespace ChaturbateRecorderApp.Services
             var sb = new StringBuilder();
             sb.AppendLine($"Application : v{typeof(DiagnosticReport).Assembly.GetName().Version?.ToString(3)}");
             sb.AppendLine($".NET : {RuntimeInformation.FrameworkDescription}");
-            sb.AppendLine($"Systeme : {Environment.OSVersion} ({(Environment.Is64BitProcess ? "64" : "32")} bits)");
+            sb.AppendLine($"Système : {Environment.OSVersion} ({(Environment.Is64BitProcess ? "64" : "32")} bits)");
             sb.AppendLine();
 
-            sb.AppendLine("Integrite des binaires (hash SHA256)");
+            sb.AppendLine("Intégrité des binaires (empreinte SHA-256)");
             sb.AppendLine($"yt-dlp.exe : {DecrireEmpreinte("yt-dlp", AppConfig.YtDlpPath, AppConfig.YtDlpExpectedSha256)}");
             sb.AppendLine($"ffmpeg.exe : {DecrireEmpreinte("ffmpeg", AppConfig.FFmpegPath, AppConfig.FfmpegExpectedSha256)}");
 
             sb.AppendLine("Composant premium (Stream Recorder Pro)");
             sb.AppendLine(DecrirePremium(premium));
 
-            sb.AppendLine("Dossier d'execution");
-            sb.AppendLine($"Emplacement autorise : {(WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir) ? "oui" : "non")}");
+            sb.AppendLine("Dossier d'exécution");
+            sb.AppendLine($"Emplacement autorisé : {(WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir) ? "oui" : "non")}");
 
-            sb.AppendLine("ACL (droits d'ecriture elargis detectes ?)");
+            sb.AppendLine("ACL (droits d'écriture élargis détectés ?)");
             sb.AppendLine(DecrireAcl("AppDir", AppConfig.AppDir));
             sb.AppendLine(DecrireAcl("CaptureDir", AppConfig.CaptureDir));
             sb.AppendLine(DecrireAcl("LogDir", AppConfig.LogDir));
 
-            sb.AppendLine($"Proxy configure : {AppConfig.ProxyUrl ?? "aucun"}");
+            sb.AppendLine($"Proxy configuré : {(string.IsNullOrWhiteSpace(AppConfig.ProxyUrl) ? "aucun" : AppConfig.ProxyUrl)}");
 
             return sb.ToString();
         }
@@ -50,7 +50,7 @@ namespace ChaturbateRecorderApp.Services
             sb.AppendLine($"yt-dlp.exe : {await VersionBinaireAsync(AppConfig.YtDlpPath, "--version")}");
             sb.AppendLine($"ffmpeg.exe : {await VersionBinaireAsync(AppConfig.FFmpegPath, "-version")}");
 
-            sb.AppendLine("Reseau");
+            sb.AppendLine("Réseau");
             sb.AppendLine($"chaturbate.com : {(await JoignableAsync("https://chaturbate.com") ? "joignable" : "injoignable")}");
             sb.AppendLine($"https://api.github.com : {(await JoignableAsync("https://api.github.com") ? "joignable" : "injoignable")}");
 
@@ -71,7 +71,7 @@ namespace ChaturbateRecorderApp.Services
                         attendu = TrustedBinaryStore.GetTrustedHash(cle) ?? "";
 
                     if (string.IsNullOrEmpty(attendu))
-                        return $"non verifie ({hash.Substring(0, 8)}...)";
+                        return $"non vérifié ({hash.Substring(0, 8)}...)";
                     else if (string.Equals(hash, attendu, StringComparison.OrdinalIgnoreCase))
                         return $"conforme ({hash.Substring(0, 8)}...)";
                     else
@@ -93,26 +93,26 @@ namespace ChaturbateRecorderApp.Services
             {
                 var details = string.Empty;
                 if (AclValidator.TryFindBroadWriteAccess(chemin, out details))
-                    return $"{libelle} : ELARGIS — {details}";
+                    return $"{libelle} : ÉLARGIS — {details}";
                 else
                     return $"{libelle} : normaux";
             }
             catch (Exception ex)
             {
-                return $"{libelle} : non verifiable ({ex.Message})";
+                return $"{libelle} : non vérifiable ({ex.Message})";
             }
         }
 
         private static string DecrirePremium(PremiumBridge? premium)
         {
             if (premium == null)
-                return "Etat indisponible.";
+                return "État indisponible.";
             else if (!premium.IsLoaded)
-                return $"Non installe (normal) — {(premium.LicenceProblem.Length > 0 ? premium.LicenceProblem : "aucun StreamRecorderPro.dll a cote de l'application")}." ;
+                return $"Non installé (normal) — {(premium.LicenceProblem.Length > 0 ? premium.LicenceProblem : "aucun StreamRecorderPro.dll à côté de l'application")}." ;
             else if (premium.IsLicensed)
                 return $"Actif, v{premium.Version} — licence au nom de {premium.LicensedTo}.";
             else
-                return $"Installe (v{premium.Version}) mais INACTIF — {premium.LicenceProblem}.";
+                return $"Installé (v{premium.Version}) mais INACTIF — {premium.LicenceProblem}.";
         }
 
         private static async Task<string> VersionBinaireAsync(string chemin, string arguments)
@@ -142,7 +142,7 @@ namespace ChaturbateRecorderApp.Services
                     }
                 }
 
-                return "indeterminee";
+                return "indéterminée";
             }
         }
 

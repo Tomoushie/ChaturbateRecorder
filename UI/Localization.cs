@@ -154,11 +154,18 @@ namespace ChaturbateRecorderApp.UI
             ["report.intro"] = (
                 "Décris ce qui ne va pas, ou ce que tu aimerais voir. Aucun compte n'est nécessaire : le signalement est transmis pour toi.",
                 "Describe what went wrong, or what you would like to see. No account is needed: the report is submitted for you."),
-            ["report.kind"] = ("Type :", "Type:"),
+            // LES DEUX-POINTS TOMBENT, et le libelle raccourcit : ces quatre
+            // valeurs venaient du formulaire WinForms, ou l'intitule precede le
+            // champ SUR LA MEME LIGNE. Dans cette interface il est AU-DESSUS, et
+            // tous ses voisins s'ecrivent sans deux-points (« Dossier de
+            // capture », « Proxy », « Reseau »). En pointant sur ces cles le
+            // 17-08 j'ai fait entrer le style de l'ancienne interface dans la
+            // nouvelle — vu sur une capture du mainteneur.
+            ["report.kind"] = ("Type", "Type"),
             ["report.kind.bug"] = ("Un bug", "A bug"),
             ["report.kind.feature"] = ("Une idée", "An idea"),
             ["report.kind.feedback"] = ("Un retour", "Feedback"),
-            ["report.title"] = ("Résumé en une ligne :", "One-line summary:"),
+            ["report.title"] = ("Résumé", "Summary"),
             ["report.body"] = ("Description — que se passe-t-il, et à quel moment ?", "Description — what happens, and when?"),
             ["report.contextCaption"] = ("Ces informations partent aussi, et rien d'autre :", "This is also sent, and nothing else:"),
             ["report.context.ffmpegOn"] = ("ffmpeg présent", "ffmpeg present"),
@@ -171,7 +178,7 @@ namespace ChaturbateRecorderApp.UI
             ["report.noRelay"] = (
                 "L'envoi depuis l'application n'est pas disponible dans cette version. Le bouton ci-dessous ouvre la page GitHub du projet.",
                 "Sending from the application is not available in this build. The button below opens the project's GitHub page."),
-            ["report.send"] = ("Envoyer le signalement", "Send the report"),
+            ["report.send"] = ("Envoyer", "Send"),
             ["report.viaGitHub"] = ("Passer par GitHub", "Use GitHub instead"),
             ["report.sending"] = ("Envoi en cours…", "Sending…"),
             ["report.sent"] = ("Signalement envoyé. Merci.", "Report sent. Thank you."),
@@ -352,7 +359,7 @@ namespace ChaturbateRecorderApp.UI
                 "Chaturbate Recorder — update v{0} available"),
             // --- Favoris : deux causes distinctes, deux messages ---
             ["info.favoriteAlreadyPresent"] = (
-                "{0} est deja dans tes favoris.",
+                "{0} est déjà dans tes favoris.",
                 "{0} is already in your favorites."),
             ["info.favoriteInvalidUrl"] = (
                 "Cette URL n'est pas une adresse de salon valide.",
