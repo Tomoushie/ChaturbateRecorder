@@ -12,7 +12,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Primary.Fill}">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Primary.Fill}" BorderBrush="{DynamicResource Brush.Btn.Primary.Border}">
                         <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -46,7 +46,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Secondary.Fill}">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Secondary.Fill}" BorderBrush="{DynamicResource Brush.Btn.Secondary.Border}">
                         <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -80,7 +80,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Danger.Fill}">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Danger.Fill}" BorderBrush="{DynamicResource Brush.Btn.Danger.Border}">
                         <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -146,7 +146,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border CornerRadius="4" BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.Input}">
+                    <Border CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.Input}">
                         <ScrollViewer x:Name="PART_ContentHost"/>
                     </Border>
                     <ControlTemplate.Triggers>
