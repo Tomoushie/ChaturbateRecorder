@@ -92,19 +92,30 @@ namespace ChaturbateRecorderApp.Tests
 
         /// <summary>
         /// LE test de la reprise : rien dans le dossier de données, un fichier à
-        /// côté de l'exécutable — on lit l'ancien. C'est ce qui fait remonter la
-        /// liste de salons d'une installation antérieure au lieu d'accueillir
-        /// l'utilisateur avec un écran vide.
+        /// côté de l'exécutable — il est RECOPIÉ, et c'est la copie qu'on lit.
+        ///
+        /// Se contenter de lire l'ancien sur place laisserait la reprise
+        /// n'aboutir qu'au prochain ENREGISTREMENT, donc jamais pour quelqu'un
+        /// qui consulte sa liste sans la modifier — et le fichier resterait à la
+        /// merci de la mise à jour qui remplace le dossier de l'application.
+        /// C'est tout l'objet du changement.
         /// </summary>
         [Fact]
-        public void SansFichierNeufOnLitCeluiDeLAncienneEmplacement()
+        public void LAncienFichierEstRecopieAuNouvelEmplacement()
         {
             var nom = "test-reprise-" + Guid.NewGuid().ToString("N") + ".json";
             var ancien = Path.Combine(AppConfig.AppDir, nom);
             try
             {
-                File.WriteAllText(ancien, "[]");
-                Assert.Equal(ancien, AppConfig.DataFileToRead(nom));
+                File.WriteAllText(ancien, "[\"salon\"]");
+
+                var lu = AppConfig.DataFileToRead(nom);
+
+                Assert.Equal(Path.Combine(_dossierNeuf, nom), lu);
+                Assert.Equal("[\"salon\"]", File.ReadAllText(lu));
+                // L'ancien SURVIT : revenir a une version anterieure doit
+                // rendre ses donnees a l'utilisateur.
+                Assert.True(File.Exists(ancien));
             }
             finally
             {

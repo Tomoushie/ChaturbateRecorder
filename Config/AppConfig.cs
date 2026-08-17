@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace ChaturbateRecorderApp.Config
@@ -121,7 +121,27 @@ namespace ChaturbateRecorderApp.Config
             if (File.Exists(neuf)) return neuf;
 
             var ancien = Path.Combine(AppDir, nom);
-            return File.Exists(ancien) ? ancien : neuf;
+            if (!File.Exists(ancien)) return neuf;
+
+            // RECOPIER, et pas seulement lire ailleurs. Sans cette copie la
+            // reprise n'atteindrait le nouvel emplacement qu'au prochain
+            // ENREGISTREMENT — donc jamais pour quelqu'un qui se contente de
+            // consulter sa liste, et le fichier resterait a la merci de la mise
+            // a jour qui remplace le dossier de l'application.
+            try
+            {
+                Directory.CreateDirectory(DataDir);
+                File.Copy(ancien, neuf, overwrite: false);
+                return neuf;
+            }
+            catch
+            {
+                // Echec sans gravite : on lit l'ancien et la reprise se rejoue
+                // au prochain demarrage. PAS DE TRACE ICI : `Logger` vit dans
+                // `Services` et depend lui-meme d'`AppConfig.LogDir` —
+                // journaliser d'ici inverserait la couche basse.
+                return ancien;
+            }
         }
 
         // Ancien fichier, LU seulement (RoomStore le migre vers rooms.json).
