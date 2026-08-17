@@ -194,6 +194,122 @@ namespace ChaturbateRecorderApp.Tests
         }
 
         /// <summary>
+        /// LE TEXTE DES DIALOGUES EST-IL LISIBLE ? Mesuré, pas jugé à l'œil.
+        ///
+        /// Sur les captures en thème SOMBRE du mainteneur, les libellés des
+        /// trois dialogues paraissaient délavés là où ceux des Réglages sont
+        /// francs. Leur XAML demande pourtant `Brush.Fg` — donc soit l'œil se
+        /// trompe, soit quelque chose atténue le rendu. Un relevé de ressource
+        /// ne peut pas trancher : il faut le PIXEL RÉELLEMENT DESSINÉ.
+        ///
+        /// Le seuil est celui que ce projet s'est déjà donné : WCAG 4,5, celui
+        /// qui avait recalé deux couleurs du thème clair à 3,97 et 4,17.
+        ///
+        /// Une `Window` non affichée ne rend RIEN : on lui prend son `Content`,
+        /// on le détache, et on le dessine dans un `Border` autonome.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Themes))]
+        public void LeTexteDesDialoguesEstLisible(AppTheme theme)
+        {
+            SurFilStandard(() =>
+            {
+                var plaintes = new List<string>();
+
+                foreach (var (nom, fabrique) in new (string, Func<Window>)[]
+                {
+                    ("signalement", () => new ReportWindow()),
+                    ("legalite", () => new LegalWindow()),
+                    ("guide", () => new TutorialWindow()),
+                    ("diagnostic", () => new DiagnosticWindow()),
+                })
+                {
+                    // LA FENETRE SE CONSTRUIT DANS LA FABRIQUE, donc APRES que
+                    // `Rendre` a pose les ressources. La construire avant fait
+                    // lever son XAML sur « Impossible de trouver la ressource
+                    // Text.Caption » : rien ne resout un `StaticResource` tant
+                    // que le dictionnaire d'application n'existe pas.
+                    FrameworkElement? contenu = null;
+                    var (_, image, bitmap) = Rendre(theme, () =>
+                    {
+                        var fenetre = fabrique();
+                        contenu = (FrameworkElement)fenetre.Content;
+                        // Detache : une Window non affichee ne rend RIEN.
+                        fenetre.Content = null;
+                        return contenu;
+                    });
+                    Enregistrer(bitmap, $"{nom}-{theme}".ToLowerInvariant());
+
+                    foreach (var bloc in Descendants<System.Windows.Controls.TextBlock>(contenu!)
+                                 .Where(t => t.Visibility == Visibility.Visible
+                                             && !string.IsNullOrWhiteSpace(t.Text)
+                                             && t.Foreground is SolidColorBrush))
+                    {
+                        // LE FOND SUR LEQUEL LE TEXTE REPOSE, et non celui de la
+                        // fenetre : la premiere version de ce test comparait tout
+                        // a `Brush.Bg` et accusait « Envoyer » et « Fermer » d'un
+                        // contraste de 1,07 — ces libelles sont poses sur le bleu
+                        // de LEUR BOUTON. Une mesure prise contre le mauvais fond
+                        // ne vaut pas mieux qu'un coup d'oeil.
+                        var fond = FondEffectif(bloc);
+                        if (fond is not { } surface) continue;
+
+                        var couleur = ((SolidColorBrush)bloc.Foreground).Color;
+                        var contraste = Contraste(couleur, surface);
+                        if (contraste < 4.5)
+                            plaintes.Add($"{nom} : {contraste:F2} pour « {Court(bloc.Text)} »");
+                    }
+                }
+
+                Assert.True(plaintes.Count == 0,
+                    $"{theme} — texte sous le seuil WCAG 4,5 :\n  " +
+                    string.Join("\n  ", plaintes.Distinct()));
+            });
+        }
+
+        /// <summary>
+        /// Remonte l'arbre visuel jusqu'au premier ancêtre qui peint réellement
+        /// un fond. Rend null si aucun n'en peint — le texte est alors sur le
+        /// fond de la fenêtre, déjà couvert par les tests de palette.
+        ///
+        /// Un `Border` de gabarit de bouton compte : c'est bien lui que
+        /// l'utilisateur voit derrière le libellé.
+        /// </summary>
+        private static Color? FondEffectif(DependencyObject depart)
+        {
+            for (var n = VisualTreeHelper.GetParent(depart); n is not null;
+                 n = VisualTreeHelper.GetParent(n))
+            {
+                var pinceau = n switch
+                {
+                    Border b => b.Background,
+                    System.Windows.Controls.Panel p => p.Background,
+                    System.Windows.Controls.Control c => c.Background,
+                    _ => null,
+                };
+                if (pinceau is SolidColorBrush s && s.Color.A > 0) return s.Color;
+            }
+            return null;
+        }
+
+        private static string Court(string t) =>
+            t.Length <= 40 ? t.Replace("\n", " ") : t.Substring(0, 40).Replace("\n", " ") + "...";
+
+        /// <summary>Contraste WCAG 2.x, même formule que ThemeWpfTests.</summary>
+        private static double Contraste(Color a, Color b)
+        {
+            static double Canal(int v)
+            {
+                var c = v / 255.0;
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+            static double Lum(Color c) => 0.2126 * Canal(c.R) + 0.7152 * Canal(c.G) + 0.0722 * Canal(c.B);
+            var (l1, l2) = (Lum(a), Lum(b));
+            if (l1 < l2) (l1, l2) = (l2, l1);
+            return (l1 + 0.05) / (l2 + 0.05);
+        }
+
+        /// <summary>
         /// Les deux thèmes doivent donner des images DIFFÉRENTES. C'est le
         /// contrôle qui manquait quand un relevé de ressources annonçait le
         /// thème appliqué alors que la moitié de l'écran ne bougeait pas.
