@@ -100,7 +100,12 @@ namespace ChaturbateRecorderApp.Services
         /// en surveillance automatique parce qu'on a fusionné deux fichiers
         /// serait un changement de comportement que personne n'a demandé.
         /// </summary>
-        public static List<RoomEntry> Merge(IEnumerable<string>? favoris, IEnumerable<string>? surveilles, DateTime nowUtc)
+        // `IEnumerable<string?>` et non `IEnumerable<string>` : les deux listes
+        // viennent de fichiers JSON, qui rendent bel et bien des elements null.
+        // `Ajouter` les ecarte deja — c'est la SIGNATURE qui mentait, et elle
+        // obligeait les appelants a taire un CS8620. Elargissement sans risque :
+        // `IEnumerable<T>` est covariant.
+        public static List<RoomEntry> Merge(IEnumerable<string?>? favoris, IEnumerable<string?>? surveilles, DateTime nowUtc)
         {
             var vus = new Dictionary<string, RoomEntry>(StringComparer.OrdinalIgnoreCase);
 

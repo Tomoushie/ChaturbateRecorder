@@ -84,7 +84,7 @@ namespace ChaturbateRecorderApp.ViewModels
                 else
                 {
                     Message = Localization.Get("error.invalidFolderSandbox");
-                    Logger.Log(motif, LogLevel.WARN);
+                    Logger.Log(motif ?? "dossier refuse, motif non precise", LogLevel.WARN);
                 }
             }
         }
@@ -106,7 +106,7 @@ namespace ChaturbateRecorderApp.ViewModels
                 else
                 {
                     Message = Localization.Get("error.invalidFileSandbox");
-                    Logger.Log(motif, LogLevel.WARN);
+                    Logger.Log(motif ?? "fichier refuse, motif non precise", LogLevel.WARN);
                 }
             }
         }

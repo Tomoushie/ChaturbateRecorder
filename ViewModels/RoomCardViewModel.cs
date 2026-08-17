@@ -26,14 +26,18 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private string _roomName;
 
+        // Initialises ici et pas dans le constructeur : la carte est construite
+        // AVANT que la plateforme soit resolue et que l'etat soit libelle. Sans
+        // valeur, ces trois champs valent null a la premiere liaison, ce que le
+        // compilateur signalait en CS8618.
         [ObservableProperty]
-        private string _platformIconKey;
+        private string _platformIconKey = "";
 
         [ObservableProperty]
-        private string _detail;
+        private string _detail = "";
 
         [ObservableProperty]
-        private string _stateLabel;
+        private string _stateLabel = "";
 
         [ObservableProperty]
         private int _progress;

@@ -4,10 +4,16 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-16** — 26 commits, dépôt local **sans distant**, `dotnet build`
-à 0 erreur / 0 avertissement. Le WinForms n'est pas touché et compile toujours.
-L'application navigue, ajoute un salon, l'enregistre, le surveille, le
-reconnecte, tient un historique et se configure.
+**État au 2026-08-17** — 33 commits, dépôt local **sans distant**, `dotnet build`
+à 0 erreur / 0 avertissement, **295 tests**. Le WinForms n'est pas touché et
+compile toujours. L'application navigue, ajoute un salon, l'enregistre, le
+surveille, le reconnecte, tient un historique et se configure.
+
+**MESURER LES AVERTISSEMENTS SUR `-t:Rebuild`, JAMAIS SUR UN BUILD
+INCRÉMENTAL.** Un projet à jour ne recompile rien et ne réémet donc AUCUN
+avertissement : `dotnet build` rend « 0 avertissement » sans avoir rien
+regardé. Six vrais avertissements ont vécu une session entière derrière ce
+faux vert, et ils avaient été ANNONCÉS comme absents.
 
 ## Architecture
 
@@ -37,7 +43,22 @@ disparu : un `ListBox` fait le test de survol, WPF dessine les tracés.
 
 ## Reste
 
-**LANCER L'APPLICATION** — deux variantes publiées :
+**LA MIGRATION EST COMPLÈTE.** Quatre sections, six dialogues, panneau des
+journaux, zone de notification, thème mémorisé, icône. **Aucune tranche de
+portage n'est identifiée** : `MainForm.cs` n'a plus rien à céder. Ne pas
+rouvrir ce chantier sans une raison neuve.
+
+Ce qui reste ne peut PAS être fait depuis l'environnement d'agent :
+
+1. **QU'UNE CAPTURE DÉMARRE VRAIMENT, sur un direct réel.** C'est le seul
+   inconnu depuis le premier commit. Ce qui est désormais éprouvé sans direct :
+   la ligne de commande yt-dlp, options par options, **et le fait que le yt-dlp
+   LIVRÉ l'accepte** (`Tests/DownloadArgumentsTests.cs` lance le vrai binaire
+   contre un hôte en `.invalid` et distingue le refus d'option — code 2 — de
+   l'échec réseau). Reste le réseau, le flux, le remux, le fichier.
+2. **La barre de titre sombre et l'icône** — un coup d'œil du mainteneur.
+
+**Deux variantes publiées** :
 - `..\Apercu-WPF\` (250 Mo) exige le **.NET 10 Desktop Runtime** ;
 - `..\Apercu-WPF-autonome\` (422 Mo) n'exige RIEN (`--self-contained true`).
 Régénérer par `dotnet publish -c Release -r win-x64 --self-contained false|true
@@ -46,23 +67,8 @@ depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
 `settings.json` sont PARTAGÉS avec l'app WinForms** : si celle-ci tourne, la
 WPF sort en silence.
 
-Par ordre de valeur :
-1. **Les 4 dialogues restants** (~1 500 l.) : Nouveautés, Remerciements,
-   Signalement, Légalité, Guide de démarrage, et le panneau des journaux.
-   Faits : Nouveautés, Rapport de plantage, Diagnostic. La fenêtre Paramètres
-   est devenue une SECTION et n'a plus lieu d'être.
-2. **Icône de zone de notification** : le WinForms se MASQUE dans la zone de
-   notification au lieu de se fermer (19.0), et `ShowWindowEventName` est
-   déclaré mais personne ne l'écoute — la seconde instance signale un évènement
-   que rien ne reçoit. WPF n'a pas de NotifyIcon : il faut trancher entre
-   `<UseWindowsForms>true</UseWindowsForms>` et une dépendance NuGet, **décision
-   du mainteneur**.
-Les contrôles `Themed*` sont FAITS (`Themes/Natifs.xaml`).
-
-**Toute la logique d'enregistrement est portée** : démarrage, arrêt, sondage
-d'état, déclenchement automatique, reconnexion et minuteur avec son sélecteur
-de durée. **Les QUATRE sections sont faites** — Enregistrer, Historique,
-Réglages, Soutenir. `MainForm.cs` n'a plus rien à céder.
+**Le dépôt n'a AUCUN distant** — trente-trois commits à un seul endroit sur un
+seul disque. C'est le risque restant, et il n'est pas technique.
 
 **LES DEUX COPIES DE `SettingsManager.cs` DIVERGENT désormais**, tranché avec le
 mainteneur le 2026-08-16 : la version WPF a un champ `Theme` que la WinForms
@@ -74,9 +80,6 @@ qu'elle ne connaît pas.
 `Brush`, `UserControl` et `Clipboard` deviennent ambigus. Ils sont tranchés par
 des **alias globaux dans le csproj** — une seule fois, pas un alias par fichier
 que le onzième fichier écrit aurait oublié.
-
-**NON ÉPROUVÉ** : qu'un enregistrement démarre vraiment. Cela demande un direct
-réel. Compilation, rendu et logique de la table sont vérifiés, pas la chaîne.
 
 **Plus de dette ouverte.** L'interrupteur « auto » est désormais le vrai
 interrupteur 34×18. Le dossier `Models\`

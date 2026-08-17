@@ -88,8 +88,13 @@ namespace ChaturbateRecorderApp.Services
         /// Ligne de commande yt-dlp. Isolée pour être lisible d'un bloc — c'est
         /// la seule partie de cette classe qui décide de ce qui est réellement
         /// enregistré, et chaque option y répond à un incident précis.
+        ///
+        /// `internal` et non `private` pour que les tests l'atteignent
+        /// (<c>InternalsVisibleTo</c>, voir <c>Properties/AssemblyInfo.cs</c>) :
+        /// c'est le seul endroit de la chaîne de capture qui soit vérifiable
+        /// sans direct réel, et le reste ne l'est pas du tout.
         /// </summary>
-        private static List<string> BuildArguments(string ffmpegPath, string targetUrl, string outputTemplate,
+        internal static List<string> BuildArguments(string ffmpegPath, string targetUrl, string outputTemplate,
             string? formatSelector, string outputContainer, string? cookiesFilePath, string? proxyUrl)
         {
             var arguments = new List<string>

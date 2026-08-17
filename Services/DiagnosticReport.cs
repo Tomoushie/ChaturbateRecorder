@@ -68,7 +68,7 @@ namespace ChaturbateRecorderApp.Services
                 {
                     var hash = Convert.ToHexString(SHA256.HashData(stream));
                     if (string.IsNullOrEmpty(attendu))
-                        attendu = TrustedBinaryStore.GetTrustedHash(cle);
+                        attendu = TrustedBinaryStore.GetTrustedHash(cle) ?? "";
 
                     if (string.IsNullOrEmpty(attendu))
                         return $"non verifie ({hash.Substring(0, 8)}...)";
