@@ -44,12 +44,24 @@ namespace ChaturbateRecorderApp.ViewModels
         /// <summary>Modele de la section « Soutenir ».</summary>
         public SupportViewModel Soutien { get; } = new();
 
-        public void Dispose() => Streams.Dispose();
+        public void Dispose()
+        {
+            Localization.LanguageChanged -= RefreshLabels;
+            Streams.Dispose();
+        }
 
         public MainViewModel()
         {
             RefreshLabels();
             SelectedSection = Sections[0];
+
+            // La barre de navigation ne passe PAS par `{ui:Str}` : ses libelles
+            // vivent dans un objet de section, que la liste lie par `Label`.
+            // Elle a donc besoin de son propre reveil — sans lui, `RefreshLabels`
+            // n'etait appelee qu'ici, au demarrage, et les quatre sections
+            // restaient dans la langue du lancement pendant que tout le reste de
+            // l'ecran changeait.
+            Localization.LanguageChanged += RefreshLabels;
         }
 
         public void RefreshLabels()

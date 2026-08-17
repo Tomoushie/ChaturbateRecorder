@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ChaturbateRecorderApp.UI
 {
@@ -510,6 +511,112 @@ namespace ChaturbateRecorderApp.UI
             ["tutorial.security.body"] = (
                 "Avant chaque enregistrement, l'appli vérifie le hash de yt-dlp.exe et ffmpeg.exe, et surveille l'emplacement d'exécution du programme.\n\nLe bouton \"Rechercher une mise à jour\" en haut de la fenêtre vérifie automatiquement les nouvelles versions publiées sur GitHub.",
                 "Before each recording, the app verifies the hash of yt-dlp.exe and ffmpeg.exe, and checks where the program is running from.\n\nThe \"Check for updates\" button at the top of the window looks for new versions published on GitHub."),
+
+            // ---------------------------------------------------------------
+            // 2026-08-17 — libellés des vues WPF.
+            //
+            // Ils étaient écrits EN DUR dans neuf fichiers XAML : ils ne
+            // suivaient donc pas la case « Français », alors que les Réglages
+            // promettent que la langue s'applique immédiatement. Seule la barre
+            // de navigation changeait, parce qu'elle seule passait par ici.
+            //
+            // Quatre d'entre eux étaient AUSSI privés de leurs accents
+            // (« Legalite... », « Signaler un probleme... », « Guide de
+            // demarrage... », et la légende des outils) — visible sur une
+            // capture d'écran envoyée par le mainteneur.
+            // ---------------------------------------------------------------
+
+            ["crash.intro"] = (
+                "L'application a rencontré une erreur inattendue.",
+                "The application ran into an unexpected error."),
+            ["crash.openLogs"] = ("Ouvrir le dossier des logs", "Open the log folder"),
+            ["crash.restart"] = ("Redémarrer", "Restart"),
+
+            ["button.copy"] = ("Copier", "Copy"),
+
+            ["history.recentCount"] = (
+                "Les 50 enregistrements les plus récents.",
+                "The 50 most recent recordings."),
+            ["history.loading"] = (
+                "Lecture du dossier de capture...",
+                "Reading the capture folder..."),
+            ["history.empty"] = (
+                "Aucun enregistrement dans le dossier de capture.",
+                "No recordings in the capture folder."),
+            ["history.open"] = ("Ouvrir", "Open"),
+            ["history.folder"] = ("Dossier", "Folder"),
+
+            ["legal.disclaimer"] = (
+                "Texte informatif, il ne constitue pas un avis juridique.",
+                "Informational text; it is not legal advice."),
+
+            ["report.intro"] = (
+                "Décris ce qui s'est passé. Le rapport est transmis au dépôt du projet.",
+                "Describe what happened. The report is sent to the project repository."),
+            ["report.context"] = ("Informations techniques jointes", "Technical details attached"),
+            ["report.publicWarning"] = (
+                "Ce rapport sera publié sur une page publique, avec tout ce qui est affiché ci-dessus. N'y mets aucune information personnelle.",
+                "This report will be published on a public page, together with everything shown above. Do not put any personal information in it."),
+            ["report.sent"] = ("Rapport envoyé.", "Report sent."),
+            ["report.sentDetail"] = (
+                "Le suivi se fait sur la page de l'issue. Aucune adresse de contact n'a été transmise.",
+                "Follow-up happens on the issue page. No contact address was sent."),
+            ["report.openIssue"] = ("Ouvrir l'issue", "Open the issue"),
+
+            ["settings.captureFolder"] = ("Dossier de capture", "Capture folder"),
+            ["settings.appearance"] = ("Apparence", "Appearance"),
+            ["settings.darkTheme"] = ("Thème sombre", "Dark theme"),
+            // La case porte le nom de la langue qu'elle ACTIVE, dans cette
+            // langue : « Français » coché en anglais dirait au lecteur anglais
+            // ce qu'il obtiendrait en cochant. Elle ne se traduit donc pas.
+            ["settings.french"] = ("Français", "Français"),
+            ["settings.appearanceHint"] = (
+                "Thème et langue s'appliquent immédiatement. Le thème est mémorisé à l'enregistrement.",
+                "Theme and language apply immediately. The theme is remembered when you save."),
+            ["settings.recording"] = ("Enregistrement", "Recording"),
+            ["settings.autoReconnect"] = (
+                "Reconnexion automatique par défaut",
+                "Automatic reconnection by default"),
+            ["settings.checkUpdates"] = (
+                "Vérifier les mises à jour au démarrage",
+                "Check for updates at startup"),
+            ["settings.showLogs"] = ("Afficher le panneau des journaux", "Show the log panel"),
+            ["settings.monitorInterval"] = (
+                "Intervalle de surveillance (secondes)",
+                "Monitoring interval (seconds)"),
+            ["settings.monitorIntervalHint"] = (
+                "Borné entre 30 et 3600 à l'enregistrement. Sonder plus souvent lance un processus par salon et par tour sans rendre l'information plus fraîche.",
+                "Clamped between 30 and 3600 when saving. Polling more often starts one process per room per round without making the information any fresher."),
+            ["settings.network"] = ("Réseau", "Network"),
+            ["settings.cookiesFile"] = ("Fichier cookies.txt", "cookies.txt file"),
+            ["settings.proxy"] = ("Proxy", "Proxy"),
+            ["settings.tools"] = ("Outils", "Tools"),
+            ["settings.diagnostic"] = ("Diagnostic...", "Diagnostics..."),
+            ["settings.report"] = ("Signaler un problème...", "Report a problem..."),
+            ["settings.legal"] = ("Légalité...", "Legal..."),
+            ["settings.tutorial"] = ("Guide de démarrage...", "Getting started guide..."),
+            ["settings.toolsHint"] = (
+                "Versions des binaires, empreintes SHA-256, droits des dossiers et joignabilité du réseau. C'est ce qu'il faut regarder quand une capture échoue.",
+                "Binary versions, SHA-256 fingerprints, folder permissions and network reachability. This is what to look at when a capture fails."),
+            // « Enregistrer » au sens SAUVEGARDER. Volontairement distinct de
+            // `nav.streams`, qui est le même mot français au sens ENREGISTRER
+            // UN DIRECT — et qui se traduit par « Record ».
+            ["settings.save"] = ("Enregistrer", "Save"),
+
+            ["streams.add"] = ("Ajouter", "Add"),
+            ["streams.logs"] = ("Journaux", "Logs"),
+            ["streams.clearLogs"] = ("Vider", "Clear"),
+            ["streams.openLogFolder"] = ("Ouvrir le dossier", "Open the folder"),
+
+            ["support.body"] = (
+                "Le logiciel est gratuit et le restera. Les dons couvrent le temps passé, pas l'accès.",
+                "The software is free and will stay free. Donations cover the time spent, not access."),
+            ["support.donate"] = ("Faire un don", "Donate"),
+            ["support.sponsor"] = ("Parrainer", "Sponsor"),
+            ["support.thanks"] = ("Remerciements", "Thanks"),
+            ["support.thanksNote"] = (
+                "Pseudonymes publiés avec l'accord des personnes concernées.",
+                "Nicknames published with the agreement of the people concerned."),
         };
 
         /// <summary>
@@ -532,7 +639,28 @@ namespace ChaturbateRecorderApp.UI
         /// compromis. Tenu à jour par Program.Main et par MainForm
         /// (constructeur + HandleLanguageChangedFromSettings).
         /// </summary>
-        public static AppLanguage Current { get; set; } = AppLanguage.French;
+        private static AppLanguage _current = AppLanguage.French;
+
+        public static AppLanguage Current
+        {
+            get => _current;
+            set
+            {
+                if (_current == value) return;
+                _current = value;
+                LanguageChanged?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Levé quand la langue change. `LocalizationSource` s'y abonne pour
+        /// réévaluer toutes les liaisons du XAML d'un coup.
+        ///
+        /// Un ÉVÈNEMENT et non un appel direct : cette classe ne connaît pas
+        /// WPF et ne doit pas l'apprendre — elle sert aussi Program.Main, qui
+        /// s'exécute avant toute fenêtre.
+        /// </summary>
+        public static event Action? LanguageChanged;
 
         public static string Get(string key) => Get(key, Current);
 

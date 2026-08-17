@@ -1,6 +1,7 @@
-<UserControl x:Class="ChaturbateRecorderApp.Views.HistoryView"
+﻿<UserControl x:Class="ChaturbateRecorderApp.Views.HistoryView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
              xmlns:conv="clr-namespace:ChaturbateRecorderApp.Converters">
 
     <UserControl.Resources>
@@ -15,23 +16,23 @@
 
         <StackPanel Grid.Row="0" Orientation="Horizontal">
             <Button Style="{StaticResource Button.Secondary}"
-                    Content="Actualiser"
+                    Content="{ui:Str button.refresh}"
                     Command="{Binding RafraichirCommand}" />
             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
                        Style="{StaticResource Text.Caption}"
-                       Text="Les 50 enregistrements les plus récents." />
+                       Text="{ui:Str history.recentCount}" />
         </StackPanel>
 
         <!-- Trois états mutuellement exclusifs : en cours, vide, ou la liste.
              Un dossier vide qui n'affiche RIEN se lit comme un défaut. -->
         <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                    Style="{StaticResource Text.Caption}"
-                   Text="Lecture du dossier de capture..."
+                   Text="{ui:Str history.loading}"
                    Visibility="{Binding Chargement, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
         <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                    Style="{StaticResource Text.Caption}"
-                   Text="Aucun enregistrement dans le dossier de capture."
+                   Text="{ui:Str history.empty}"
                    Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
         <ScrollViewer Grid.Row="1" Margin="0,12,0,0"
@@ -76,12 +77,12 @@
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Style="{StaticResource Button.Secondary}"
-                                            Content="Ouvrir"
+                                            Content="{ui:Str history.open}"
                                             Command="{Binding DataContext.OuvrirFichierCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                             CommandParameter="{Binding CheminComplet}" />
                                     <Button Margin="8,0,0,0"
                                             Style="{StaticResource Button.Secondary}"
-                                            Content="Dossier"
+                                            Content="{ui:Str history.folder}"
                                             Command="{Binding DataContext.OuvrirDossierCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                             CommandParameter="{Binding CheminComplet}" />
                                 </StackPanel>

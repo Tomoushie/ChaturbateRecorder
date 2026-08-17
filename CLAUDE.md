@@ -126,6 +126,35 @@ rangeait sous `%AppData%\StreamRecorderPro` au lieu de
    d'intervalle. **C'est pour cela que ce journal existe : le garder.**
 7. `System.Windows.Localization` est homonyme de la table de chaînes du projet :
    alias obligatoire, sinon `CS0104` partout.
+8. **UN `Setter` DE STYLE NE TRAVERSE PAS LE `ControlTemplate`.** Poser
+   `BorderBrush` sur le `Button` ne peint rien si le `Border` du gabarit ne le
+   reprend pas : ce sont deux propriétés différentes. Les trois gabarits de
+   bouton réservaient `BorderThickness="1"` sans lier `BorderBrush` — un trait
+   peint avec rien, donc « Parcourir... » et « Diagnostic... » en TEXTE NU. Le
+   gabarit du champ de saisie faisait l'inverse : brosse posée, épaisseur
+   laissée à 0, donc aucun cadre nulle part. **Trouvé sur une capture d'écran
+   du mainteneur, pas par moi.** Verrouillé par `Tests/ThemeTemplateTests.cs`.
+
+## Localisation
+
+**LE XAML PASSE PAR `{ui:Str cle}`** (`UI/LocalizationSource.cs`), qui rend une
+LIAISON vers un indexeur notifiant — pas une chaîne : une extension de balisage
+n'est évaluée qu'au chargement, et rendre le texte figerait la langue du
+démarrage.
+
+Le portage avait perdu ce câblage sur **61 libellés dans 9 vues**, et quatre y
+avaient aussi perdu leurs accents. Rien ne le signalait : build vert, écran
+correct, défaut visible seulement en changeant de langue — donc jamais, puisque
+l'application démarre dans celle du système. `RefreshLabels` de la barre de
+navigation n'était d'ailleurs appelée qu'au constructeur : **rien** ne suivait
+le changement de langue à chaud.
+
+Deux filets dans `Tests/ViewLocalizationTests.cs` : aucun libellé en dur dans
+une vue, et toute clé citée existe dans la table (`Get` rend la CLÉ quand elle
+manque — donc une faute de frappe s'affiche au lieu d'échouer).
+
+`Localization.Current` lève `LanguageChanged`. Les deux abonnés sont
+`LocalizationSource` et `MainViewModel`.
 
 **COROLLAIRE DE MÉTHODE, la leçon la plus chère** : relever la valeur d'une
 RESSOURCE ne prouve RIEN sur ce qui est AFFICHÉ. Un relevé disait le thème bon

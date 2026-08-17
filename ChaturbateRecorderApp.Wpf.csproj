@@ -82,6 +82,9 @@
     <Using Include="System.Windows.Media.Brush" Alias="Brush" />
     <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
     <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
+    <!-- Sixieme ambiguite de la meme famille, apparue avec l'extension de
+         balisage de traduction : System.Windows.Forms.Binding existe aussi. -->
+    <Using Include="System.Windows.Data.Binding" Alias="Binding" />
   </ItemGroup>
 
   <ItemGroup>

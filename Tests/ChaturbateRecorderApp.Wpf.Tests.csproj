@@ -26,6 +26,7 @@
     <Using Include="System.Windows.Media.Brush" Alias="Brush" />
     <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
     <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
+    <Using Include="System.Windows.Data.Binding" Alias="Binding" />
   </ItemGroup>
 
   <ItemGroup>

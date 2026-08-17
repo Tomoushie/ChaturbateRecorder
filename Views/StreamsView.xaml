@@ -1,6 +1,7 @@
-<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
+﻿<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -40,7 +41,7 @@
                 <Button Grid.Column="2"
                         Margin="8,0,0,0"
                         Style="{StaticResource Button.Primary}"
-                        Content="Ajouter"
+                        Content="{ui:Str streams.add}"
                         Command="{Binding AjouterCommand}" />
             </Grid>
         </Border>
@@ -75,12 +76,12 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Orientation="Horizontal">
-                    <TextBlock Text="Journaux" FontWeight="SemiBold" VerticalAlignment="Center"
+                    <TextBlock Text="{ui:Str streams.logs}" FontWeight="SemiBold" VerticalAlignment="Center"
                                Foreground="{DynamicResource Brush.Fg}" />
                     <Button Margin="12,0,0,0" Style="{StaticResource Button.Secondary}"
-                            Content="Vider" Command="{Binding ViderCommand}" />
+                            Content="{ui:Str streams.clearLogs}" Command="{Binding ViderCommand}" />
                     <Button Margin="8,0,0,0" Style="{StaticResource Button.Secondary}"
-                            Content="Ouvrir le dossier" Command="{Binding OuvrirDossierCommand}" />
+                            Content="{ui:Str streams.openLogFolder}" Command="{Binding OuvrirDossierCommand}" />
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
