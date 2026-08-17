@@ -52,10 +52,29 @@ journaux, zone de notification, thème mémorisé, icône. **Aucune tranche de
 portage n'est identifiée** : `MainForm.cs` n'a plus rien à céder. Ne pas
 rouvrir ce chantier sans une raison neuve.
 
+**LA CAPTURE FONCTIONNE — ÉPROUVÉE SUR UN VRAI DIRECT le 2026-08-17.** C'était
+le seul inconnu depuis le premier commit. Le mainteneur a enregistré un salon en
+ligne avec la version WPF. Sont éprouvés du même coup : la reprise des données
+vers `%LocalAppData%` (sa liste de salons est remontée seule), et la barre de
+titre sombre — noire quand la fenêtre est inactive, bleue quand elle est active,
+ce dernier point étant le réglage Windows et non un défaut.
+
+**LE PREMIER ESSAI A RAPPORTÉ DEUX DÉFAUTS QU'AUCUN TEST N'AURAIT VUS :**
+1. la barre de progression restait VIDE pendant toute la capture —
+   `Indeterminate` n'était posé qu'à la réception d'une progression, or un
+   direct n'en rend souvent aucune. Invisible en thème clair (barre vide sur
+   carte blanche) ;
+2. **fermer l'application laissait ses `yt-dlp` EN VIE** — quatre processus
+   orphelins constatés. `Dispose` ne coupait pas le coordinateur. Le `.part`
+   n'était alors jamais renommé. Le WinForms, lui, est correct.
+
+**RESTE NON ÉPROUVÉ, et écarté pour l'instant avec le mainteneur** : la
+reconnexion automatique quand un direct coupe, et le minuteur d'arrêt. Couverts
+par les tests du coordinateur, jamais joués contre un vrai flux.
+
 Ce qui reste ne peut PAS être fait depuis l'environnement d'agent :
 
-1. **QU'UNE CAPTURE DÉMARRE VRAIMENT, sur un direct réel.** C'est le seul
-   inconnu depuis le premier commit. Ce qui est désormais éprouvé sans direct :
+1. Ce qui est éprouvé sans direct, et qui l'était avant le premier essai :
    la ligne de commande yt-dlp, options par options, **et le fait que le yt-dlp
    LIVRÉ l'accepte** (`Tests/DownloadArgumentsTests.cs` lance le vrai binaire
    contre un hôte en `.invalid` et distingue le refus d'option — code 2 — de
