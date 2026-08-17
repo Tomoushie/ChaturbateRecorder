@@ -70,9 +70,12 @@ namespace ChaturbateRecorderApp.Services
 
         public IReadOnlyList<RoomEntry> Rooms => _rooms;
 
-        private static string StoreFile => Path.Combine(AppConfig.AppDir, "rooms.json");
+        // Voir AppConfig.DataFileToRead : lecture la ou le fichier est, ecriture
+        // toujours dans le dossier de donnees.
+        private static string StoreFile => AppConfig.DataFileToRead("rooms.json");
+        private static string StoreFileAEcrire => AppConfig.DataFile("rooms.json");
         private static string LegacyFavorites => AppConfig.FavoritesFile;
-        private static string LegacyWatchList => Path.Combine(AppConfig.AppDir, "watchlist.json");
+        private static string LegacyWatchList => AppConfig.DataFileToRead("watchlist.json");
 
         /// <summary>
         /// Compare deux adresses de salon. Hôte et schéma en minuscules, barre
@@ -273,7 +276,7 @@ namespace ChaturbateRecorderApp.Services
             try
             {
                 var options = new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.Never };
-                File.WriteAllText(StoreFile, JsonSerializer.Serialize(_rooms, options));
+                File.WriteAllText(StoreFileAEcrire, JsonSerializer.Serialize(_rooms, options));
             }
             catch (Exception ex)
             {

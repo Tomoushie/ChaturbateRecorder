@@ -56,15 +56,18 @@ namespace ChaturbateRecorderApp.Services
     /// </summary>
     public static class SettingsManager
     {
-        private static string SettingsFile => Path.Combine(AppConfig.AppDir, "settings.json");
+        // Voir AppConfig.DataFileToRead : lecture la ou le fichier est,
+        // ecriture toujours dans le dossier de donnees.
+        private static string FichierALire => AppConfig.DataFileToRead("settings.json");
+        private static string FichierAEcrire => AppConfig.DataFile("settings.json");
 
         public static UserSettings Load()
         {
-            if (!File.Exists(SettingsFile)) return new UserSettings();
+            if (!File.Exists(FichierALire)) return new UserSettings();
 
             try
             {
-                var raw = File.ReadAllText(SettingsFile);
+                var raw = File.ReadAllText(FichierALire);
                 if (string.IsNullOrWhiteSpace(raw)) return new UserSettings();
                 return JsonSerializer.Deserialize<UserSettings>(raw) ?? new UserSettings();
             }
@@ -80,7 +83,7 @@ namespace ChaturbateRecorderApp.Services
             try
             {
                 var json = JsonSerializer.Serialize(settings);
-                File.WriteAllText(SettingsFile, json);
+                File.WriteAllText(FichierAEcrire, json);
             }
             catch (Exception ex)
             {

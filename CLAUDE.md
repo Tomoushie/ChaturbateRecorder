@@ -15,6 +15,24 @@ différentes, si bien qu'une capture titrée « v1.35.1 » pouvait être l'une o
 l'autre. C'est arrivé une fois. Ne jamais laisser `main` porter le numéro d'un
 tag existant.
 
+**2026-08-17 — LES DONNÉES DE L'UTILISATEUR DÉMÉNAGENT dans
+`%LocalAppData%\ChaturbateRecorder\`** (rooms, favoris, surveillance, réglages),
+là où vivent déjà les journaux. Part avec la 1.36.0, non publiée : pas de bump,
+entrée de changelog ajoutée FR + EN.
+
+Elles vivaient à côté de l'exe, ce qui avait deux conséquences **qu'aucun test
+ni aucune capture n'aurait montrées avant un vrai déploiement** : installée dans
+`Program Files`, l'application n'aurait pas pu enregistrer un seul salon ; et
+une mise à jour qui remplace son dossier effaçait la liste de salons. Le
+commentaire de `DefaultLogDir` disait déjà pourquoi les journaux, eux, étaient
+ailleurs — le raisonnement valait mot pour mot pour ces quatre fichiers.
+
+**Trouvé par une capture d'écran de la variante WPF** : sa liste de salons était
+VIDE alors que celle-ci en avait onze, chacune lisant le `rooms.json` de SON
+dossier. `trusted-binaries.json` reste volontairement à côté de l'exe (il décrit
+les binaires INSTALLÉS, et l'installateur l'écrit). Reprise automatique à la
+première lecture, anciens fichiers conservés, `Tests/DataLocationTests.cs` (7).
+
 **RESTE NON ÉPROUVÉ, faute de direct réel** : la carte ÉTENDUE pendant un
 enregistrement (barre indéterminée, décompte), la confirmation au retrait d'un
 salon en cours, et l'extraction de vignette du premium. Tout le reste a été

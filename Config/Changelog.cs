@@ -318,6 +318,7 @@ namespace ChaturbateRecorderApp.Config
                 "Tes favoris et ta liste de surveillance sont repris automatiquement au premier lancement. Les anciens fichiers ne sont pas supprimés : revenir à une version antérieure reste possible.",
                 "Ajouter un salon à la liste ne le met plus sous surveillance : c'est l'interrupteur de sa carte qui l'active, comme avant.",
                 "Retirer un salon en cours d'enregistrement demande maintenant confirmation.",
+                "Ta liste de salons, tes réglages et ta surveillance sont désormais rangés avec les journaux, dans ton dossier de données personnel, au lieu du dossier de l'application. Ils survivent donc à une mise à jour et à un déplacement du logiciel. La reprise est automatique et les anciens fichiers ne sont pas supprimés.",
             }),
         };
 
@@ -515,6 +516,7 @@ namespace ChaturbateRecorderApp.Config
                 "Your favorites and your monitoring list are carried over automatically on first launch. The old files are not deleted: going back to an earlier version stays possible.",
                 "Adding a room to the list no longer puts it under monitoring: the switch on its card does that, as before.",
                 "Removing a room while it is recording now asks for confirmation.",
+                "Your room list, your settings and your monitoring list now live alongside the logs, in your personal data folder, instead of the application folder. They therefore survive an update and a move of the software. The carry-over is automatic and the old files are not deleted.",
             },
         };
 
