@@ -1,4 +1,4 @@
-using ChaturbateRecorderApp.Services;
+﻿using ChaturbateRecorderApp.Services;
 using ChaturbateRecorderApp.UI;
 
 namespace ChaturbateRecorderApp.UI
@@ -48,11 +48,17 @@ namespace ChaturbateRecorderApp.UI
         /// <summary>
         /// La barre de la carte doit-elle être INDÉTERMINÉE ?
         ///
-        /// **Oui dès qu'une capture tourne sans progression chiffrée**, et c'est
-        /// le cas NORMAL d'un direct : il n'a pas de fin connue, yt-dlp ne rend
-        /// donc souvent aucun pourcentage. Laissée déterminée à 0, la barre
-        /// reste VIDE pendant toute la capture — l'écran dit « en cours » à côté
-        /// d'une barre morte, ce qui se lit comme un enregistrement figé.
+        /// **Oui pendant TOUTE la capture**, sans regarder le pourcentage. Un
+        /// direct n'a pas de fin connue : les chiffres que rend yt-dlp comptent
+        /// des FRAGMENTS et ne disent rien de ce qui reste. La version WinForms
+        /// fait exactement cela — « la barre reste en Marquee pendant
+        /// l'enregistrement », son pourcentage ne servant qu'à la pose finale.
+        ///
+        /// Deux mauvaises réponses ont précédé celle-ci, et les deux se sont
+        /// vues sur un vrai direct : laissée déterminée à 0 la barre restait
+        /// VIDE ; conditionnée au pourcentage, elle restait PLEINE, yt-dlp
+        /// rendant 100 % à chaque fragment. Vide ou pleine, une barre immobile
+        /// se lit comme un enregistrement figé.
         ///
         /// Le défaut a vécu jusqu'au premier essai sur un vrai direct : rien ne
         /// posait l'indétermination au DÉMARRAGE, seulement à la réception d'une
@@ -63,8 +69,6 @@ namespace ChaturbateRecorderApp.UI
         /// c'est une décision d'affichage, et une décision se vérifie.
         /// </summary>
         /// <param name="enCours">Vrai tant qu'une capture tourne pour ce salon.</param>
-        /// <param name="progression">Dernier pourcentage reçu, 0 si aucun.</param>
-        public static bool BarreIndeterminee(bool enCours, int progression) =>
-            enCours && progression <= 0;
+        public static bool BarreIndeterminee(bool enCours) => enCours;
     }
 }

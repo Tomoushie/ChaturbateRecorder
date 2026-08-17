@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -211,22 +211,22 @@ namespace ChaturbateRecorderApp.Tests
         /// **LE DÉFAUT TROUVÉ SUR UN VRAI DIRECT**, le premier jamais capturé
         /// par l'application WPF.
         ///
-        /// Un direct n'a pas de fin connue : yt-dlp ne rend souvent AUCUN
-        /// pourcentage. L'indétermination n'était posée qu'à la réception d'une
-        /// progression — donc jamais — et la barre restait vide pendant toute la
-        /// capture, à côté d'un « En cours… » qui, lui, disait vrai. La version
-        /// WinForms, elle, met sa barre en défilement dès le démarrage.
+        /// DEUX mauvaises réponses ont précédé celle-ci, vues toutes les deux
+        /// sur un vrai direct. D'abord l'indétermination n'était posée qu'à la
+        /// réception d'une progression : la barre restait VIDE. Puis, une fois
+        /// posée au démarrage mais conditionnée au pourcentage, elle restait
+        /// PLEINE — yt-dlp rend 100 % à chaque fragment d'un direct.
+        ///
+        /// La règle juste est celle du WinForms, et elle est plus simple que
+        /// mes deux tentatives : la barre défile tant que la capture tourne, le
+        /// pourcentage ne servant qu'à la pose finale.
         /// </summary>
         [Theory]
-        [InlineData(true, 0, true)]    // capture qui demarre : rien de chiffre encore
-        [InlineData(true, -1, true)]   // yt-dlp rend parfois un pourcentage absurde
-        [InlineData(true, 43, false)]  // une vraie progression : la barre la MONTRE
-        [InlineData(false, 0, false)]  // rien ne tourne : pas d'animation trompeuse
-        [InlineData(false, 43, false)] // capture finie : la barre ne bouge plus
-        public void LaBarreEstIndetermineeTantQuAucuneProgressionNArrive(
-            bool enCours, int progression, bool attendu)
+        [InlineData(true, true)]    // une capture tourne : la barre defile, point
+        [InlineData(false, false)]  // rien ne tourne : pas d'animation trompeuse
+        public void LaBarreDefileTantQueLaCaptureTourne(bool enCours, bool attendu)
         {
-            Assert.Equal(attendu, RecordingLabels.BarreIndeterminee(enCours, progression));
+            Assert.Equal(attendu, RecordingLabels.BarreIndeterminee(enCours));
         }
 
         // --- La fuite ------------------------------------------------------
