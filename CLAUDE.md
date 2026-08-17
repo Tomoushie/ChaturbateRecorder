@@ -1,11 +1,11 @@
-# Chaturbate Recorder — version WPF (application GRATUITE)
+﻿# Chaturbate Recorder — version WPF (application GRATUITE)
 
 Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-17** — 37 commits, dépôt local **sans distant**, `dotnet build`
-à 0 erreur / 0 avertissement, **364 tests**. L'application navigue, ajoute un
+**État au 2026-08-17** — 47 commits, dépôt local **sans distant**, `dotnet build`
+à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`), **396 tests**. L'application navigue, ajoute un
 salon, l'enregistre, le surveille, le reconnecte, tient un historique et se
 configure.
 
@@ -104,8 +104,8 @@ depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
 `settings.json` sont désormais partagés avec l'app WinForms** (voir plus haut) : si celle-ci tourne, la
 WPF sort en silence.
 
-**Le dépôt n'a AUCUN distant** — trente-trois commits à un seul endroit sur un
-seul disque. C'est le risque restant, et il n'est pas technique.
+**Le dépôt n'a AUCUN distant** — 47 commits à un seul endroit sur un seul
+disque. C'est le risque restant, et il n'est pas technique.
 
 **LES DEUX COPIES DE `SettingsManager.cs` DIVERGENT désormais**, tranché avec le
 mainteneur le 2026-08-16 : la version WPF a un champ `Theme` que la WinForms
