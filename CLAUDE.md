@@ -59,7 +59,7 @@ vers `%LocalAppData%` (sa liste de salons est remontée seule), et la barre de
 titre sombre — noire quand la fenêtre est inactive, bleue quand elle est active,
 ce dernier point étant le réglage Windows et non un défaut.
 
-**LE PREMIER ESSAI A RAPPORTÉ DEUX DÉFAUTS QU'AUCUN TEST N'AURAIT VUS :**
+**LE PREMIER ESSAI A RAPPORTÉ TROIS DÉFAUTS QU'AUCUN TEST N'AURAIT VUS :**
 1. la barre de progression restait VIDE pendant toute la capture —
    `Indeterminate` n'était posé qu'à la réception d'une progression, or un
    direct n'en rend souvent aucune. Invisible en thème clair (barre vide sur
@@ -67,6 +67,16 @@ ce dernier point étant le réglage Windows et non un défaut.
 2. **fermer l'application laissait ses `yt-dlp` EN VIE** — quatre processus
    orphelins constatés. `Dispose` ne coupait pas le coordinateur. Le `.part`
    n'était alors jamais renommé. Le WinForms, lui, est correct.
+
+3. **LES CAPTURES NE DEVENAIENT JAMAIS DES VIDÉOS.** Le portage n'avait pas
+   repris la FINALISATION : yt-dlp écrit dans `<nom>.mp4.part` et ne le renomme
+   qu'en fin NATURELLE de flux, ce qui n'arrive jamais pour un direct. Chaque
+   capture restait donc un `.part`, absent de l'historique qui ne liste que
+   `.mp4`/`.mkv`/`.mov` — l'application enregistrait des vidéos que personne ne
+   voyait. Réparé par `Services/CaptureFinalizer.cs`, appelé à CHAQUE fin, y
+   compris sur échec et AVANT toute reconnexion (qui régénère
+   `OutputBaseName`). **La MINIATURE n'est toujours pas portée**, écartée avec
+   le mainteneur.
 
 **RESTE NON ÉPROUVÉ, et écarté pour l'instant avec le mainteneur** : la
 reconnexion automatique quand un direct coupe, et le minuteur d'arrêt. Couverts
