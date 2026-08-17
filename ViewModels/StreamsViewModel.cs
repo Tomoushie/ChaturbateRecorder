@@ -285,22 +285,27 @@ namespace ChaturbateRecorderApp.ViewModels
         [RelayCommand]
         private void Ajouter()
         {
-            if (string.IsNullOrWhiteSpace(_newRoomUrl))
+            // LES PROPRIETES, PAS LES CHAMPS, et ici ce n'etait pas cosmetique :
+            // ecrire `_addError` court-circuitait la propriete generee, donc
+            // AUCUNE notification n'etait levee — le message de refus du bac a
+            // sable ne se serait JAMAIS affiche. L'analyseur du toolkit le
+            // signalait (MVVMTK0034) ; l'avertissement disait vrai.
+            if (string.IsNullOrWhiteSpace(NewRoomUrl))
             {
                 return;
             }
 
-            if (!UrlValidator.IsSafeUrl(_newRoomUrl, AppConfig.Whitelist, AppConfig.Blacklist, out var motif))
+            if (!UrlValidator.IsSafeUrl(NewRoomUrl, AppConfig.Whitelist, AppConfig.Blacklist, out var motif))
             {
-                _addError = motif ?? Localization.Get("error.invalidUrl");
+                AddError = motif ?? Localization.Get("error.invalidUrl");
                 return;
             }
 
-            _addError = "";
-            _store.Add(_newRoomUrl);
+            AddError = "";
+            _store.Add(NewRoomUrl);
             _store.Save();
             Recharger();
-            _newRoomUrl = "";
+            NewRoomUrl = "";
         }
 
         [RelayCommand]

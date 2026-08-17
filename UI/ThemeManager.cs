@@ -346,7 +346,23 @@ namespace ChaturbateRecorderApp.UI
             _ => (p.Neutral, Lerp(p.Neutral, p.Fg, 0.06f), Lerp(p.Neutral, p.Fg, 0.12f), p.Border, p.Fg)
         };
 
-        internal static Color Lerp(Color a, Color b, float t) => Color.FromRgb(
+        /// <summary>
+        /// Interpole deux couleurs, CANAL ALPHA COMPRIS.
+        ///
+        /// **`FromArgb` et non `FromRgb`, et ce n'est pas un detail** : `FromRgb`
+        /// force l'alpha a 255. Une seule couleur de la palette en a un —
+        /// `Shadow`, a 24 en clair et 90 en sombre — et elle devenait donc NOIR
+        /// OPAQUE des le premier pas du fondu. Les cartes prenaient une ombre
+        /// dure pendant toute la transition, puis retrouvaient la bonne a la
+        /// pose finale.
+        ///
+        /// Trouve par `LesBornesDeLInterpolationRendentLesPalettesExactes`, qui
+        /// a echoue a sa premiere execution : `Lerp(clair, sombre, 0)` ne
+        /// rendait deja pas la palette claire. Le defaut existe aussi dans le
+        /// WinForms, dont le `Color.FromArgb(r, g, b)` a la meme consequence.
+        /// </summary>
+        internal static Color Lerp(Color a, Color b, float t) => Color.FromArgb(
+            (byte)(a.A + (b.A - a.A) * t),
             (byte)(a.R + (b.R - a.R) * t),
             (byte)(a.G + (b.G - a.G) * t),
             (byte)(a.B + (b.B - a.B) * t)

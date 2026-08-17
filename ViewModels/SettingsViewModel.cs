@@ -50,7 +50,13 @@ namespace ChaturbateRecorderApp.ViewModels
             _autoUpdateCheck = _reglages.AutoUpdateCheck;
             _watchIntervalSeconds = _reglages.WatchIntervalSeconds;
             _showLogs = _reglages.ShowLogs;
+            // Le CHAMP et non la propriete, VOLONTAIREMENT : passer par la
+            // propriete declencherait `OnFrancaisChanged` pendant la
+            // construction, donc reappliquerait la langue deja en place. On veut
+            // seulement refleter l'etat courant.
+#pragma warning disable MVVMTK0034
             _francais = Localization.Current == AppLanguage.French;
+#pragma warning restore MVVMTK0034
             _sombre = ThemeManager.Current == AppTheme.Dark;
         }
 
@@ -108,17 +114,22 @@ namespace ChaturbateRecorderApp.ViewModels
         [RelayCommand]
         private void Enregistrer()
         {
-            _reglages.CaptureDir = !string.IsNullOrEmpty(_captureDir) ? _captureDir : null;
-            _reglages.CookiesFilePath = !string.IsNullOrEmpty(_cookiesFilePath) ? _cookiesFilePath : null;
-            _reglages.ProxyUrl = !string.IsNullOrEmpty(_proxyUrl) ? _proxyUrl : null;
-            _reglages.AutoReconnectDefault = _autoReconnect;
-            _reglages.AutoUpdateCheck = _autoUpdateCheck;
-            _reglages.WatchIntervalSeconds = Math.Clamp(_watchIntervalSeconds, 30, 3600);
-            _reglages.ShowLogs = _showLogs;
+            // Les PROPRIETES, pas les champs : lire `_captureDir` court-circuite
+            // la propriete generee, ce que l'analyseur du toolkit signale
+            // (MVVMTK0034). C'est sans effet aujourd'hui — meme champ derriere —
+            // mais le jour ou la propriete gagne une regle, le contournement la
+            // sauterait en silence.
+            _reglages.CaptureDir = !string.IsNullOrEmpty(CaptureDir) ? CaptureDir : null;
+            _reglages.CookiesFilePath = !string.IsNullOrEmpty(CookiesFilePath) ? CookiesFilePath : null;
+            _reglages.ProxyUrl = !string.IsNullOrEmpty(ProxyUrl) ? ProxyUrl : null;
+            _reglages.AutoReconnectDefault = AutoReconnect;
+            _reglages.AutoUpdateCheck = AutoUpdateCheck;
+            _reglages.WatchIntervalSeconds = Math.Clamp(WatchIntervalSeconds, 30, 3600);
+            _reglages.ShowLogs = ShowLogs;
             // Le theme suit la case, et il est desormais PERSISTE : c'etait le
             // dernier reglage de cet ecran a ne pas survivre a une fermeture.
             _reglages.Theme = Sombre ? "dark" : "light";
-            _reglages.Language = _francais ? "fr" : "en";
+            _reglages.Language = Francais ? "fr" : "en";
 
             try
             {
