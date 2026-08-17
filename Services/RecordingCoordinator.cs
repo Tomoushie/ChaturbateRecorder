@@ -164,6 +164,18 @@ namespace ChaturbateRecorderApp.Services
         {
             if (etat is DownloadState.Completed or DownloadState.Failed or DownloadState.Stopped)
             {
+                // RENDRE SON NOM AU FICHIER, et le faire AVANT toute
+                // reconnexion : celle-ci regenere `OutputBaseName`, et le `.part`
+                // de la tentative precedente n'aurait alors plus personne pour
+                // le reclamer. On finalise donc a CHAQUE fin, y compris sur
+                // echec — ce qui a ete capture avant la coupure est justement ce
+                // qu'on cherche a sauver.
+                //
+                // Sans attendre : le renommage reessaie pendant trois secondes
+                // le temps que Windows relache le handle du processus tue, et
+                // l'interface n'a pas a se figer pour cela.
+                _ = CaptureFinalizer.FinaliserAsync(job.CaptureDir, job.OutputBaseName, job.ContainerExt);
+
                 // **SEUL `Failed` déclenche une reconnexion.** `Stopped` est un
                 // arrêt DEMANDÉ et `Completed` une fin normale : rejouer l'un
                 // ou l'autre relancerait une capture que personne n'a demandée.
