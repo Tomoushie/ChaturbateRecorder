@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using ChaturbateRecorderApp.Config;
@@ -279,6 +280,36 @@ namespace ChaturbateRecorderApp.Services
             if (!_minuteurs.TryGetValue(url, out var m)) return;
             m.Stop();
             _minuteurs.Remove(url);
+        }
+
+        /// <summary>
+        /// Arrête TOUTES les captures en cours. Appelé quand l'application se
+        /// ferme pour de bon.
+        ///
+        /// **Sans lui, fermer l'application laissait ses yt-dlp EN VIE.** Ils
+        /// continuaient d'écrire dans leur `.part`, et plus personne n'était là
+        /// pour le renommer ni générer la miniature — un live ne se termine
+        /// jamais seul, c'est l'application qui coupe. Constaté sur la machine
+        /// du mainteneur après le premier essai sur un vrai direct : QUATRE
+        /// `yt-dlp.exe` orphelins, dont un manifestement actif, alors qu'aucune
+        /// fenêtre n'était ouverte.
+        ///
+        /// La copie de la liste des clés est OBLIGATOIRE : `Arreter` retire de
+        /// `_enCours` (directement, ou via l'état que le moteur rend pendant
+        /// `Stop`), et énumérer une table qu'on modifie lève.
+        /// </summary>
+        public void ArreterTout()
+        {
+            foreach (var url in _enCours.Keys.ToList())
+            {
+                try { Arreter(url); }
+                catch (Exception ex)
+                {
+                    // Un salon qui refuse de s'arrêter ne doit pas empêcher les
+                    // autres : c'est le dernier geste avant la sortie.
+                    Logger.Log($"Arret impossible pour {url} : {ex.Message}", LogLevel.ERROR);
+                }
+            }
         }
 
         public void Arreter(string url)

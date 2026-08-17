@@ -316,6 +316,51 @@ namespace ChaturbateRecorderApp.Tests
             Assert.Equal(2, moteur.Demarrages);
         }
 
+        /// <summary>
+        /// **LE DÉFAUT LE PLUS COÛTEUX TROUVÉ SUR UN VRAI DIRECT** : fermer
+        /// l'application laissait ses yt-dlp EN VIE.
+        ///
+        /// Rien n'arrêtait les captures à la sortie — le modèle de vue libérait
+        /// la surveillance, les journaux et les cartes, jamais le coordinateur.
+        /// Les processus continuaient d'écrire dans leur `.part`, que plus
+        /// personne n'allait renommer : un live ne se termine jamais seul, c'est
+        /// l'application qui coupe. Constaté sur la machine du mainteneur —
+        /// quatre `yt-dlp.exe` orphelins, dont un manifestement actif, alors
+        /// qu'aucune fenêtre n'était ouverte.
+        /// </summary>
+        [Fact]
+        public void ArreterToutCoupeChaqueCaptureEnCours()
+        {
+            var moteurs = new List<MoteurDeDoublure>();
+            var coord = new RecordingCoordinator(() =>
+            {
+                var m = new MoteurDeDoublure { EtatALArret = DownloadState.Stopped };
+                moteurs.Add(m);
+                return m;
+            });
+
+            coord.Demarrer(Url);
+            coord.Demarrer(Autre);
+
+            coord.ArreterTout();
+
+            Assert.False(coord.EnCours(Url));
+            Assert.False(coord.EnCours(Autre));
+            Assert.All(moteurs, m => Assert.Equal(1, m.Arrets));
+        }
+
+        /// <summary>
+        /// Et il ne doit pas lever sur une table vide : c'est le dernier geste
+        /// avant la sortie, et une exception y empêcherait le ménage suivant.
+        /// </summary>
+        [Fact]
+        public void ArreterToutSansAucuneCaptureNeFaitRien()
+        {
+            var (coord, moteur) = Banc();
+            coord.ArreterTout();
+            Assert.Equal(0, moteur.Arrets);
+        }
+
         // --- Plusieurs salons de front -------------------------------------
 
         /// <summary>

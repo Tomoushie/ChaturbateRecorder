@@ -222,6 +222,13 @@ namespace ChaturbateRecorderApp.ViewModels
         /// </summary>
         public void Dispose()
         {
+            // **LES CAPTURES D'ABORD.** Sans cet appel, fermer l'application
+            // laissait ses yt-dlp EN VIE : ils continuaient d'ecrire dans leur
+            // `.part` et plus personne n'etait la pour le renommer. Constate
+            // apres le premier essai sur un vrai direct — quatre processus
+            // orphelins alors qu'aucune fenetre n'etait ouverte.
+            _enregistrement.ArreterTout();
+
             _surveillance.Dispose();
             Journaux.Dispose();
             foreach (var carte in Rooms) carte.Detach();
