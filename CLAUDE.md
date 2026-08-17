@@ -187,6 +187,29 @@ alors que la moitié de l'écran ne bougeait pas ; seule une capture
 
 ## Vérification visuelle
 
+**LE HARNAIS EXISTE MAINTENANT : `Tests/RenduVisuelTests.cs`.** Il dessine les
+vues pour de vrai, échantillonne les PIXELS, et dépose des PNG dans
+`%TEMP%\cbr-rendu\` — à REGARDER, aucune assertion ne remplace un coup d'œil.
+Il a été écrit parce qu'un défaut de bordure avait traversé toute la migration :
+les ressources étaient bonnes, le rendu non, et seule une capture l'a montré.
+
+Quatre choses qu'il a coûtées, à ne pas redécouvrir :
+1. **UN SEUL fil STA, persistant, avec sa boucle de répartition.** Un fil neuf
+   par test fait **PLANTER le processus hôte** (`Application` et ses ressources
+   appartiennent au fil qui les a créées) — et le symptôme est un vert PARTIEL,
+   une partie de la suite n'ayant jamais tourné.
+2. **Toutes les classes qui touchent un état de processus sont dans la
+   collection `EtatDeProcessus`** (`Application.Current`, `Localization.Current`,
+   `AppConfig.DataDir`). Sans elle, xunit les parallélise et la suite FIGE.
+3. **`IsVisible` vaut toujours faux** dans un arbre détaché : tester
+   `Visibility == Visible`.
+4. La liste des dictionnaires et des converters est **LUE dans `App.xaml`**, pas
+   recopiée : l'ordre de fusion décide de ce qu'un `StaticResource` voit.
+
+Mesurer la BORDURE et non l'intérieur d'un bouton secondaire : en thème clair
+son fond est celui de la carte, seule la bordure le détache — c'est exactement
+pour ça que son absence le rendait invisible.
+
 Il n'y a pas de bureau interactif dans l'environnement d'agent :
 
 - une `Window` NON AFFICHÉE ne rend rien (capture blanche) — détacher son

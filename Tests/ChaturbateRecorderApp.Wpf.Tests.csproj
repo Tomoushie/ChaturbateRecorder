@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -27,6 +27,10 @@
     <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
     <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
     <Using Include="System.Windows.Data.Binding" Alias="Binding" />
+    <Using Include="System.Windows.Controls.Button" Alias="Button" />
+    <Using Include="System.Windows.Controls.TextBox" Alias="TextBox" />
+    <Using Include="System.Windows.Size" Alias="Size" />
+    <Using Include="System.Windows.Point" Alias="Point" />
   </ItemGroup>
 
   <ItemGroup>

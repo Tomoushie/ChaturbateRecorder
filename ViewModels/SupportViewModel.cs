@@ -16,10 +16,23 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty] private string _statut = "";
         [ObservableProperty] private bool _chargement;
 
+        /// <summary>
+        /// Vrai tant que personne n'est remercié.
+        ///
+        /// La propriété existait déjà mais ne NOTIFIAIT rien et personne ne s'y
+        /// liait : la carte s'ouvrait donc sur 450 px de blanc, sans un mot. Le
+        /// vide est un état légitime — le projet est jeune — mais il doit se
+        /// DIRE, comme l'historique dit qu'il n'a pas d'enregistrement.
+        /// </summary>
         public bool Vide => Noms.Count == 0;
 
         public SupportViewModel()
         {
+            // `Noms` est remplie ici et re-remplie par « Actualiser » : sans cet
+            // abonnement, `Vide` resterait sur sa valeur du premier calcul et le
+            // message d'état vide survivrait à l'arrivée des noms.
+            Noms.CollectionChanged += (s, e) => OnPropertyChanged(nameof(Vide));
+
             // Pas d'AddRange : ObservableCollection n'en a pas, et la version
             // de List<T> leverait un evenement par element de toute facon.
             foreach (var nom in SupportersProvider.FromEmbedded().Names)

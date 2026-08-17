@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,7 +14,7 @@ namespace ChaturbateRecorderApp.Tests
     /// une FormatException dans une seule des deux, cas qu'un test manuel en
     /// français ne révèle jamais.
     /// </summary>
-    [Collection("Localization")]
+    [Collection("EtatDeProcessus")]
     public class LocalizationTests
     {
         private static readonly Regex PlaceholderRegex = new(@"\{(\d+)\}", RegexOptions.Compiled);

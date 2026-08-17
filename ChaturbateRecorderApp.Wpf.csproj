@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -85,6 +85,14 @@
     <!-- Sixieme ambiguite de la meme famille, apparue avec l'extension de
          balisage de traduction : System.Windows.Forms.Binding existe aussi. -->
     <Using Include="System.Windows.Data.Binding" Alias="Binding" />
+    <!-- Quatre de plus, meme famille : le rendu hors application manipule des
+         elements et des coordonnees WPF. `Services/TrayIcon.cs` prefixe deja
+         tout ce qu'il prend a WinForms par `WinForms.`, donc rien ne perd son
+         type ici. -->
+    <Using Include="System.Windows.Controls.Button" Alias="Button" />
+    <Using Include="System.Windows.Controls.TextBox" Alias="TextBox" />
+    <Using Include="System.Windows.Size" Alias="Size" />
+    <Using Include="System.Windows.Point" Alias="Point" />
   </ItemGroup>
 
   <ItemGroup>

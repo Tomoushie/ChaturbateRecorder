@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using ChaturbateRecorderApp.Config;
 using Xunit;
@@ -21,7 +21,7 @@ namespace ChaturbateRecorderApp.Tests
     /// Ce fichier éprouve la règle de reprise, parce que c'est le seul endroit
     /// du changement où des données peuvent être perdues.
     /// </summary>
-    [Collection("DataLocation")]
+    [Collection("EtatDeProcessus")]
     public class DataLocationTests : IDisposable
     {
         private readonly string _dossierNeuf;
@@ -162,10 +162,4 @@ namespace ChaturbateRecorderApp.Tests
         }
     }
 
-    /// <summary>
-    /// `AppConfig.DataDir` est un état statique que ces tests déplacent : la
-    /// collection les sérialise pour qu'aucune autre classe ne le voie bouger.
-    /// </summary>
-    [CollectionDefinition("DataLocation")]
-    public class CollectionEmplacementDonnees { }
 }

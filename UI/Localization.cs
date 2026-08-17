@@ -615,6 +615,18 @@ namespace ChaturbateRecorderApp.UI
             // les .xaml, et ne l'auraient jamais vu.
             ["settings.saved"] = ("Réglages enregistrés.", "Settings saved."),
 
+            // Les deux ÉTATS VIDES, ajoutés le 17-08 : ces deux écrans
+            // s'ouvraient sur du blanc, ce qui se lit comme une panne plutôt
+            // que comme une liste à remplir. Ils disent ce qu'il n'y a pas ET
+            // le geste qui suit — un état vide qui ne fait que constater
+            // laisse l'utilisateur au même point.
+            ["streams.empty"] = (
+                "Aucun salon pour l'instant. Colle l'adresse d'un direct ci-dessus pour l'ajouter à ta liste.",
+                "No rooms yet. Paste the address of a live stream above to add it to your list."),
+            ["support.thanksEmpty"] = (
+                "Personne n'est encore remercié ici. La liste se remplira au premier don.",
+                "Nobody is thanked here yet. The list will fill up with the first donation."),
+
             ["streams.add"] = ("Ajouter", "Add"),
             ["streams.logs"] = ("Journaux", "Logs"),
             ["streams.clearLogs"] = ("Vider", "Clear"),

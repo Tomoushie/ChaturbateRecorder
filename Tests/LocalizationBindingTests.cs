@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Windows.Controls;
 using ChaturbateRecorderApp.UI;
@@ -22,7 +22,7 @@ namespace ChaturbateRecorderApp.Tests
     /// liaison échouerait EN SILENCE, WPF se contentant d'une trace de
     /// débogage, et les soixante et un libellés s'afficheraient vides.
     /// </summary>
-    [Collection("Localization")]
+    [Collection("EtatDeProcessus")]
     public class LocalizationBindingTests
     {
         /// <summary>
@@ -123,12 +123,4 @@ namespace ChaturbateRecorderApp.Tests
         }
     }
 
-    /// <summary>
-    /// `Localization.Current` est un état STATIQUE, et xunit lance les classes
-    /// en parallèle. Cette collection sérialise les deux classes qui le
-    /// basculent — sans quoi chacune verrait les bascules de l'autre, de façon
-    /// intermittente et donc pénible à diagnostiquer.
-    /// </summary>
-    [CollectionDefinition("Localization")]
-    public class CollectionLocalisation { }
 }

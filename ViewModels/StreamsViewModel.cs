@@ -15,6 +15,17 @@ namespace ChaturbateRecorderApp.ViewModels
     {
         private readonly RoomStore _store = new();
         public ObservableCollection<RoomCardViewModel> Rooms { get; } = new();
+
+        /// <summary>
+        /// Vrai quand aucun salon n'est connu — l'état du PREMIER LANCEMENT, et
+        /// celui qu'on voit forcément avant d'avoir rien fait.
+        ///
+        /// L'écran n'en disait rien : la vue principale s'ouvrait entièrement
+        /// blanche sous la barre d'ajout, ce qui se lit comme une application
+        /// cassée plutôt que comme une liste à remplir. L'historique, lui, dit
+        /// depuis toujours qu'il n'a pas d'enregistrement.
+        /// </summary>
+        public bool Vide => Rooms.Count == 0;
         [ObservableProperty]
         private string _newRoomUrl = "";
         [ObservableProperty]
@@ -35,6 +46,11 @@ namespace ChaturbateRecorderApp.ViewModels
 
         public StreamsViewModel()
         {
+            // `Recharger` vide et reconstruit la liste ENTIERE a chaque ajout et
+            // chaque retrait : sans cet abonnement, le message d'etat vide
+            // resterait affiche par-dessus le premier salon ajoute.
+            Rooms.CollectionChanged += (s, e) => OnPropertyChanged(nameof(Vide));
+
             _store.Load();
             Recharger();
 

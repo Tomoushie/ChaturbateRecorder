@@ -62,6 +62,17 @@
             <ItemsControl ItemsSource="{Binding Rooms}"
                           ItemTemplate="{StaticResource RoomCard.Template}" />
         </ScrollViewer>
+
+        <!-- ETAT VIDE, dans la MEME cellule que la liste : il occupe donc la
+             place que les cartes prendront, au lieu de pousser la mise en page.
+             Sans lui l'ecran principal s'ouvrait entierement blanc au premier
+             lancement, ce qui se lit comme une panne. -->
+        <TextBlock Grid.Row="2" Margin="16,0,16,0"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                   Style="{StaticResource Text.Caption}"
+                   Text="{ui:Str streams.empty}"
+                   Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
         <!-- PANNEAU DES JOURNAUX, masque par defaut (UserSettings.ShowLogs) :
              il occupait de la place en permanence pour une information qu'on
              ne consulte que quand quelque chose ne va pas. -->

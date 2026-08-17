@@ -71,6 +71,18 @@
                     </ItemsControl>
                 </ScrollViewer>
 
+                <!-- ETAT VIDE, dans la MEME cellule que la liste. La carte prend
+                     la hauteur restante de la vue : sans ce message elle
+                     s'ouvrait sur ~450 px de blanc, entre « Actualiser » et la
+                     mention de consentement. Le vide est legitime — le projet
+                     est jeune — mais il doit se dire. -->
+                <TextBlock Grid.Row="1" Margin="16,0,16,0"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                           Style="{StaticResource Text.Caption}"
+                           Text="{ui:Str support.thanksEmpty}"
+                           Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
                 <!-- Mention de consentement en contraste PLEIN et non atténué :
                      l'atténuer en ferait la ligne la moins lue de l'écran, or
                      c'est celle qui engage le mainteneur. -->
