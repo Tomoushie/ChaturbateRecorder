@@ -172,6 +172,16 @@ namespace ChaturbateRecorderApp.Tests
         {
             SurFilStandard(() =>
             {
+                // LE DOSSIER DE DONNEES EST DEPLACE le temps du rendu. Sans
+                // cela le modele lit la VRAIE liste de salons de la machine —
+                // ce qui est arrive des que le mainteneur a lance
+                // l'application — et la capture porterait de vrais noms. La
+                // garde ci-dessous l'avait attrape ; mieux vaut ne pas
+                // dependre d'elle.
+                var dataDirInitial = ChaturbateRecorderApp.Config.AppConfig.DataDir;
+                var vierge = Path.Combine(Path.GetTempPath(), "cbr-vide-" + Guid.NewGuid().ToString("N"));
+                ChaturbateRecorderApp.Config.AppConfig.DataDir = vierge;
+
                 var modele = new StreamsViewModel();
                 try
                 {
@@ -189,7 +199,13 @@ namespace ChaturbateRecorderApp.Tests
                         $"{theme} — l'ecran principal ne dit PAS qu'il est vide. " +
                         $"Voir le PNG dans {DossierSortie}.");
                 }
-                finally { modele.Dispose(); }
+                finally
+                {
+                    modele.Dispose();
+                    ChaturbateRecorderApp.Config.AppConfig.DataDir = dataDirInitial;
+                    try { if (Directory.Exists(vierge)) Directory.Delete(vierge, true); }
+                    catch { /* dossier temporaire */ }
+                }
             });
         }
 

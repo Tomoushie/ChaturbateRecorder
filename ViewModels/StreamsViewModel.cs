@@ -83,6 +83,13 @@ namespace ChaturbateRecorderApp.ViewModels
                     // la date, sinon la carte garderait « 0 s » pour toujours.
                     carte.Detail = carte.DetailBase;
                 }
+                else
+                {
+                    // AU DEMARRAGE AUSSI, et pas seulement a la reception d'une
+                    // progression : un direct n'en rend souvent aucune, et la
+                    // barre restait alors vide pendant toute la capture.
+                    carte.Indeterminate = RecordingLabels.BarreIndeterminee(true, carte.Progress);
+                }
             };
 
             _enregistrement.Progression += (url, pourcent) =>
@@ -92,7 +99,7 @@ namespace ChaturbateRecorderApp.ViewModels
                 // Un direct n'a pas de fin connue : yt-dlp rend souvent 0 %.
                 // Une barre indéterminée dit « ça travaille » sans mentir sur
                 // une progression que personne ne peut calculer.
-                carte.Indeterminate = pourcent <= 0;
+                carte.Indeterminate = RecordingLabels.BarreIndeterminee(true, (int)pourcent);
             };
 
             _enregistrement.ReconnexionProgrammee += (url, secondes, tentative, total) =>

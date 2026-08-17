@@ -205,6 +205,30 @@ namespace ChaturbateRecorderApp.Tests
             carte.Detach();
         }
 
+        // --- La barre de progression ---------------------------------------
+
+        /// <summary>
+        /// **LE DÉFAUT TROUVÉ SUR UN VRAI DIRECT**, le premier jamais capturé
+        /// par l'application WPF.
+        ///
+        /// Un direct n'a pas de fin connue : yt-dlp ne rend souvent AUCUN
+        /// pourcentage. L'indétermination n'était posée qu'à la réception d'une
+        /// progression — donc jamais — et la barre restait vide pendant toute la
+        /// capture, à côté d'un « En cours… » qui, lui, disait vrai. La version
+        /// WinForms, elle, met sa barre en défilement dès le démarrage.
+        /// </summary>
+        [Theory]
+        [InlineData(true, 0, true)]    // capture qui demarre : rien de chiffre encore
+        [InlineData(true, -1, true)]   // yt-dlp rend parfois un pourcentage absurde
+        [InlineData(true, 43, false)]  // une vraie progression : la barre la MONTRE
+        [InlineData(false, 0, false)]  // rien ne tourne : pas d'animation trompeuse
+        [InlineData(false, 43, false)] // capture finie : la barre ne bouge plus
+        public void LaBarreEstIndetermineeTantQuAucuneProgressionNArrive(
+            bool enCours, int progression, bool attendu)
+        {
+            Assert.Equal(attendu, RecordingLabels.BarreIndeterminee(enCours, progression));
+        }
+
         // --- La fuite ------------------------------------------------------
 
         /// <summary>

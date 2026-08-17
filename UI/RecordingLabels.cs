@@ -44,5 +44,27 @@ namespace ChaturbateRecorderApp.UI
                 _ => Localization.Get("watch.state.offline")
             };
         }
+
+        /// <summary>
+        /// La barre de la carte doit-elle être INDÉTERMINÉE ?
+        ///
+        /// **Oui dès qu'une capture tourne sans progression chiffrée**, et c'est
+        /// le cas NORMAL d'un direct : il n'a pas de fin connue, yt-dlp ne rend
+        /// donc souvent aucun pourcentage. Laissée déterminée à 0, la barre
+        /// reste VIDE pendant toute la capture — l'écran dit « en cours » à côté
+        /// d'une barre morte, ce qui se lit comme un enregistrement figé.
+        ///
+        /// Le défaut a vécu jusqu'au premier essai sur un vrai direct : rien ne
+        /// posait l'indétermination au DÉMARRAGE, seulement à la réception d'une
+        /// progression qui n'arrivait jamais. Trouvé par le mainteneur, sur une
+        /// capture, en comparant avec la version WinForms dont la barre vit.
+        ///
+        /// Fonction pure et isolée pour la même raison que ses deux voisines :
+        /// c'est une décision d'affichage, et une décision se vérifie.
+        /// </summary>
+        /// <param name="enCours">Vrai tant qu'une capture tourne pour ce salon.</param>
+        /// <param name="progression">Dernier pourcentage reçu, 0 si aucun.</param>
+        public static bool BarreIndeterminee(bool enCours, int progression) =>
+            enCours && progression <= 0;
     }
 }
