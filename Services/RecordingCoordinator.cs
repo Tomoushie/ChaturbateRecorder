@@ -11,6 +11,24 @@ namespace ChaturbateRecorderApp.Services
     {
         private readonly Dictionary<string, RecordingJob> _enCours = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// D'où viennent les moteurs. L'application n'en passe pas et obtient
+        /// donc de vrais yt-dlp — c'est le seul comportement livré.
+        ///
+        /// Les tests en passent une doublure : sans cela, éprouver ce qui suit
+        /// exigerait un direct réel, alors que rien ici ne parle au réseau.
+        /// Ce qui se décide dans ce fichier — reconnecter ou non, conclure ou
+        /// attendre, ce qui reste « en cours » — ne se voit AUTREMENT que par
+        /// le symptôme, et chacun de ces symptômes est une capture perdue ou un
+        /// salon devenu injoignable.
+        /// </summary>
+        private readonly Func<DownloadEngine> _fabriqueDeMoteur;
+
+        public RecordingCoordinator(Func<DownloadEngine>? fabriqueDeMoteur = null)
+        {
+            _fabriqueDeMoteur = fabriqueDeMoteur ?? (() => new DownloadEngine());
+        }
+
         public event Action<string, DownloadState>? EtatChange;
         public event Action<string, double>? Progression;
         public event Action<string, string>? LigneDeJournal;
@@ -55,6 +73,7 @@ namespace ChaturbateRecorderApp.Services
                 ContainerExt = containerExt,
                 AutoReconnectEnabled = reconnexionAuto,
                 TimerMinutes = minutesMinuteur,
+                Engine = _fabriqueDeMoteur(),
             };
 
             _parametres[url] = (formatSelector, containerExt);

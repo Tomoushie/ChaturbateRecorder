@@ -55,7 +55,11 @@ Ce qui reste ne peut PAS être fait depuis l'environnement d'agent :
    la ligne de commande yt-dlp, options par options, **et le fait que le yt-dlp
    LIVRÉ l'accepte** (`Tests/DownloadArgumentsTests.cs` lance le vrai binaire
    contre un hôte en `.invalid` et distingue le refus d'option — code 2 — de
-   l'échec réseau). Reste le réseau, le flux, le remux, le fichier.
+   l'échec réseau) ; et **les six invariants du coordinateur**
+   (`Tests/RecordingCoordinatorTests.cs`), grâce à une FABRIQUE de moteurs que
+   `RecordingCoordinator` reçoit désormais — l'application n'en passe pas et
+   obtient donc de vrais yt-dlp, les tests passent une doublure. Reste le
+   réseau, le flux, le remux, le fichier.
 2. **La barre de titre sombre et l'icône** — un coup d'œil du mainteneur.
 
 **Deux variantes publiées** :

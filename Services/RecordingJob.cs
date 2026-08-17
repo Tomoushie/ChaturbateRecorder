@@ -13,7 +13,11 @@ namespace ChaturbateRecorderApp.Services
         public required string CaptureDir { get; init; }
         public required string CodecChoice { get; init; }
         public required string ContainerExt { get; init; }
-        public DownloadEngine Engine { get; } = new();
+        // `init` et non seulement `get` : le coordinateur peut ainsi recevoir
+        // une FABRIQUE de moteurs et poser autre chose qu'un vrai yt-dlp. La
+        // valeur par defaut reste un moteur reel, donc rien ne change pour
+        // l'application.
+        public DownloadEngine Engine { get; init; } = new();
 
         // --- Reconnexion automatique (4.2) ---
         public bool AutoReconnectEnabled { get; set; }

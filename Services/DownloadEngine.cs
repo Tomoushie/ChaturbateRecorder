@@ -54,7 +54,15 @@ namespace ChaturbateRecorderApp.Services
             _runner.Diagnostic += message => Logger.Log(message, LogLevel.ERROR);
         }
 
-        public void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120, long logMaxSizeBytes = 0)
+        /// <remarks>
+        /// `virtual`, avec <see cref="Stop"/> et <see cref="SetState"/> : c'est
+        /// le SEUL moyen d'éprouver <see cref="RecordingCoordinator"/> sans
+        /// lancer yt-dlp. Le coordinateur décide de la reconnexion, du minuteur
+        /// et de ce qui reste « en cours » — six invariants dont chacun décrit
+        /// une panne précise, et qui ne se voient autrement que sur un direct
+        /// réel. Un moteur de doublure les rend vérifiables ici.
+        /// </remarks>
+        public virtual void Start(string ytDlpPath, string ffmpegPath, string targetUrl, string outputTemplate, string logFilePath, string? formatSelector = null, string outputContainer = "mp4", string? cookiesFilePath = null, string? proxyUrl = null, int watchdogTimeoutSeconds = 120, long logMaxSizeBytes = 0)
         {
             if (State == DownloadState.Running)
                 throw new InvalidOperationException("Un téléchargement est déjà en cours.");
@@ -172,7 +180,13 @@ namespace ChaturbateRecorderApp.Services
             });
         }
 
-        private void SetState(DownloadState state)
+        /// <summary>
+        /// `protected` et non `private` : en C#, une classe dérivée ne peut pas
+        /// lever l'évènement de sa base. Sans ce point d'entrée, un moteur de
+        /// doublure ne pourrait jamais annoncer « échec » — c'est-à-dire ne
+        /// pourrait éprouver aucune des décisions du coordinateur.
+        /// </summary>
+        protected void SetState(DownloadState state)
         {
             State = state;
             OnStateChanged?.Invoke(state);
@@ -237,6 +251,6 @@ namespace ChaturbateRecorderApp.Services
         /// marque l'arrêt comme MANUEL : l'état final sera Stopped, ce qui
         /// exclut la reconnexion automatique côté MainForm.
         /// </summary>
-        public void Stop() => _runner.Stop();
+        public virtual void Stop() => _runner.Stop();
     }
 }
