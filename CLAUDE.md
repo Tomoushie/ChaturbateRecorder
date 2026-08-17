@@ -4,10 +4,14 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-17** — 33 commits, dépôt local **sans distant**, `dotnet build`
-à 0 erreur / 0 avertissement, **295 tests**. Le WinForms n'est pas touché et
-compile toujours. L'application navigue, ajoute un salon, l'enregistre, le
-surveille, le reconnecte, tient un historique et se configure.
+**État au 2026-08-17** — 37 commits, dépôt local **sans distant**, `dotnet build`
+à 0 erreur / 0 avertissement, **364 tests**. L'application navigue, ajoute un
+salon, l'enregistre, le surveille, le reconnecte, tient un historique et se
+configure.
+
+**LE WINFORMS N'EST PLUS INTOUCHÉ** : l'emplacement des données de
+l'utilisateur y a changé le 17-08 (voir « Données de l'utilisateur »), parce que
+le faire d'un seul côté aurait fait diverger les deux applications pour de bon.
 
 **MESURER LES AVERTISSEMENTS SUR `-t:Rebuild`, JAMAIS SUR UN BUILD
 INCRÉMENTAL.** Un projet à jour ne recompile rien et ne réémet donc AUCUN
@@ -68,7 +72,7 @@ Ce qui reste ne peut PAS être fait depuis l'environnement d'agent :
 Régénérer par `dotnet publish -c Release -r win-x64 --self-contained false|true
 -o "..\Apercu-WPF[-autonome]"`. Le csproj copie yt-dlp et ffmpeg
 depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
-`settings.json` sont PARTAGÉS avec l'app WinForms** : si celle-ci tourne, la
+`settings.json` sont désormais partagés avec l'app WinForms** (voir plus haut) : si celle-ci tourne, la
 WPF sort en silence.
 
 **Le dépôt n'a AUCUN distant** — trente-trois commits à un seul endroit sur un
@@ -134,6 +138,26 @@ rangeait sous `%AppData%\StreamRecorderPro` au lieu de
    gabarit du champ de saisie faisait l'inverse : brosse posée, épaisseur
    laissée à 0, donc aucun cadre nulle part. **Trouvé sur une capture d'écran
    du mainteneur, pas par moi.** Verrouillé par `Tests/ThemeTemplateTests.cs`.
+
+## Données de l'utilisateur
+
+**`rooms.json`, `favorites.json`, `watchlist.json` et `settings.json` vivent
+dans `%LocalAppData%\ChaturbateRecorder\`** (2026-08-17), avec les journaux.
+`AppConfig.DataFileToRead` rend le fichier neuf s'il existe, sinon l'ancien à
+côté de l'exe : la reprise se fait à la première lecture et **l'ancien n'est
+jamais supprimé**. `AppConfig.DataFile` écrit toujours au nouvel endroit et crée
+le dossier. `trusted-binaries.json` reste près de l'exe — il décrit les binaires
+INSTALLÉS, pas l'utilisateur.
+
+**LE MÊME CHANGEMENT EST FAIT DANS LE WINFORMS** (`c3da07b`), et il devait
+l'être : sans lui les deux applications divergeaient pour de bon.
+
+**CORRECTION D'UNE NOTE ANTÉRIEURE** : `settings.json` n'a JAMAIS été partagé
+avec le WinForms, contrairement à ce qui était écrit ici et dans la mémoire.
+Chaque dossier avait le sien, `AppDir` valant `AppContext.BaseDirectory`. Seul
+le mutex d'instance unique est réellement global. Depuis ce changement, les deux
+applications partagent bel et bien leurs données — mais parce qu'on les y a
+mises, pas parce qu'elles l'étaient.
 
 ## Localisation
 

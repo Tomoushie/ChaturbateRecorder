@@ -564,6 +564,13 @@ namespace ChaturbateRecorderApp.UI
             ["report.openIssue"] = ("Ouvrir l'issue", "Open the issue"),
 
             ["settings.captureFolder"] = ("Dossier de capture", "Capture folder"),
+            // Affiché SOUS le champ et non dedans : laissé vide, le réglage vaut
+            // null, et l'application suit alors le dossier « Vidéos » du
+            // système. Pré-remplir le champ figerait ce chemin dans
+            // settings.json au premier enregistrement — le défaut cesserait de
+            // suivre le système. La légende dit donc où vont les fichiers sans
+            // rien décider à la place de l'utilisateur.
+            ["settings.captureFolderDefault"] = ("Par défaut : {0}", "Default: {0}"),
             ["settings.appearance"] = ("Apparence", "Appearance"),
             ["settings.darkTheme"] = ("Thème sombre", "Dark theme"),
             // La case porte le nom de la langue qu'elle ACTIVE, dans cette
@@ -602,6 +609,11 @@ namespace ChaturbateRecorderApp.UI
             // `nav.streams`, qui est le même mot français au sens ENREGISTRER
             // UN DIRECT — et qui se traduit par « Record ».
             ["settings.save"] = ("Enregistrer", "Save"),
+            // Le SEUL libelle visible qui vivait encore en dur hors du XAML, et
+            // il etait lui aussi sans accents. Trouve en balayant les modeles de
+            // vue apres coup : les filets de ViewLocalizationTests ne lisent que
+            // les .xaml, et ne l'auraient jamais vu.
+            ["settings.saved"] = ("Réglages enregistrés.", "Settings saved."),
 
             ["streams.add"] = ("Ajouter", "Add"),
             ["streams.logs"] = ("Journaux", "Logs"),

@@ -64,13 +64,76 @@ namespace ChaturbateRecorderApp.Config
         /// deplacement de l'application. C'est aussi la que va le rapport de
         /// crash, qui doit pouvoir s'ecrire meme quand tout le reste a echoue.
         /// </summary>
-        public static string DefaultLogDir()
+        public static string DefaultLogDir() => Path.Combine(DefaultDataDir(), "logs");
+
+        /// <summary>
+        /// Dossier des DONNEES de l'utilisateur : liste de salons, favoris,
+        /// surveillance, parametres.
+        ///
+        /// Il vaut le parent de <see cref="DefaultLogDir"/>, et pour EXACTEMENT
+        /// la raison deja ecrite au-dessus pour les journaux : le dossier existe
+        /// toujours, il est inscriptible sans elevation, et il survit a un
+        /// deplacement de l'application. Ces quatre fichiers vivaient pourtant a
+        /// cote de l'exe jusqu'au 2026-08-17, ce qui avait deux consequences que
+        /// personne n'aurait vues avant un vrai deploiement :
+        ///
+        /// - installee dans `Program Files`, l'application n'aurait PAS PU
+        ///   enregistrer un seul salon — le dossier n'y est pas inscriptible ;
+        /// - une mise a jour qui remplace le dossier de l'application effacait
+        ///   la liste de salons de l'utilisateur.
+        ///
+        /// Trouve autrement : l'aperçu WPF affichait une liste de salons VIDE
+        /// alors que le WinForms en avait onze, chacun lisant le `rooms.json`
+        /// de SON dossier.
+        ///
+        /// `trusted-binaries.json` reste volontairement a cote de l'exe : il
+        /// decrit les binaires INSTALLES et non l'utilisateur, et deux
+        /// installations qui partageraient ce fichier se declareraient
+        /// mutuellement alterees.
+        /// </summary>
+        public static string DefaultDataDir()
         {
             var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrWhiteSpace(local)) local = AppDir;
-            return Path.Combine(local, "ChaturbateRecorder", "logs");
+            return Path.Combine(local, "ChaturbateRecorder");
         }
-        public static string FavoritesFile     = Path.Combine(AppDir, "favorites.json");
+
+        public static string DataDir = DefaultDataDir();
+
+        /// <summary>
+        /// Chemin d'ECRITURE d'un fichier de donnees : toujours le nouveau
+        /// dossier, dont l'existence est assuree ici. Un appelant qui n'y
+        /// penserait pas echouerait au tout premier enregistrement, sur une
+        /// machine neuve uniquement — le pire moment pour s'en apercevoir.
+        /// </summary>
+        public static string DataFile(string nom)
+        {
+            try { Directory.CreateDirectory(DataDir); }
+            catch { /* Le repli se fera a l'ecriture, qui journalise deja. */ }
+            return Path.Combine(DataDir, nom);
+        }
+
+        /// <summary>
+        /// Chemin de LECTURE : le nouveau s'il existe, sinon l'ancien, a cote de
+        /// l'exe. C'est toute la migration — elle se fait a la premiere lecture,
+        /// et le prochain enregistrement depose la version neuve.
+        ///
+        /// **L'ancien fichier n'est jamais supprime**, comme pour la migration
+        /// favoris → salons : quelqu'un qui revient a une version anterieure
+        /// doit retrouver ses donnees. Les effacer rendrait la mise a jour
+        /// irreversible pour un gain nul.
+        /// </summary>
+        public static string DataFileToRead(string nom)
+        {
+            var neuf = Path.Combine(DataDir, nom);
+            if (File.Exists(neuf)) return neuf;
+
+            var ancien = Path.Combine(AppDir, nom);
+            return File.Exists(ancien) ? ancien : neuf;
+        }
+        // Ancien fichier, LU seulement (RoomStore le migre vers rooms.json) :
+        // il passe donc par la resolution de lecture, pas d'ecriture.
+        public static string FavoritesFile     = DataFileToRead("favorites.json");
         public static string DonateQrPath      = Path.Combine(AppDir, "donate_qr.png");
         public static string DonateQrExpectedSha256 = "FD21762BBE7C23A1CBDB5AB18210FDC2F6466B6840E20D2E795548D80F73CB71";
         public static string DonateUrl         = "https://paypal.me/tomoushie";

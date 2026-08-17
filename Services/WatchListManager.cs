@@ -25,10 +25,14 @@ namespace ChaturbateRecorderApp.Services
     {
         public List<string> Rooms { get; private set; } = new();
 
-        private static string WatchFile => Path.Combine(AppConfig.AppDir, "watchlist.json");
+        // Voir AppConfig.DataFileToRead : on lit la ou le fichier est, on ecrit
+        // toujours dans le dossier de donnees.
+        private static string FichierALire => AppConfig.DataFileToRead("watchlist.json");
+        private static string FichierAEcrire => AppConfig.DataFile("watchlist.json");
 
         public void Load()
         {
+            var WatchFile = FichierALire;
             if (!File.Exists(WatchFile)) return;
 
             try
@@ -48,7 +52,7 @@ namespace ChaturbateRecorderApp.Services
         {
             try
             {
-                File.WriteAllText(WatchFile, JsonSerializer.Serialize(Rooms));
+                File.WriteAllText(FichierAEcrire, JsonSerializer.Serialize(Rooms));
             }
             catch (Exception ex)
             {

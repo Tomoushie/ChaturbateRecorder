@@ -1,6 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ChaturbateRecorderApp.Config;
 using ChaturbateRecorderApp.Services;
 using ChaturbateRecorderApp.UI;
 using SentinelGuard;
@@ -12,7 +13,22 @@ namespace ChaturbateRecorderApp.ViewModels
         private readonly UserSettings _reglages = SettingsManager.Load();
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LegendeDossierCapture))]
         private string _captureDir = "";
+
+        /// <summary>
+        /// Où atterrissent réellement les captures quand le champ est vide.
+        ///
+        /// Un champ vide n'est PAS une absence de dossier : le réglage vaut
+        /// null et l'application suit le « Vidéos » du système. Sans cette
+        /// ligne, l'écran laissait croire que rien n'était configuré alors que
+        /// les enregistrements partaient bien quelque part — l'écran Historique
+        /// les retrouvait, mais les Réglages ne disaient pas où.
+        /// </summary>
+        public string LegendeDossierCapture =>
+            string.IsNullOrWhiteSpace(CaptureDir)
+                ? Localization.Format("settings.captureFolderDefault", AppConfig.DefaultCaptureDir())
+                : "";
 
         [ObservableProperty]
         private string _cookiesFilePath = "";
@@ -43,6 +59,13 @@ namespace ChaturbateRecorderApp.ViewModels
 
         public SettingsViewModel()
         {
+            // La legende est une chaine FORMATEE, donc hors de portee de
+            // `{ui:Str}` : elle a besoin de son propre reveil, sans quoi elle
+            // resterait dans la langue du lancement pendant que tout l'ecran
+            // autour d'elle change — exactement le defaut qu'on vient de
+            // reparer ailleurs.
+            Localization.LanguageChanged += () => OnPropertyChanged(nameof(LegendeDossierCapture));
+
             _captureDir = _reglages.CaptureDir ?? "";
             _cookiesFilePath = _reglages.CookiesFilePath ?? "";
             _proxyUrl = _reglages.ProxyUrl ?? "";
@@ -134,7 +157,7 @@ namespace ChaturbateRecorderApp.ViewModels
             try
             {
                 SettingsManager.Save(_reglages);
-                Message = "Reglages enregistres.";
+                Message = Localization.Get("settings.saved");
             }
             catch (Exception ex)
             {

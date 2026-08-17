@@ -27,6 +27,14 @@
                                 Content="{ui:Str button.browse}"
                                 Command="{Binding ChoisirDossierCommand}" />
                     </Grid>
+                    <!-- Chaine vide quand un dossier est choisi : la legende
+                         disparait alors avec sa hauteur, sans laisser de blanc.
+                         Un Collapsed par declencheur ferait la meme chose en
+                         plus verbeux, le TextBlock vide ne mesurant rien. -->
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LegendeDossierCapture}" />
                 </StackPanel>
             </Border>
 
