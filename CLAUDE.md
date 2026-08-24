@@ -27,8 +27,21 @@ passage. `StreamsViewModel.RafraichirApercuAsync` redemande une vignette à
 chaque salon vu en ligne, `RoomCardViewModel.CheminApercu` la porte,
 `RoomCard.xaml` l'affiche en 64×36 à côté du pictogramme — colonne totalement
 effacée sans elle, donc écran identique pour qui n'a pas le composant payé.
-**Reste (v2, déjà annoncée dans le README de StreamRecorderPro)** : aperçu
-VIDÉO en direct plutôt qu'une image fixe.
+**LA V2 EST LIVRÉE (24-08, même session)** : cliquer la vignette ouvre une
+fenêtre de vidéo en direct (`StreamRecorderPro.LiveVideo`/`LiveWindow`, ffmpeg
+en décodage continu réutilisé — pas de nouvelle dépendance). Côté libre,
+`PremiumBinding`/`PremiumBridge.TryShowLiveWindow` au même endroit que
+`TryCapturePreview`. **Non éprouvé contre un salon réel** : ffmpeg testé
+offline contre `testsrc` (mire synthétique), la fenêtre elle-même demande
+l'œil du mainteneur sur un vrai bureau, comme la capture en 97.0.
+
+**PIÈGE WPF N°5, trouvé en écrivant le filet de rendu** : un `Control`
+(`Button`) **`Collapsed` n'applique JAMAIS son `ControlTemplate`**
+(`ApplyTemplate` part de `Measure`, sauté pour `Collapsed`) — ses enfants
+générés par le gabarit (ici un `Border`+`Image`) n'existent alors PAS dans
+l'arbre visuel, contrairement à un `Border` simple dont les enfants restent
+toujours présents. Chercher l'élément posé DIRECTEMENT en XAML (le `Button`
+lui-même), jamais ce que son gabarit produit, si l'élément peut être caché.
 
 **LES DEUX `.part` ORPHELINS DU PREMIER ESSAI EN DIRECT (17-08) SONT
 FINALISÉS** — renommés à la main le 24-08, ils apparaîtront dans l'historique.
