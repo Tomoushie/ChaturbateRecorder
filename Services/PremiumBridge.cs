@@ -33,15 +33,17 @@ namespace ChaturbateRecorderApp.Services
         private readonly PropertyInfo _licensedTo;
         private readonly PropertyInfo _licenceProblem;
         private readonly MethodInfo _capturePreview;
+        private readonly MethodInfo _liveWindow;
 
         private PremiumBinding(object instance, PropertyInfo version, PropertyInfo licensedTo,
-                               PropertyInfo licenceProblem, MethodInfo capturePreview)
+                               PropertyInfo licenceProblem, MethodInfo capturePreview, MethodInfo liveWindow)
         {
             _instance = instance;
             _version = version;
             _licensedTo = licensedTo;
             _licenceProblem = licenceProblem;
             _capturePreview = capturePreview;
+            _liveWindow = liveWindow;
         }
 
         /// <summary>
@@ -79,6 +81,16 @@ namespace ChaturbateRecorderApp.Services
                 return null;
             }
 
+            var liveWindow = type.GetMethod("TryShowLiveWindow", BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(int) },
+                null);
+            if (liveWindow == null || liveWindow.ReturnType != typeof(bool))
+            {
+                probleme = "méthode bool TryShowLiveWindow(string, string, string, string, int) absente";
+                return null;
+            }
+
             if (type.GetConstructor(Type.EmptyTypes) == null)
             {
                 probleme = "constructeur sans argument absent";
@@ -100,7 +112,7 @@ namespace ChaturbateRecorderApp.Services
 
             if (instance == null) { probleme = "construction impossible : instance nulle"; return null; }
 
-            return new PremiumBinding(instance, version, licensedTo, licenceProblem, capture);
+            return new PremiumBinding(instance, version, licensedTo, licenceProblem, capture, liveWindow);
         }
 
         internal string Version => Lire(_version);
@@ -126,6 +138,20 @@ namespace ChaturbateRecorderApp.Services
                 // l'application : il est OPTIONNEL, son échec est un
                 // non-évènement pour qui n'a pas acheté.
                 Logger.Log($"Premium : aperçu impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
+
+        internal bool TryShowLiveWindow(string ytDlpPath, string ffmpegPath, string roomUrl, string titre, int timeoutSeconds)
+        {
+            try
+            {
+                return _liveWindow.Invoke(_instance,
+                    new object[] { ytDlpPath, ffmpegPath, roomUrl, titre, timeoutSeconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : vidéo en direct impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
                 return false;
             }
         }
@@ -235,6 +261,18 @@ namespace ChaturbateRecorderApp.Services
             if (_module == null || !IsLicensed) return false;
             return _module.TryCapturePreview(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
                 roomUrl, destinationJpg, timeoutSeconds);
+        }
+
+        /// <summary>
+        /// Ouvre une fenêtre de vidéo en direct pour ce salon. Faux si le
+        /// composant est absent, sa licence refusée, ou l'ouverture ratée —
+        /// l'appelant n'a rien d'autre à faire dans ce cas.
+        /// </summary>
+        public bool TryShowLiveWindow(string roomUrl, string titre, int timeoutSeconds = 20)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TryShowLiveWindow(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
+                roomUrl, titre, timeoutSeconds);
         }
 
         private static string Empreinte(string chemin)

@@ -75,15 +75,32 @@
                          quand elle est absente — colonne Auto + Collapsed
                          revient à une largeur de zéro, donc l'immense
                          majorité des utilisateurs (sans le composant payé)
-                         voit un écran identique à avant cet ajout. -->
-                    <Border Grid.Column="1" Width="64" Height="36"
+                         voit un écran identique à avant cet ajout.
+
+                         CLIQUABLE depuis la v2 (vidéo en direct) : un Button
+                         sans habillage (juste un ContentPresenter comme
+                         gabarit) donne le clic, le clavier et le curseur
+                         « main » sans qu'aucun chrome de bouton n'apparaisse
+                         par-dessus la vignette. -->
+                    <Button Grid.Column="1"
                             Margin="12,0,0,0"
-                            CornerRadius="4"
-                            Background="{DynamicResource Brush.Input}"
-                            Visibility="{Binding CheminApercu, Converter={StaticResource StringToVisibilityConverter}}">
-                        <Image Stretch="UniformToFill"
-                               Source="{Binding CheminApercu, Converter={StaticResource PathToThumbnailConverter}}" />
-                    </Border>
+                            Cursor="Hand"
+                            ToolTip="Voir le direct"
+                            Visibility="{Binding CheminApercu, Converter={StaticResource StringToVisibilityConverter}}"
+                            Command="{Binding DataContext.VoirEnDirectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Border Width="64" Height="36"
+                                CornerRadius="4"
+                                Background="{DynamicResource Brush.Input}">
+                            <Image Stretch="UniformToFill"
+                                   Source="{Binding CheminApercu, Converter={StaticResource PathToThumbnailConverter}}" />
+                        </Border>
+                    </Button>
 
                     <StackPanel Grid.Column="2" Margin="12,0,12,0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding RoomName}"

@@ -390,5 +390,18 @@
             _store.Save();
             Recharger();
         }
+
+        /// <summary>
+        /// Ouvre la vidéo en direct du salon (v2 premium) — clic sur la
+        /// vignette. En tâche de fond comme <see cref="RafraichirApercuAsync"/> :
+        /// résoudre le flux est un appel réseau bloquant, et App.Premium se
+        /// charge lui-même de revenir sur le fil d'interface pour la fenêtre.
+        /// </summary>
+        [RelayCommand]
+        private void VoirEnDirect(RoomCardViewModel? carte)
+        {
+            if (carte is null) return;
+            _ = Task.Run(() => App.Premium.TryShowLiveWindow(carte.Url, carte.RoomName));
+        }
     }
 }

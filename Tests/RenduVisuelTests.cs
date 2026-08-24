@@ -270,13 +270,20 @@ namespace ChaturbateRecorderApp.Tests
                     });
                     Enregistrer(bitmap, $"vignette-premium-{theme}".ToLowerInvariant());
 
-                    // 64x36 : la taille du cadre de vignette, et d'aucun autre
-                    // Border du gabarit (la carte elle-même n'a pas de largeur
-                    // fixe, le liseré d'état fait 4 px de large).
-                    var cadres = Descendants<Border>(vue).Where(b => b.Width == 64 && b.Height == 36).ToList();
-                    Assert.Equal(2, cadres.Count);
-                    Assert.Contains(cadres, b => b.Visibility == Visibility.Visible);
-                    Assert.Contains(cadres, b => b.Visibility == Visibility.Collapsed);
+                    // Chercher le BOUTON, pas le Border qu'il habille : un
+                    // Control COLLAPSED n'applique jamais son ControlTemplate
+                    // (ApplyTemplate part de Measure, sauté pour Collapsed),
+                    // donc le Border et l'Image qu'il contient n'existent tout
+                    // simplement PAS dans l'arbre visuel pour la carte sans
+                    // vignette — piège découvert en écrivant ce test même.
+                    // Le Button, lui, est un enfant DIRECT de la grille (posé
+                    // par XAML, pas par un template) : toujours présent.
+                    var boutons = Descendants<Button>(vue)
+                        .Where(b => Equals(b.ToolTip, "Voir le direct"))
+                        .ToList();
+                    Assert.Equal(2, boutons.Count);
+                    Assert.Contains(boutons, b => b.Visibility == Visibility.Visible);
+                    Assert.Contains(boutons, b => b.Visibility == Visibility.Collapsed);
                 }
                 finally
                 {

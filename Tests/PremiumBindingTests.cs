@@ -27,6 +27,7 @@ namespace ChaturbateRecorderApp.Tests
             public string LicensedTo => "Jane Doe";
             public string LicenceProblem => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => true;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => true;
         }
 
         private sealed class SansVersion
@@ -34,6 +35,7 @@ namespace ChaturbateRecorderApp.Tests
             public string LicensedTo => "";
             public string LicenceProblem => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
         }
 
         private sealed class MauvaiseSignature
@@ -43,6 +45,25 @@ namespace ChaturbateRecorderApp.Tests
             public string LicenceProblem => "";
             // int au lieu de bool, et un paramètre en moins.
             public int TryCapturePreview(string a, string b, string c) => 0;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
+        }
+
+        /// <summary>
+        /// Le pendant de <see cref="MauvaiseSignature"/> pour le second
+        /// membre (v2, vidéo en direct) : tout le reste du contrat est
+        /// honoré, SEUL TryShowLiveWindow a une mauvaise signature. Sans ce
+        /// cas, une régression sur ce contrôle précis passerait inaperçue —
+        /// <see cref="MauvaiseSignature"/> ne l'exerce jamais, puisqu'il est
+        /// déjà refusé plus tôt sur TryCapturePreview.
+        /// </summary>
+        private sealed class MauvaiseSignatureVideo
+        {
+            public string Version => "1.0.0";
+            public string LicensedTo => "";
+            public string LicenceProblem => "";
+            public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            // string au lieu de bool.
+            public string TryShowLiveWindow(string a, string b, string c, string d, int e) => "";
         }
 
         private sealed class ConstructeurAvecArgument
@@ -52,6 +73,7 @@ namespace ChaturbateRecorderApp.Tests
             public string LicensedTo => "";
             public string LicenceProblem => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
         }
 
         private sealed class ConstructeurQuiExplose
@@ -61,6 +83,7 @@ namespace ChaturbateRecorderApp.Tests
             public string LicensedTo => "";
             public string LicenceProblem => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
         }
 
         // --- Cas nominal ---
@@ -75,6 +98,7 @@ namespace ChaturbateRecorderApp.Tests
             Assert.Equal("1.0.0", lie!.Version);
             Assert.Equal("Jane Doe", lie.LicensedTo);
             Assert.True(lie.TryCapturePreview("yt", "ff", "url", "out.jpg", 20));
+            Assert.True(lie.TryShowLiveWindow("yt", "ff", "url", "Salon", 20));
         }
 
         // --- Chaque refus, pour la bonne raison ---
@@ -97,6 +121,15 @@ namespace ChaturbateRecorderApp.Tests
 
             Assert.Null(lie);
             Assert.Contains("TryCapturePreview", probleme);
+        }
+
+        [Fact]
+        public void ALiveWindowMethodWithTheWrongSignatureIsRefused()
+        {
+            var lie = PremiumBinding.Bind(typeof(MauvaiseSignatureVideo), out var probleme);
+
+            Assert.Null(lie);
+            Assert.Contains("TryShowLiveWindow", probleme);
         }
 
         [Fact]
