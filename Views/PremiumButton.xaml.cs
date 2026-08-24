@@ -9,9 +9,13 @@ using System.Windows.Threading;
 namespace ChaturbateRecorderApp.Views
 {
     /// <summary>
-    /// Bouton flottant « Passer à Premium » (120.0) : halo pourpre pulsé en
-    /// continu, éclairs procéduraux au survol. Purement décoratif — toute la
-    /// logique de licence/visibilité vit dans <c>MainWindow.xaml.cs</c>.
+    /// Bouton flottant « Passer à Premium » (120.0). L'habillage permanent
+    /// (halo qui respire, reflet qui balaie, icône d'éclair fixe) vit dans le
+    /// <c>ControlTemplate</c> de <c>Button.Premium</c> (Themes/Premium.xaml) —
+    /// purement déclaratif, rien à piloter ici. Ce fichier ne garde QUE ce
+    /// que le gabarit ne peut pas faire : les éclairs PROCÉDURAUX déclenchés
+    /// par le survol, régénérés à intervalle aléatoire. Toute la logique de
+    /// licence/visibilité vit dans <c>MainWindow.xaml.cs</c>.
     /// </summary>
     public partial class PremiumButton : UserControl
     {
@@ -23,25 +27,11 @@ namespace ChaturbateRecorderApp.Views
         {
             InitializeComponent();
 
-            DemarrerPulsation();
-
             // INTERVALLE ALÉATOIRE À CHAQUE TIC, pas fixe : un éclair qui
             // clignote à cadence parfaitement régulière a l'air mécanique.
             // Voir RegenererEclairs, qui reprogramme le prochain intervalle.
             _minuteurEclairs = new DispatcherTimer();
             _minuteurEclairs.Tick += (_, _) => RegenererEclairs();
-        }
-
-        /// <summary>Fondu lent de l'opacité du halo, boucle infinie — la « surbrillance animée » demandée, indépendante du survol.</summary>
-        private void DemarrerPulsation()
-        {
-            var pulsation = new DoubleAnimation(0.45, 1.0, TimeSpan.FromMilliseconds(1400))
-            {
-                AutoReverse = true,
-                RepeatBehavior = RepeatBehavior.Forever,
-                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-            };
-            Halo.BeginAnimation(OpacityProperty, pulsation);
         }
 
         private void Bouton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -88,7 +78,7 @@ namespace ChaturbateRecorderApp.Views
                 var eclair = new Polyline
                 {
                     Points = GenererTrajet(depart, arrivee, segments: 5, amplitude: 10),
-                    Stroke = (Brush)FindResource("Premium.Eclair"),
+                    Stroke = (Brush)FindResource("Premium.EclairProcedural"),
                     StrokeThickness = 1.6,
                     StrokeLineJoin = PenLineJoin.Round,
                     Effect = new System.Windows.Media.Effects.DropShadowEffect

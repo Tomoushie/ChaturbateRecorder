@@ -21,6 +21,10 @@
                      compilation. -->
                 <ResourceDictionary Source="Themes/Palette.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
+                <!-- 120.0 — bouton Premium, couleurs figées, ne dépend de rien
+                     d'autre : sa position ici n'a pas d'importance tant qu'elle
+                     suit Controls.xaml. -->
+                <ResourceDictionary Source="Themes/Premium.xaml" />
                 <ResourceDictionary Source="Themes/Icons.xaml" />
                 <ResourceDictionary Source="Themes/Natifs.xaml" />
                 <ResourceDictionary Source="Themes/SideBar.xaml" />

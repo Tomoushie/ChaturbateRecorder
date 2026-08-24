@@ -14,65 +14,49 @@
       Visibilité pilotée depuis le code-behind de MainWindow
       (App.Premium.IsLicensed), pas ici : un client déjà licencié ne doit
       jamais voir ce bouton.
+
+      HABILLAGE REPRIS D'UNE SUGGESTION DE TOM (24-08, après un premier essai
+      jugé trop « cheap » — halo en ellipse plate + traits fins) : dégradé
+      pourpre à liseré clair, icône d'éclair fixe, reflet vitreux qui balaie
+      le bouton en boucle, halo qui respire, zoom léger au survol/appui.
+      Vit dans Themes/Premium.xaml (Button.Premium) plutôt qu'ici : un style
+      de bouton partagé, pas propre à cette seule instance.
+
+      LES ÉCLAIRS PROCÉDURAUX RESTENT ICI, EN PLUS de cet habillage (demande
+      explicite de Tom : garder un vrai déclenchement au survol, pas
+      seulement l'icône fixe + le reflet ambiant du nouveau gabarit) — Canvas
+      superposé, jamais dans le ControlTemplate : le code-behind n'aurait
+      alors pu l'atteindre qu'au prix d'un Template.FindName après
+      ApplyTemplate, plus fragile qu'un élément posé directement ici.
     -->
 
     <UserControl.Resources>
-        <SolidColorBrush x:Key="Premium.Fond" Color="#8B3FE0" />
-        <SolidColorBrush x:Key="Premium.FondSurvol" Color="#9D56F0" />
-        <SolidColorBrush x:Key="Premium.Texte" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="Premium.Eclair" Color="#E0C4FF" />
-
-        <Style x:Key="Premium.StyleBouton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource Premium.Fond}" />
-            <Setter Property="Foreground" Value="{StaticResource Premium.Texte}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="18,10" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Fond" CornerRadius="20"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Fond" Property="Background"
-                                        Value="{StaticResource Premium.FondSurvol}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Propre à CETTE instance (les éclairs procéduraux dessinés par le
+             code-behind), contrairement aux pinceaux de Themes/Premium.xaml
+             qui sont un style de bouton partagé. Nommé EclairProcedural et
+             non Eclair tout court : Themes/Premium.xaml définit déjà
+             `Premium.Eclair` pour l'icône fixe du gabarit — même préfixe,
+             deux pinceaux différents, volontairement distingués plutôt que
+             de compter sur l'ordre de résolution local/global pour ne pas
+             se marcher dessus. -->
+        <SolidColorBrush x:Key="Premium.EclairProcedural" Color="#E0C4FF" />
     </UserControl.Resources>
 
     <Grid>
-        <!-- HALO : pulse en continu, DERRIÈRE le bouton — c'est la
-             « surbrillance animée » demandée, indépendante du survol. -->
-        <Ellipse x:Name="Halo" Width="150" Height="70"
-                 HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Ellipse.Fill>
-                <RadialGradientBrush>
-                    <GradientStop Color="#AA8B3FE0" Offset="0" />
-                    <GradientStop Color="#008B3FE0" Offset="1" />
-                </RadialGradientBrush>
-            </Ellipse.Fill>
-        </Ellipse>
-
-        <!-- ÉCLAIRS : Canvas vide au repos, rempli par le code-behind
-             pendant le survol. IsHitTestVisible=False : ne doit JAMAIS
-             intercepter le clic destiné au bouton. -->
-        <Canvas x:Name="CanevasEclairs" IsHitTestVisible="False" />
-
-        <Button x:Name="Bouton" Style="{StaticResource Premium.StyleBouton}"
+        <!-- ÉCLAIRS PROCÉDURAUX : Canvas vide au repos, rempli par le
+             code-behind pendant le survol. IsHitTestVisible=False : ne doit
+             JAMAIS intercepter le clic destiné au bouton. Au-dessus du
+             bouton dans l'ordre de déclaration : c'est ce qui le pose
+             PAR-DESSUS le halo/reflet du gabarit, comme des étincelles qui
+             crépitent devant. -->
+        <Button x:Name="Bouton" Style="{StaticResource Button.Premium}"
+                Height="40" MinWidth="190"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 Content="{ui:Str premium.button}"
                 Click="Bouton_Click"
                 MouseEnter="Bouton_MouseEnter"
                 MouseLeave="Bouton_MouseLeave" />
+
+        <Canvas x:Name="CanevasEclairs" IsHitTestVisible="False" />
     </Grid>
 </UserControl>
