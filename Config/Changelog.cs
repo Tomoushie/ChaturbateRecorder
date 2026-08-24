@@ -326,6 +326,11 @@ namespace ChaturbateRecorderApp.Config
                 "Planificateur (Stream Recorder Pro) : une fenêtre horaire quotidienne par salon restreint quand l'enregistrement automatique a le droit de démarrer.",
                 "Le panneau Diagnostic affiche l'usage local de ces fonctionnalités (jamais transmis).",
             }),
+            ("1.38.0", new[]
+            {
+                "L'historique gagne un mode Galerie (bouton à côté de \"Liste\") : une grille de vignettes plutôt qu'une liste, avec tri par date, durée ou salon et un filtre par nom de salon.",
+                "Survoler une carte de la Galerie révèle sa taille de fichier et, pour qui a Stream Recorder Pro, une empreinte d'intégrité (SHA-256) calculée à la demande.",
+            }),
         };
 
         /// <summary>
@@ -529,6 +534,11 @@ namespace ChaturbateRecorderApp.Config
                 "Smart naming (Stream Recorder Pro): customise the file name of each recording with a pattern of your choice (room, date, time, detected quality).",
                 "Scheduler (Stream Recorder Pro): a daily time window per room restricts when automatic recording is allowed to start.",
                 "The Diagnostics panel shows local usage of these features (never sent anywhere).",
+            },
+            ["1.38.0"] = new[]
+            {
+                "History gets a Gallery mode (button next to \"List\"): a grid of thumbnails instead of a list, with sorting by date, duration or room and a filter by room name.",
+                "Hovering a card in the Gallery reveals its file size and, for anyone with Stream Recorder Pro, an integrity fingerprint (SHA-256) computed on demand.",
             },
         };
 

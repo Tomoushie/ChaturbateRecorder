@@ -41,7 +41,7 @@
     -->
     <RootNamespace>ChaturbateRecorderApp</RootNamespace>
 
-    <Version>1.37.0</Version>
+    <Version>1.38.0</Version>
 
     <!--
       ICONE DE L'APPLICATION. Elle manquait : l'executable, la barre des taches

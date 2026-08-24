@@ -358,11 +358,19 @@ namespace ChaturbateRecorderApp.Tests
         /// Une version INCONNUE ne declenche pas le repli : il n'y a rien a
         /// quoi retomber. C'est le seul chemin qui laisse la liste vide, et
         /// c'est pour lui que `Vide` existe.
+        ///
+        /// `CurrentVersion`, pas un littéral : un littéral fige la version
+        /// APRÈS laquelle "rien n'existe encore" au jour où le test a été
+        /// écrit — chaque nouvelle entrée de changelog l'a rendu faux à deux
+        /// reprises (1.37.0 puis 1.38.0), pour la même raison à chaque fois.
+        /// `CurrentVersion` reste vrai par construction : c'est justement la
+        /// dernière version dont `TheCurrentAssemblyVersionHasAChangelogEntry`
+        /// garantit l'existence.
         /// </summary>
         [Fact]
         public void AnUnknownVersionLeavesTheListEmpty()
         {
-            var vm = new ViewModels.ChangelogViewModel("1.37.0", "99.99.99");
+            var vm = new ViewModels.ChangelogViewModel(CurrentVersion, "99.99.99");
 
             Assert.Empty(vm.Versions);
             Assert.True(vm.Vide);
