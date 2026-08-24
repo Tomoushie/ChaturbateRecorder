@@ -555,6 +555,22 @@ namespace ChaturbateRecorderApp.UI
             ["history.open"] = ("Ouvrir", "Open"),
             ["history.folder"] = ("Dossier", "Folder"),
 
+            ["gallery.viewList"] = ("Liste", "List"),
+            ["gallery.viewGrid"] = ("Galerie", "Gallery"),
+            ["gallery.sortDate"] = ("Date", "Date"),
+            ["gallery.sortDuration"] = ("Durée", "Duration"),
+            ["gallery.sortRoom"] = ("Salon", "Room"),
+            ["gallery.filterByRoom"] = ("Filtrer par salon", "Filter by room"),
+            ["gallery.unknownRoom"] = ("Salon inconnu", "Unknown room"),
+            ["gallery.fingerprint"] = ("Empreinte (premium)", "Fingerprint (premium)"),
+            ["gallery.fingerprintComputing"] = ("Calcul…", "Computing…"),
+            ["gallery.fingerprintNeedsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active.",
+                "Requires an active StreamRecorderPro licence."),
+            ["gallery.fingerprintHelp"] = (
+                "Empreinte d'intégrité locale (SHA-256) : atteste que ce fichier n'a pas changé depuis son calcul, pas son authenticité.",
+                "Local integrity fingerprint (SHA-256): attests this file has not changed since it was computed, not its authenticity."),
+
             ["legal.disclaimer"] = (
                 "Texte informatif, il ne constitue pas un avis juridique.",
                 "Informational text; it is not legal advice."),

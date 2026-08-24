@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ChaturbateRecorderApp.Views.HistoryView"
+<UserControl x:Class="ChaturbateRecorderApp.Views.HistoryView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
@@ -6,10 +6,12 @@
 
     <UserControl.Resources>
         <conv:PathToThumbnailConverter x:Key="PathToThumbnailConverter" />
+        <conv:BoolToButtonStyleConverter x:Key="BoolToButtonStyleConverter" />
     </UserControl.Resources>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -21,23 +23,59 @@
             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
                        Style="{StaticResource Text.Caption}"
                        Text="{ui:Str history.recentCount}" />
+
+            <!-- LISTE / GALERIE : même donnée, deux présentations, voir
+                 ModeAffichageHistorique. Le style entier change avec l'état
+                 (pas seulement Background/Foreground) : le gabarit de
+                 Button.Secondary peint son fond en dur, un Setter externe sur
+                 Background n'atteindrait rien (piège WPF n°8). -->
+            <Button Margin="24,0,0,0" Content="{ui:Str gallery.viewList}"
+                    Command="{Binding AfficherEnListeCommand}"
+                    Style="{Binding EstEnListe, Converter={StaticResource BoolToButtonStyleConverter}}" />
+            <Button Margin="6,0,0,0" Content="{ui:Str gallery.viewGrid}"
+                    Command="{Binding AfficherEnGalerieCommand}"
+                    Style="{Binding EstEnGalerie, Converter={StaticResource BoolToButtonStyleConverter}}" />
+        </StackPanel>
+
+        <!-- Tri et filtre : utiles dans les DEUX modes (une liste longue se
+             filtre aussi bien qu'une grille), donc posés une seule fois,
+             au-dessus des deux. -->
+        <StackPanel Grid.Row="1" Margin="0,10,0,0" Orientation="Horizontal">
+            <Button Content="{ui:Str gallery.sortDate}"
+                    Command="{Binding TrierParDateCommand}"
+                    Style="{Binding TriParDate, Converter={StaticResource BoolToButtonStyleConverter}}" />
+            <Button Margin="6,0,0,0" Content="{ui:Str gallery.sortDuration}"
+                    Command="{Binding TrierParDureeCommand}"
+                    Style="{Binding TriParDuree, Converter={StaticResource BoolToButtonStyleConverter}}" />
+            <Button Margin="6,0,0,0" Content="{ui:Str gallery.sortRoom}"
+                    Command="{Binding TrierParSalonCommand}"
+                    Style="{Binding TriParSalon, Converter={StaticResource BoolToButtonStyleConverter}}" />
+
+            <TextBlock Margin="18,0,0,0" VerticalAlignment="Center"
+                       Style="{StaticResource Text.Caption}"
+                       Text="{ui:Str gallery.filterByRoom}" />
+            <TextBox Margin="6,0,0,0" Width="140" VerticalAlignment="Center"
+                     Style="{StaticResource Surface.Input}"
+                     Text="{Binding FiltreSalon, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
         <!-- Trois états mutuellement exclusifs : en cours, vide, ou la liste.
              Un dossier vide qui n'affiche RIEN se lit comme un défaut. -->
-        <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+        <TextBlock Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                    Style="{StaticResource Text.Caption}"
                    Text="{ui:Str history.loading}"
                    Visibility="{Binding Chargement, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-        <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+        <TextBlock Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                    Style="{StaticResource Text.Caption}"
                    Text="{ui:Str history.empty}"
                    Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-        <ScrollViewer Grid.Row="1" Margin="0,12,0,0"
+        <!-- ===================== MODE LISTE (inchangé) ===================== -->
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0"
                       VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
+                      HorizontalScrollBarVisibility="Disabled"
+                      Visibility="{Binding EstEnListe, Converter={StaticResource BooleanToVisibilityConverter}}">
             <ItemsControl ItemsSource="{Binding Elements}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -88,6 +126,119 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- ===================== MODE GALERIE (Premium II) ===================== -->
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Visibility="{Binding EstEnGalerie, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ItemsControl ItemsSource="{Binding Elements}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Carte : 200 px de large, vignette 16/9 en tête,
+                             infos rapides toujours visibles, le RESTE
+                             (taille, empreinte premium) révélé au survol,
+                             c'est la "hover-card" du brief.
+
+                             Le déclencheur qui révèle "Survol" vit sur le
+                             DataTemplate (SourceName + TargetName), PAS dans
+                             un Border.Style : un Style.Setter ne peut pas
+                             cibler TargetName (MC4011), seul un template a
+                             cette espace de noms partagée entre éléments
+                             frères. -->
+                        <Border x:Name="Carte" Width="200" Margin="0,0,10,10" Padding="0"
+                                CornerRadius="10"
+                                Background="{DynamicResource Brush.Card}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                ClipToBounds="True">
+                            <Grid>
+                                <StackPanel>
+                                    <Border Height="112" Background="{DynamicResource Brush.Input}">
+                                        <Image Stretch="UniformToFill"
+                                               Source="{Binding CheminVignette, Converter={StaticResource PathToThumbnailConverter}}" />
+                                    </Border>
+
+                                    <StackPanel Margin="10,8,10,10">
+                                        <TextBlock Text="{Binding Salon}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource Brush.Fg}"
+                                                   Visibility="{Binding SalonInconnu, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                                        <TextBlock Text="{ui:Str gallery.unknownRoom}" FontStyle="Italic"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource Brush.FgMuted}"
+                                                   Visibility="{Binding SalonInconnu, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                        <TextBlock Margin="0,2,0,0" FontSize="11"
+                                                   Foreground="{DynamicResource Brush.FgMuted}"
+                                                   Text="{Binding DateEtDuree, Mode=OneWay}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- RÉVÉLÉ AU SURVOL uniquement : la taille du
+                                     fichier et, pour qui a Stream Recorder
+                                     Pro, l'empreinte d'intégrité. Jamais un
+                                     calcul automatique, un fichier peut peser
+                                     plusieurs Go. -->
+                                <Border x:Name="Survol" VerticalAlignment="Bottom"
+                                        Background="#E6000000" Opacity="0"
+                                        Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding TailleLisible}" FontSize="11" Foreground="White" />
+
+                                        <Button Margin="0,6,0,0" HorizontalAlignment="Left"
+                                                Style="{StaticResource Button.Secondary}"
+                                                Content="{ui:Str gallery.fingerprint}"
+                                                Command="{Binding CalculerEmpreinteCommand}"
+                                                Visibility="{Binding EmpreinteInconnue, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBlock Margin="0,4,0,0" FontSize="10" FontStyle="Italic"
+                                                   Foreground="{DynamicResource Brush.Danger}"
+                                                   Text="{ui:Str gallery.fingerprintNeedsLicense}"
+                                                   Visibility="{Binding EstLicencie, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                                        <TextBlock Margin="0,4,0,0" FontSize="10" FontStyle="Italic"
+                                                   Foreground="White"
+                                                   Text="{ui:Str gallery.fingerprintComputing}"
+                                                   Visibility="{Binding CalculEmpreinteEnCours, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBlock Margin="0,4,0,0" FontSize="9" FontFamily="Consolas"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="White"
+                                                   Text="{Binding Empreinte}"
+                                                   ToolTip="{ui:Str gallery.fingerprintHelp}"
+                                                   Visibility="{Binding Empreinte, Converter={StaticResource StringToVisibilityConverter}}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <DataTemplate.Triggers>
+                            <Trigger SourceName="Carte" Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Survol" Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Survol" Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

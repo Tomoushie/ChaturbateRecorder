@@ -37,6 +37,15 @@ namespace ChaturbateRecorderApp.ViewModels
         /// <summary>Du sidecar écrit à la finalisation, ou reparsé en repli — voir <c>HistoryService.Salon</c>. Null : salon inconnu (nom déjà personnalisé, sans sidecar).</summary>
         public string? Salon { get; }
 
+        /// <summary>
+        /// Fixe dès la construction (jamais recalculé) : sert UNIQUEMENT à
+        /// choisir entre le vrai nom et le repli <c>{ui:Str gallery.unknownRoom}</c>
+        /// en XAML, qui lui reste une VRAIE liaison et survit donc à un
+        /// changement de langue — un texte de repli lu une fois en C# ne le
+        /// ferait pas (voir la mésaventure déjà payée sur la localisation).
+        /// </summary>
+        public bool SalonInconnu => Salon == null;
+
         public DateTime Date { get; }
         public string TailleLisible { get; }
         public string DateLisible { get; }
@@ -47,11 +56,25 @@ namespace ChaturbateRecorderApp.ViewModels
         /// <summary>Null tant que non résolue (Galerie) : <see cref="HistoryViewModel"/> la détecte en arrière-plan, jamais sur le chemin de chargement de la liste.</summary>
         [ObservableProperty] private string? _dureeLisible;
 
-        public bool PremiumActif => App.Premium.IsLicensed;
+        public bool EstLicencie => App.Premium.IsLicensed;
 
         /// <summary>Empreinte d'INTÉGRITÉ (pas d'authenticité — rien à comparer pour un enregistrement personnel), calculée à la DEMANDE, jamais au chargement de la liste (fichiers potentiellement énormes).</summary>
         [ObservableProperty] private string? _empreinte;
         [ObservableProperty] private bool _calculEmpreinteEnCours;
+
+        /// <summary>Pour n'afficher le bouton « Empreinte » qu'avant son calcul — <see cref="InverseBooleanToVisibilityConverter"/>, pas un nouveau convertisseur pour une seule liaison.</summary>
+        public bool EmpreinteInconnue => Empreinte == null;
+
+        partial void OnEmpreinteChanged(string? value) => OnPropertyChanged(nameof(EmpreinteInconnue));
+
+        /// <summary>
+        /// Date seule, ou date + durée si connue — un seul <c>TextBlock.Text</c>
+        /// plutôt que deux <c>Run</c> dont l'un serait masqué : <c>Run</c> n'a
+        /// pas de propriété <c>Visibility</c> (ce n'est pas un <c>UIElement</c>).
+        /// </summary>
+        public string DateEtDuree => DureeLisible != null ? $"{DateLisible} — {DureeLisible}" : DateLisible;
+
+        partial void OnDureeLisibleChanged(string? value) => OnPropertyChanged(nameof(DateEtDuree));
 
         internal void DefinirDuree(TimeSpan? duree)
         {
@@ -65,7 +88,7 @@ namespace ChaturbateRecorderApp.ViewModels
         [RelayCommand]
         private async Task CalculerEmpreinteAsync()
         {
-            if (!PremiumActif || CalculEmpreinteEnCours || Empreinte != null) return;
+            if (!EstLicencie || CalculEmpreinteEnCours || Empreinte != null) return;
 
             CalculEmpreinteEnCours = true;
             try
@@ -105,6 +128,15 @@ namespace ChaturbateRecorderApp.ViewModels
         private void AfficherEnGalerie() => Mode = ModeAffichageHistorique.Galerie;
 
         [RelayCommand]
+        private void TrierParDate() => Tri = TriHistorique.DatePlusRecente;
+
+        [RelayCommand]
+        private void TrierParDuree() => Tri = TriHistorique.DureeLaPlusLongue;
+
+        [RelayCommand]
+        private void TrierParSalon() => Tri = TriHistorique.Salon;
+
+        [RelayCommand]
         private async Task RafraichirAsync()
         {
             try
@@ -129,8 +161,31 @@ namespace ChaturbateRecorderApp.ViewModels
             }
         }
 
+        // Propriétés dérivées, pour réutiliser BooleanToVisibilityConverter
+        // (déjà employé pour Chargement/Vide) plutôt qu'écrire un nouveau
+        // convertisseur pour une seule paire de valeurs d'énumération.
+        public bool EstEnListe => Mode == ModeAffichageHistorique.Liste;
+        public bool EstEnGalerie => Mode == ModeAffichageHistorique.Galerie;
+
+        partial void OnModeChanged(ModeAffichageHistorique value)
+        {
+            OnPropertyChanged(nameof(EstEnListe));
+            OnPropertyChanged(nameof(EstEnGalerie));
+        }
+
+        public bool TriParDate => Tri == TriHistorique.DatePlusRecente;
+        public bool TriParDuree => Tri == TriHistorique.DureeLaPlusLongue;
+        public bool TriParSalon => Tri == TriHistorique.Salon;
+
         partial void OnFiltreSalonChanged(string value) => AppliquerTriEtFiltre();
-        partial void OnTriChanged(TriHistorique value) => AppliquerTriEtFiltre();
+
+        partial void OnTriChanged(TriHistorique value)
+        {
+            AppliquerTriEtFiltre();
+            OnPropertyChanged(nameof(TriParDate));
+            OnPropertyChanged(nameof(TriParDuree));
+            OnPropertyChanged(nameof(TriParSalon));
+        }
 
         private void AppliquerTriEtFiltre()
         {
