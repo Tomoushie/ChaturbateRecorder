@@ -96,6 +96,23 @@ namespace ChaturbateRecorderApp.Tests
             Assert.DoesNotContain(':', resultat);
         }
 
+        /// <summary>
+        /// Les accents sont des caractères NTFS parfaitement valides — aucune
+        /// raison de les toucher — mais tous les tests jusqu'ici n'employaient
+        /// que des noms de salon ASCII. Verrouille qu'un `Replace` de jeton
+        /// n'en mange aucun, la même classe de défaut que celui trouvé sur la
+        /// PROSE de ce même commit (mot sans accent dans la table de
+        /// traduction, voir <c>AccentsTests</c>).
+        /// </summary>
+        [Fact]
+        public void LesAccentsDuNomDeSalonSurviventAuRemplacement()
+        {
+            var nomBaseAccentue = "amélie-réaumur-2026-08-17_20-15-35";
+            var resultat = CaptureFinalizer.ConstruireNomIntelligent("{salon}_{qualite}", nomBaseAccentue, "1080p");
+
+            Assert.Equal("amélie-réaumur_1080p", resultat);
+        }
+
         // --- Détection de qualité, contre un VRAI ffmpeg ------------------
 
         /// <summary>
@@ -137,6 +154,33 @@ namespace ChaturbateRecorderApp.Tests
             var qualite = await CaptureFinalizer.DetecterQualiteAsync("peu-importe.mp4", introuvable);
 
             Assert.Null(qualite);
+        }
+
+        /// <summary>
+        /// Un flux qui meurt avant la première image : le `.part` renommé
+        /// existe mais ne contient aucune vidéo lisible (0 octet, ou un
+        /// conteneur tronqué). Ni exception, ni fausse qualité — juste
+        /// l'absence de qualité, comme un fichier introuvable.
+        /// </summary>
+        [Fact]
+        public async Task UnFichierVideOuTronqueNeFaitPasPlanterLaDetection()
+        {
+            var cheminReel = CheminFfmpegDuBuildPrincipal();
+            if (cheminReel == null) return; // pas de ffmpeg disponible ici
+
+            var fichier = Path.Combine(Path.GetTempPath(), "cbr-vide-" + Guid.NewGuid().ToString("N") + ".mp4");
+            try
+            {
+                File.WriteAllBytes(fichier, Array.Empty<byte>());
+
+                var qualite = await CaptureFinalizer.DetecterQualiteAsync(fichier, cheminReel);
+
+                Assert.Null(qualite);
+            }
+            finally
+            {
+                try { if (File.Exists(fichier)) File.Delete(fichier); } catch { /* dossier temporaire */ }
+            }
         }
 
         private static string? CheminFfmpegDuBuildPrincipal()
