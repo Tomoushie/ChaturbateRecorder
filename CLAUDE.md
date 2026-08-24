@@ -9,8 +9,21 @@ Ce fichier-ci ne couvre que la migration.
 WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
 — nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
 `dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
-**419 tests**. L'application navigue, ajoute un salon, l'enregistre, le
+**426 tests**. L'application navigue, ajoute un salon, l'enregistre, le
 surveille, le reconnecte, tient un historique et se configure.
+
+**DURCISSEMENT DE LA TROISIÈME VAGUE (24-08, même jour)** : sept tests sur
+quatre angles jamais éprouvés depuis la livraison de l'auto-tagging et du
+planificateur — un nom de salon accentué traverse `ConstruireNomIntelligent`
+intact, un flux mort avant la première image (fichier vide) rend une qualité
+`null` sans planter `DetecterQualiteAsync`, la fenêtre horaire ET
+l'auto-enregistrement survivent à une SECONDE instance de `RoomStore`
+(personne n'écrivait puis ne relisait `rooms.json` — la reprise après
+redémarrage n'était donc jamais éprouvée, pas même son absence : un salon
+jamais planifié doit rester `-1/-1`, pas `0/0`), et `SetSchedule`/
+`SetAutoRecord` sur une URL inconnue ou vide refusent proprement au lieu de
+planter ou de créer une entrée fantôme. Aucun défaut trouvé — le
+durcissement confirme le comportement existant plutôt que d'en réparer un.
 
 **REFONTE PREMIUM, TROISIÈME VAGUE (24-08)** : auto-tagging (nommage
 intelligent des captures) et planificateur (fenêtre horaire quotidienne par
