@@ -319,6 +319,13 @@ namespace ChaturbateRecorderApp.Config
                 "Ajouter un salon à la liste ne le met plus sous surveillance : c'est l'interrupteur de sa carte qui l'active, comme avant.",
                 "Retirer un salon en cours d'enregistrement demande maintenant confirmation.",
             }),
+            ("1.37.0", new[]
+            {
+                "La vignette d'un salon en ligne s'affiche désormais sur sa carte pour qui a Stream Recorder Pro — cliquer dessus ouvre la vidéo en direct dans une fenêtre séparée.",
+                "Nommage intelligent (Stream Recorder Pro) : personnalise le nom des fichiers enregistrés selon un motif au choix (salon, date, heure, qualité détectée).",
+                "Planificateur (Stream Recorder Pro) : une fenêtre horaire quotidienne par salon restreint quand l'enregistrement automatique a le droit de démarrer.",
+                "Le panneau Diagnostic affiche l'usage local de ces fonctionnalités (jamais transmis).",
+            }),
         };
 
         /// <summary>
@@ -515,6 +522,13 @@ namespace ChaturbateRecorderApp.Config
                 "Your favorites and your monitoring list are carried over automatically on first launch. The old files are not deleted: going back to an earlier version stays possible.",
                 "Adding a room to the list no longer puts it under monitoring: the switch on its card does that, as before.",
                 "Removing a room while it is recording now asks for confirmation.",
+            },
+            ["1.37.0"] = new[]
+            {
+                "The thumbnail of a room that is live now shows on its card for anyone with Stream Recorder Pro — clicking it opens the live video in a separate window.",
+                "Smart naming (Stream Recorder Pro): customise the file name of each recording with a pattern of your choice (room, date, time, detected quality).",
+                "Scheduler (Stream Recorder Pro): a daily time window per room restricts when automatic recording is allowed to start.",
+                "The Diagnostics panel shows local usage of these features (never sent anywhere).",
             },
         };
 

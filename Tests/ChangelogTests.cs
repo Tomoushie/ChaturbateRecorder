@@ -362,7 +362,7 @@ namespace ChaturbateRecorderApp.Tests
         [Fact]
         public void AnUnknownVersionLeavesTheListEmpty()
         {
-            var vm = new ViewModels.ChangelogViewModel("1.36.0", "99.99.99");
+            var vm = new ViewModels.ChangelogViewModel("1.37.0", "99.99.99");
 
             Assert.Empty(vm.Versions);
             Assert.True(vm.Vide);
