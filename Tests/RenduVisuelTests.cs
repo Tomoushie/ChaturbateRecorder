@@ -429,6 +429,77 @@ namespace ChaturbateRecorderApp.Tests
         }
 
         /// <summary>
+        /// La barre de progression, TROISIÈME reprise du même défaut (voir le
+        /// commentaire du gabarit dans Natifs.xaml) : trouvée par Tom contre
+        /// un vrai direct, invisible ici sans lui. Ce test ne peut pas prouver
+        /// que "Defilement" BOUGE (aucun Dispatcher qui tourne pendant un
+        /// rendu hors écran, même limite que LiveOverlay) — seulement que le
+        /// bon élément est VISIBLE dans le bon mode, ce qui aurait suffi à
+        /// attraper l'absence totale de logique indéterminée d'avant ce
+        /// correctif (les deux étaient alors invisibles OU l'ancien visible
+        /// dans les deux modes).
+        /// </summary>
+        [Fact]
+        public void LaBarreIndetermineeMontreLeDefilementPasLIndicateurDeValeur()
+        {
+            SurFilStandard(() =>
+            {
+                var (vue, _, bitmap) = Rendre(AppTheme.Dark, () => new System.Windows.Controls.ProgressBar
+                {
+                    Minimum = 0,
+                    Maximum = 100,
+                    Value = 100, // exactement le cas réel : yt-dlp rend 100 % à chaque fragment
+                    IsIndeterminate = true,
+                });
+                Enregistrer(bitmap, "barre-indeterminee");
+
+                var indicateur = Descendants<Border>(vue).Single(b => b.Name == "PART_Indicator");
+                var defilement = Descendants<Border>(vue).Single(b => b.Name == "Defilement");
+
+                Assert.Equal(Visibility.Collapsed, indicateur.Visibility);
+                Assert.Equal(Visibility.Visible, defilement.Visibility);
+
+                // Le PNG ci-dessus capture l'instant t=0 : "Defilement" y
+                // part hors-champ (X=-70) par construction (il doit ENTRER
+                // par la gauche), donc invisible sur cette seule image sans
+                // que ce soit un défaut. On force ici un point milieu de la
+                // trajectoire pour vérifier au moins que le morceau se
+                // dessine correctement une fois dans le cadre -- ce
+                // qu'aucun Dispatcher ne fait avancer tout seul hors écran.
+                var decalage = (TranslateTransform)defilement.RenderTransform;
+                decalage.BeginAnimation(TranslateTransform.XProperty, null); // détache le Storyboard, sinon la valeur forcée est aussitôt reprise
+                decalage.X = 200;
+                var racineMilieu = (Border)vue.Parent;
+                racineMilieu.UpdateLayout();
+                var bitmapMilieu = new RenderTargetBitmap(Largeur, Hauteur, 96, 96, PixelFormats.Pbgra32);
+                bitmapMilieu.Render(racineMilieu);
+                Enregistrer(bitmapMilieu, "barre-indeterminee-mi-parcours");
+            });
+        }
+
+        [Fact]
+        public void LaBarreDeterminaeMontreToujoursLIndicateurDeValeur()
+        {
+            SurFilStandard(() =>
+            {
+                var (vue, _, bitmap) = Rendre(AppTheme.Dark, () => new System.Windows.Controls.ProgressBar
+                {
+                    Minimum = 0,
+                    Maximum = 100,
+                    Value = 42,
+                    IsIndeterminate = false,
+                });
+                Enregistrer(bitmap, "barre-determinee-42");
+
+                var indicateur = Descendants<Border>(vue).Single(b => b.Name == "PART_Indicator");
+                var defilement = Descendants<Border>(vue).Single(b => b.Name == "Defilement");
+
+                Assert.Equal(Visibility.Visible, indicateur.Visibility);
+                Assert.Equal(Visibility.Collapsed, defilement.Visibility);
+            });
+        }
+
+        /// <summary>
         /// LA GALERIE (Premium II), au pixel — jamais tentée jusqu'ici.
         ///
         /// **Salons FICTIFS, comme pour "Enregistrer"** : `AppConfig.CaptureDir`

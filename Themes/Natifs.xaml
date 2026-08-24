@@ -253,14 +253,58 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Grid>
+                    <!--
+                    TROISIÈME REPRISE DU MÊME DÉFAUT (24-08, deux corrections
+                    précédentes côté StreamsViewModel : voir son commentaire
+                    de classe sur `Indeterminate`). Poser `IsIndeterminate`
+                    est nécessaire mais ne suffisait PAS : ce gabarit ne lui
+                    donnait AUCUN sens visuel — ni Trigger ni Storyboard —
+                    donc PART_Indicator restait dimensionné sur Value/Maximum
+                    dans les DEUX modes. Comme yt-dlp rend 100 % à chaque
+                    fragment pour un direct, la barre restait figée PLEINE,
+                    lue comme un enregistrement TERMINÉ. Trouvé par Tom en
+                    testant contre un vrai direct — invisible sans lui,
+                    comme les deux fois précédentes.
+
+                    "Défilement" est un morceau INDÉPENDANT de PART_Indicator
+                    (jamais géré par le calcul automatique du contrôle),
+                    révélé et animé UNIQUEMENT par le déclencheur ci-dessous
+                    — PART_Indicator reste inchangé pour le mode déterminé.
+                    -->
+                    <Grid ClipToBounds="True">
                         <Border CornerRadius="3" Background="{TemplateBinding Background}" />
                         <Border x:Name="PART_Track" />
                         <Border x:Name="PART_Indicator"
                                 CornerRadius="3"
                                 HorizontalAlignment="Left"
                                 Background="{TemplateBinding Foreground}" />
+                        <Border x:Name="Defilement" Width="70" CornerRadius="3"
+                                HorizontalAlignment="Left"
+                                Background="{TemplateBinding Foreground}"
+                                Visibility="Collapsed">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="DecalageDefilement" X="-70" />
+                            </Border.RenderTransform>
+                        </Border>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Defilement" Property="Visibility" Value="Visible" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard Name="AnimationDefilement">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DecalageDefilement" Storyboard.TargetProperty="X"
+                                                         From="-70" To="600" Duration="0:0:1.4"
+                                                         RepeatBehavior="Forever" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="AnimationDefilement" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

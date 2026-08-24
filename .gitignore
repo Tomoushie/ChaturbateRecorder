@@ -19,3 +19,4 @@ Tools/
 # État local généré au runtime (copié dans bin/ de toute façon)
 settings.json
 favorites.json
+Images/
