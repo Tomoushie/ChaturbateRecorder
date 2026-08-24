@@ -172,6 +172,22 @@ namespace ChaturbateRecorderApp.Config
         // itch.io de l'application libre : un compte qui encaisse ne doit pas
         // porter le nom d'une plateforme adulte, sous peine de gel.
         public static string ProUrl            = "https://tomoushie.itch.io/stream-recorder-pro";
+        // 120.0 — deux comptes bancaires, alternative directe à itch.io pour
+        // payer StreamRecorderPro. VOLONTAIREMENT PAS PayPal.me/GitHub
+        // Sponsors ici (voir le commentaire de ProUrl juste au-dessus, même
+        // motif) : un virement bancaire n'a aucune politique de contenu, ce
+        // risque ne s'applique donc qu'aux deux comptes déjà utilisés par le
+        // panneau "Soutenir" (dons généraux à l'app gratuite), qui restent
+        // hors de ce circuit. Livraison MANUELLE dans les deux cas — DLL +
+        // licence envoyées à la main après réception, aucune automatisation
+        // comme itch.io. Nom du bénéficiaire à CONFIRMER auprès du mainteneur
+        // avant publication : le QR EPC le porte, un nom faux n'empêche pas
+        // le virement (les banques matchent surtout sur l'IBAN) mais peut
+        // déclencher un avertissement dans l'appli bancaire du payeur.
+        public static string PremiumBeneficiaire = "Tomoushie";
+        public static string PremiumIban1      = "BE91377089117876";
+        public static string PremiumIban2      = "BE18650637740065";
+        public static string PremiumIban2Bic   = "REVOBEB2";
         // 102.0 — relais qui crée l'issue à la place de l'utilisateur, pour
         // qui n'a pas de compte GitHub. Le code source du service est dans
         // report-worker/. Chaîne VIDE = fonctionnalité désactivée : la fenêtre

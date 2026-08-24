@@ -46,41 +46,54 @@
     -->
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <ListBox Grid.Column="0"
-                 Style="{StaticResource Nav.SideBar}"
-                 ItemsSource="{Binding Sections}"
-                 SelectedItem="{Binding SelectedSection, Mode=TwoWay}" />
+            <ListBox Grid.Column="0"
+                     Style="{StaticResource Nav.SideBar}"
+                     ItemsSource="{Binding Sections}"
+                     SelectedItem="{Binding SelectedSection, Mode=TwoWay}" />
+
+            <!--
+              ZONE DE CONTENU. Seule « Enregistrer » est portée ; les trois autres
+              affichent encore leur carton. Le contenu est choisi par la CLÉ de la
+              section et non par son libellé, qui change avec la langue.
+            -->
+            <ContentControl Grid.Column="1" Content="{Binding}">
+                <ContentControl.Style>
+                    <Style TargetType="ContentControl">
+                        <Setter Property="ContentTemplate" Value="{StaticResource Section.APorter}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection.Key}" Value="streams">
+                                <Setter Property="ContentTemplate" Value="{StaticResource Section.Streams}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedSection.Key}" Value="history">
+                                <Setter Property="ContentTemplate" Value="{StaticResource Section.History}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedSection.Key}" Value="settings">
+                                <Setter Property="ContentTemplate" Value="{StaticResource Section.Settings}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedSection.Key}" Value="support">
+                                <Setter Property="ContentTemplate" Value="{StaticResource Section.Support}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ContentControl.Style>
+            </ContentControl>
+        </Grid>
 
         <!--
-          ZONE DE CONTENU. Seule « Enregistrer » est portée ; les trois autres
-          affichent encore leur carton. Le contenu est choisi par la CLÉ de la
-          section et non par son libellé, qui change avec la langue.
+          BOUTON PREMIUM FLOTTANT (120.0), bas-droite, AU-DESSUS de tout le
+          reste quelle que soit la section affichée — d'où le second Grid
+          plutôt qu'une troisième colonne, qui l'aurait confiné à la zone de
+          contenu. Visibilité pilotée depuis le code-behind
+          (App.Premium.IsLicensed) : jamais montré à qui a déjà acheté.
         -->
-        <ContentControl Grid.Column="1" Content="{Binding}">
-            <ContentControl.Style>
-                <Style TargetType="ContentControl">
-                    <Setter Property="ContentTemplate" Value="{StaticResource Section.APorter}" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="streams">
-                            <Setter Property="ContentTemplate" Value="{StaticResource Section.Streams}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="history">
-                            <Setter Property="ContentTemplate" Value="{StaticResource Section.History}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="settings">
-                            <Setter Property="ContentTemplate" Value="{StaticResource Section.Settings}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding SelectedSection.Key}" Value="support">
-                            <Setter Property="ContentTemplate" Value="{StaticResource Section.Support}" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </ContentControl.Style>
-        </ContentControl>
+        <vues:PremiumButton x:Name="BoutonPremium"
+                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                             Margin="0,0,16,16" />
     </Grid>
 </Window>

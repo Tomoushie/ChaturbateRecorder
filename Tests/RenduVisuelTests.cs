@@ -324,6 +324,12 @@ namespace ChaturbateRecorderApp.Tests
                     ("guide", () => new TutorialWindow()),
                     ("diagnostic", () => new DiagnosticWindow()),
                     ("planification", () => new ScheduleWindow("Salon fictif", false, -1, -1)),
+                    // 120.0 — ajoutée au même filet que les autres dialogues :
+                    // gratuit (PNG + contraste WCAG des libellés), et c'est
+                    // exactement le genre d'écran (texte sur carte, sur bouton)
+                    // où le défaut déjà payé une fois (bouton secondaire
+                    // indiscernable) pourrait se répéter.
+                    ("premium", () => new PremiumUpgradeWindow()),
                 })
                 {
                     // LA FENETRE SE CONSTRUIT DANS LA FABRIQUE, donc APRES que
@@ -697,6 +703,39 @@ namespace ChaturbateRecorderApp.Tests
                 // des deux.
                 Assert.NotEqual(sombre1.Pixel(4, 4), clair.Pixel(4, 4));
                 Assert.Equal(sombre1.Pixel(4, 4), sombre2.Pixel(4, 4));
+            });
+        }
+
+        /// <summary>
+        /// Sanity-check du bouton flottant Premium (120.0) : rendu réel non
+        /// vide, dans les deux thèmes — le halo utilise des couleurs FIGÉES
+        /// (pas de DynamicResource), donc rien ne garantissait qu'il survive
+        /// à un changement de thème sans un rendu réel pour le prouver.
+        ///
+        /// **Ne prouve PAS** les éclairs au survol : ce harnais ne peut pas
+        /// simuler une vraie souris (voir le commentaire de classe) — cette
+        /// part-là reste à l'œil du mainteneur.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Themes))]
+        public void LeBoutonPremiumEstVisible(AppTheme theme)
+        {
+            SurFilStandard(() =>
+            {
+                var (_, image, bitmap) = Rendre(theme, () => new PremiumButton());
+                Enregistrer(bitmap, $"bouton-premium-{theme}".ToLowerInvariant());
+
+                // Pixel() rend une chaîne "#RRGGBB", pas une Color : comparer
+                // aux mêmes chaînes que le reste du fichier.
+                var fond = theme == AppTheme.Dark ? "#1B1B1B" : "#EFEFEF";
+                var pixels = new[]
+                {
+                    image.Pixel(450, 350), // centre du canevas 900x700, où le bouton doit se trouver
+                    image.Pixel(430, 350),
+                    image.Pixel(470, 350),
+                };
+                Assert.True(pixels.Any(p => p != fond),
+                    $"{theme} — rien de dessiné au centre du canevas, le bouton semble absent.");
             });
         }
 

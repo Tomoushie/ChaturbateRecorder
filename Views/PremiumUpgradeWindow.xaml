@@ -1,0 +1,146 @@
+<Window x:Class="ChaturbateRecorderApp.Views.PremiumUpgradeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
+        Title="{ui:Str premium.title}"
+        Width="620" Height="720"
+        MinWidth="480" MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+    <!--
+      120.0 — présentation de Stream Recorder Pro + moyens de paiement.
+      itch.io, IBAN #1 et IBAN #2 sont à POIDS ÉGAL (choix explicite du
+      mainteneur) : aucun des trois n'est mis en avant visuellement. PAS de
+      PayPal ni de GitHub Sponsors ici — voir AppConfig.PremiumIban1, ce
+      couple porte un risque de gel de compte déjà identifié pour ce projet.
+
+      Les IBAN/BIC ne sont PAS écrits en dur ici : ce sont des données, pas
+      des libellés à traduire (voir AucunLibelleNEstEcritEnDur), posées par
+      le code-behind depuis AppConfig.
+    -->
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- ===================== PRÉSENTATION ===================== -->
+                <Border Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Text="{ui:Str premium.intro}" />
+
+                        <TextBlock Margin="0,16,0,0" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.featuresTitle}" />
+
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.overlay}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.gallery}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.autotag}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===================== PAIEMENT ===================== -->
+                <TextBlock Margin="0,16,0,8" FontWeight="SemiBold" FontSize="14"
+                           Foreground="{DynamicResource Brush.Fg}"
+                           Text="{ui:Str premium.paymentTitle}" />
+
+                <!-- itch.io — même poids visuel que les deux virements ci-dessous. -->
+                <Border Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <Button Style="{StaticResource Button.Primary}"
+                                HorizontalAlignment="Left"
+                                Content="{ui:Str premium.itchio}"
+                                Click="ItchIo_Click" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.itchioNote}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Virements — deux comptes au choix, présentés côte à côte. -->
+                <Border Margin="0,12,0,0" Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.bankTitle}" />
+                        <TextBlock Margin="0,6,0,12" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.bankNote}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Compte 1 -->
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <Image x:Name="ImageQrIban1" Width="140" Height="140"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                <TextBlock x:Name="TexteIban1" Margin="0,8,0,0"
+                                           HorizontalAlignment="Center"
+                                           FontFamily="Consolas" FontSize="12"
+                                           Foreground="{DynamicResource Brush.Fg}" />
+                                <Button Margin="0,6,0,0"
+                                        Style="{StaticResource Button.Secondary}"
+                                        Content="{ui:Str premium.copy}"
+                                        Click="CopierIban1_Click" />
+                            </StackPanel>
+
+                            <!-- Compte 2 (Revolut) -->
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <Image x:Name="ImageQrIban2" Width="140" Height="140"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                <TextBlock x:Name="TexteIban2" Margin="0,8,0,0"
+                                           HorizontalAlignment="Center"
+                                           FontFamily="Consolas" FontSize="12"
+                                           Foreground="{DynamicResource Brush.Fg}" />
+                                <TextBlock x:Name="TexteBic2" Margin="0,2,0,0"
+                                           HorizontalAlignment="Center"
+                                           FontFamily="Consolas" FontSize="11"
+                                           Style="{StaticResource Text.Caption}" />
+                                <Button Margin="0,6,0,0"
+                                        Style="{StaticResource Button.Secondary}"
+                                        Content="{ui:Str premium.copy}"
+                                        Click="CopierIban2_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,0"
+                    HorizontalAlignment="Right">
+            <TextBlock x:Name="TexteStatut" VerticalAlignment="Center" Margin="0,0,12,0"
+                       Style="{StaticResource Text.Caption}" />
+            <Button Style="{StaticResource Button.Primary}"
+                    Content="{ui:Str button.close}" Click="Fermer_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

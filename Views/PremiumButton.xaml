@@ -1,0 +1,78 @@
+<UserControl x:Class="ChaturbateRecorderApp.Views.PremiumButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
+             Width="220" Height="88">
+
+    <!--
+      120.0 — bouton flottant « Passer à Premium », bas-droite de la fenêtre
+      principale. Couleurs FIGÉES (pourpre/mauve), pas liées au thème
+      courant : c'est un élément marketing, pas un contrôle applicatif — même
+      raisonnement que Button.OnScrim (Themes/Controls.xaml), qui fige aussi
+      ses couleurs pour composer sur un fond variable.
+
+      Visibilité pilotée depuis le code-behind de MainWindow
+      (App.Premium.IsLicensed), pas ici : un client déjà licencié ne doit
+      jamais voir ce bouton.
+    -->
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="Premium.Fond" Color="#8B3FE0" />
+        <SolidColorBrush x:Key="Premium.FondSurvol" Color="#9D56F0" />
+        <SolidColorBrush x:Key="Premium.Texte" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="Premium.Eclair" Color="#E0C4FF" />
+
+        <Style x:Key="Premium.StyleBouton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource Premium.Fond}" />
+            <Setter Property="Foreground" Value="{StaticResource Premium.Texte}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Fond" CornerRadius="20"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fond" Property="Background"
+                                        Value="{StaticResource Premium.FondSurvol}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- HALO : pulse en continu, DERRIÈRE le bouton — c'est la
+             « surbrillance animée » demandée, indépendante du survol. -->
+        <Ellipse x:Name="Halo" Width="150" Height="70"
+                 HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#AA8B3FE0" Offset="0" />
+                    <GradientStop Color="#008B3FE0" Offset="1" />
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+
+        <!-- ÉCLAIRS : Canvas vide au repos, rempli par le code-behind
+             pendant le survol. IsHitTestVisible=False : ne doit JAMAIS
+             intercepter le clic destiné au bouton. -->
+        <Canvas x:Name="CanevasEclairs" IsHitTestVisible="False" />
+
+        <Button x:Name="Bouton" Style="{StaticResource Premium.StyleBouton}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Content="{ui:Str premium.button}"
+                Click="Bouton_Click"
+                MouseEnter="Bouton_MouseEnter"
+                MouseLeave="Bouton_MouseLeave" />
+    </Grid>
+</UserControl>

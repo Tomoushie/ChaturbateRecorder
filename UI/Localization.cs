@@ -683,6 +683,36 @@ namespace ChaturbateRecorderApp.UI
             ["support.thanksNote"] = (
                 "Pseudonymes publiés avec l'accord des personnes concernées.",
                 "Nicknames published with the agreement of the people concerned."),
+
+            // 120.0 — bouton Premium (bas droite de la fenêtre principale) et
+            // sa fenêtre de présentation. PAS de PayPal/GitHub Sponsors ici,
+            // volontairement : voir AppConfig.PremiumIban1.
+            ["premium.button"] = ("Passer à Premium", "Upgrade to Premium"),
+            ["premium.title"] = ("Stream Recorder Pro", "Stream Recorder Pro"),
+            ["premium.intro"] = (
+                "Stream Recorder Pro est le complément payant de Chaturbate Recorder — un seul pack, une seule fois, aucun abonnement.",
+                "Stream Recorder Pro is the paid companion to Chaturbate Recorder — one pack, one payment, no subscription."),
+            ["premium.featuresTitle"] = ("Ce que ça ajoute", "What it adds"),
+            ["premium.feature.overlay"] = (
+                "Vidéo en direct dans une fenêtre dédiée, avec un panneau statut/durée/qualité/débit par-dessus l'image.",
+                "Live video in a dedicated window, with a status/duration/quality/bitrate panel over the picture."),
+            ["premium.feature.gallery"] = (
+                "Galerie de l'historique : grille de vignettes, tri par date, durée ou salon, empreinte SHA-256 à la demande.",
+                "History gallery: thumbnail grid, sort by date, duration or room, on-demand SHA-256 fingerprint."),
+            ["premium.feature.autotag"] = (
+                "Nommage intelligent des captures et planificateur horaire par salon.",
+                "Smart naming for captures and a per-room daily schedule."),
+            ["premium.paymentTitle"] = ("Moyens de paiement", "Payment methods"),
+            ["premium.itchio"] = ("Acheter sur itch.io", "Buy on itch.io"),
+            ["premium.itchioNote"] = (
+                "Livraison automatique du fichier et de la licence — le moyen le plus rapide.",
+                "Automatic delivery of the file and the licence — the fastest option."),
+            ["premium.bankTitle"] = ("Virement bancaire (deux comptes au choix)", "Bank transfer (either account)"),
+            ["premium.bankNote"] = (
+                "Livraison manuelle : le mainteneur envoie le fichier et la licence après réception du virement. Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
+                "Manual delivery: the maintainer sends the file and the licence after the transfer is received. Scan the QR with your banking app, or copy the IBAN by hand."),
+            ["premium.copy"] = ("Copier l'IBAN", "Copy IBAN"),
+            ["premium.copied"] = ("Copié !", "Copied!"),
         };
 
         /// <summary>

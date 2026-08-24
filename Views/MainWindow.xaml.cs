@@ -24,6 +24,11 @@ namespace ChaturbateRecorderApp.Views
             ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
             DataContext = new MainViewModel();
 
+            // 120.0 — jamais montré à qui a déjà acheté StreamRecorderPro.
+            // App.Premium est chargé au démarrage (voir App.xaml.cs), avant
+            // la construction de cette fenêtre : pas besoin d'attendre Loaded.
+            BoutonPremium.Visibility = App.Premium.IsLicensed ? Visibility.Collapsed : Visibility.Visible;
+
             // La fenetre principale EST la duree de vie de l'application ici :
             // sa fermeture doit arreter la surveillance, sinon la boucle
             // continue de sonder dans un processus qui n'affiche plus rien.

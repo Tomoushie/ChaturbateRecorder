@@ -101,6 +101,14 @@
     <!-- L'ID est bien `.Wpf` : `Microsoft.Xaml.Behaviors` seul n'existe pas
          sur nuget.org (NU1101), et c'est ce que déclarait le squelette. -->
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <!-- 120.0 — bouton Premium : QR codes EPC/SEPA pour les deux virements
+         bancaires. Génère un PNG en mémoire (PngByteQRCode), aucune
+         dépendance System.Drawing/GDI+ malgré UseWindowsForms activé plus
+         haut — ce projet vérifie déjà les empreintes de ses binaires, mais
+         un paquet MIT très utilisé (Shane32/QRCoder) reste préférable à un
+         encodeur QR écrit à la main (la correction d'erreur Reed-Solomon
+         est facile à rater silencieusement). -->
+    <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
   <ItemGroup>
