@@ -4,13 +4,34 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-24** — 49 commits, dépôt distant `origin` =
+**État au 2026-08-24** — 52 commits, dépôt distant `origin` =
 `https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
 WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
 — nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
 `dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
-**396 tests**. L'application navigue, ajoute un salon, l'enregistre, le
+**419 tests**. L'application navigue, ajoute un salon, l'enregistre, le
 surveille, le reconnecte, tient un historique et se configure.
+
+**REFONTE PREMIUM, TROISIÈME VAGUE (24-08)** : auto-tagging (nommage
+intelligent des captures) et planificateur (fenêtre horaire quotidienne par
+salon) livrés — **aucun des deux ne touche `StreamRecorderPro.dll`**. Les
+deux ne sont que des fonctionnalités de l'app libre gatées par
+`App.Premium.IsLicensed` ; seules la vignette et la vidéo en direct
+justifient réellement le composant fermé. `App.Premium.UsageSummary`
+(compteurs locaux par fonctionnalité, jamais transmis) visible dans le
+Diagnostic.
+
+**CINQUIÈME PIÈGE WPF, un DEUXIÈME EN MÊME TEMPS** : le style de case à
+cocher partagé (`CheckBox` implicite ET `Interrupteur`) laissait
+`Control.Background` au blanc par défaut de WPF — jamais peint par leurs
+gabarits personnalisés, mais lu comme le fond du texte par le filet de
+contraste WCAG, faussant la mesure. ET une chaîne confiée brute à `Content`
+ne reprend pas le `Foreground` hérité, invisible en thème sombre — les deux
+touchaient les 5 cases des Réglages et le bouton « auto » de chaque carte,
+jamais mesurés faute d'un dialogue à case à cocher dans la liste testée
+avant `ScheduleWindow`. Corrigés à la racine (`Background="Transparent"`
+sur les deux styles) et au point d'usage (`TextBlock` explicite, jamais une
+chaîne nue, dans `Content`).
 
 **LA MINIATURE DE L'HISTORIQUE EST DÉSORMAIS GÉNÉRÉE** (24-08) : l'affichage
 existait déjà (`HistoryService.Vignette`, XAML lié) mais rien n'écrivait le
