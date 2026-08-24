@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using ChaturbateRecorderApp.Config;
 
@@ -83,6 +84,33 @@ namespace ChaturbateRecorderApp.Services
             }
 
             return CaptureFinalizer.ExtraireNomSalon(Path.GetFileNameWithoutExtension(video.Name));
+        }
+
+        /// <summary>
+        /// Empreinte d'INTÉGRITÉ (Premium II), jamais « d'authenticité » : un
+        /// enregistrement personnel n'a aucune référence externe à laquelle
+        /// se comparer, contrairement au hash des binaires (yt-dlp/ffmpeg)
+        /// vérifié contre une empreinte connue à l'avance. Elle atteste
+        /// seulement « ce fichier n'a pas changé depuis qu'on l'a calculé » —
+        /// calculée à la DEMANDE (voir <c>HistoryItemViewModel.CalculerEmpreinteAsync</c>),
+        /// jamais pour les cinquante fichiers de la liste à chaque ouverture :
+        /// un enregistrement peut peser plusieurs Go.
+        /// </summary>
+        public static async Task<string?> CalculerEmpreinteAsync(string videoPath)
+        {
+            if (!File.Exists(videoPath)) return null;
+
+            try
+            {
+                await using var flux = File.OpenRead(videoPath);
+                var octetsHash = await SHA256.HashDataAsync(flux).ConfigureAwait(false);
+                return Convert.ToHexString(octetsHash);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Empreinte impossible pour {videoPath} : {ex.Message}", LogLevel.WARN);
+                return null;
+            }
         }
 
         public static string FormaterTaille(long octets)

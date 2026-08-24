@@ -369,6 +369,67 @@ namespace ChaturbateRecorderApp.Services
         }
 
         /// <summary>
+        /// Durée d'une capture FINIE, pour la Galerie (Premium II). Appel
+        /// PARESSEUX et INDÉPENDANT de <see cref="DetecterQualiteAsync"/> —
+        /// invoqué à la demande de la Galerie, jamais sur le chemin de
+        /// finalisation : les deux tournent à des moments différents, un
+        /// second appel ffmpeg est le prix d'un couplage plus faible avec un
+        /// chemin déjà éprouvé plutôt qu'une raison de le modifier.
+        ///
+        /// Contrairement à l'aperçu en direct (débit quasi jamais annoncé
+        /// pour un flux HLS), un fichier FINI a un conteneur normal : la
+        /// durée est quasi toujours là.
+        /// </summary>
+        internal static async Task<TimeSpan?> DetecterDureeAsync(string videoPath, string ffmpegPath)
+        {
+            if (!File.Exists(ffmpegPath) || !File.Exists(videoPath)) return null;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+            };
+            foreach (var a in new[] { "-hide_banner", "-i", videoPath }) psi.ArgumentList.Add(a);
+
+            using var p = Process.Start(psi);
+            if (p == null) return null;
+
+            var erreur = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
+
+            using var delai = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                await p.WaitForExitAsync(delai.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                try { p.Kill(entireProcessTree: true); } catch { /* déjà parti */ }
+                return null;
+            }
+
+            return ExtraireDuree(erreur);
+        }
+
+        /// <summary>
+        /// Fonction PURE : lit « Duration: HH:MM:SS.cc » dans la sortie
+        /// ffmpeg. Rend null si absente ou « N/A » (fichier tronqué,
+        /// conteneur inhabituel) — jamais une durée devinée.
+        /// </summary>
+        internal static TimeSpan? ExtraireDuree(string sortieFfmpeg)
+        {
+            var m = Regex.Match(sortieFfmpeg, @"Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})");
+            if (!m.Success) return null;
+
+            return new TimeSpan(0,
+                int.Parse(m.Groups[1].Value),
+                int.Parse(m.Groups[2].Value),
+                int.Parse(m.Groups[3].Value),
+                int.Parse(m.Groups[4].Value) * 10);
+        }
+
+        /// <summary>
         /// Un appel a ffmpeg, une image. Le verdict est l'EXISTENCE du fichier
         /// et non le code de sortie : c'est le fichier que l'historique ira
         /// lire. Pas de redirection stdout/stderr : rien ne les lit, et un
