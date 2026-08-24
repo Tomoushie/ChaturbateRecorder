@@ -4,7 +4,7 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-24** — 52 commits, dépôt distant `origin` =
+**État au 2026-08-24** — 60 commits, dépôt distant `origin` =
 `https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
 WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
 — nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
@@ -24,6 +24,34 @@ jamais planifié doit rester `-1/-1`, pas `0/0`), et `SetSchedule`/
 `SetAutoRecord` sur une URL inconnue ou vide refusent proprement au lieu de
 planter ou de créer une entrée fantôme. Aucun défaut trouvé — le
 durcissement confirme le comportement existant plutôt que d'en réparer un.
+
+## Clôture de « Premium I » (24-08, tag `v1.37.0`)
+
+**Résumé** : trois vagues livrées le même jour — vignette premium (image
+fixe, v1) puis vidéo en direct (v2, réutilise ffmpeg, aucune nouvelle
+dépendance), suivies d'auto-tagging et planificateur (tous deux gratuits en
+code, gatés par `App.Premium.IsLicensed`, aucun des deux ne touche
+`StreamRecorderPro.dll`). Durcissement le jour même : sept tests sur les
+angles jamais éprouvés (accents, flux mort, redémarrage, salon inconnu),
+zéro défaut trouvé.
+
+**État des tests** : 426/426 verts, `dotnet build -t:Rebuild` à 0 erreur /
+0 avertissement — mesuré sur un REBUILD complet, jamais un build
+incrémental (voir plus haut, la leçon qui a coûté une session entière).
+
+**Ce qui reste délibérément non éprouvé**, et qui ne peut PAS l'être depuis
+l'environnement d'agent : la vidéo en direct et la vignette premium contre
+un salon réellement en ligne (testées offline contre `testsrc`, une mire
+synthétique), la reconnexion automatique et le minuteur d'arrêt contre un
+vrai flux, la barre de titre sombre et l'icône. Chacun demande l'œil du
+mainteneur sur un vrai bureau — écarté avec lui, pas oublié.
+
+**Conclusion** : le socle premium (vignette, vidéo, licence hors ligne,
+compteurs d'usage locaux) est posé, testé, et considéré stable pour ce qui
+est vérifiable sans direct réel. C'est la base sur laquelle « Premium II »
+(overlay, galerie — périmètre encore à trancher, PAS l'historique qui existe
+déjà) s'appuiera, sur une branche séparée (`premium-ii`) plutôt que sur
+`main`.
 
 **REFONTE PREMIUM, TROISIÈME VAGUE (24-08)** : auto-tagging (nommage
 intelligent des captures) et planificateur (fenêtre horaire quotidienne par
