@@ -68,6 +68,42 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Galerie (Premium II) : le bouton "Empreinte" de la hover-card repose
+         sur un bandeau sombre FIXE (#E6000000), jamais thème clair/sombre,
+         car il compose par-dessus une vignette quelconque, pas une surface
+         de l'appli. Button.Secondary suit pourtant le thème COURANT : trouvé
+         par un rendu forcé du survol en thème clair, un bouton blanc y
+         jurait sur le bandeau sombre. Couleurs volontairement EN DUR ici,
+         jamais DynamicResource, précisément pour ne plus suivre le thème. -->
+    <Style x:Key="Button.OnScrim" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1"
+                            Background="#33FFFFFF" BorderBrush="#66FFFFFF">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="#4DFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="#1AFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Fond" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <Style x:Key="Button.Danger" TargetType="Button">
         <Setter Property="Padding" Value="10,4"/>
         <Setter Property="MinHeight" Value="28"/>

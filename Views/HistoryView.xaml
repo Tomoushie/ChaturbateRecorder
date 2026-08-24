@@ -196,7 +196,7 @@
                                         <TextBlock Text="{Binding TailleLisible}" FontSize="11" Foreground="White" />
 
                                         <Button Margin="0,6,0,0" HorizontalAlignment="Left"
-                                                Style="{StaticResource Button.Secondary}"
+                                                Style="{StaticResource Button.OnScrim}"
                                                 Content="{ui:Str gallery.fingerprint}"
                                                 Command="{Binding CalculerEmpreinteCommand}"
                                                 Visibility="{Binding EmpreinteInconnue, Converter={StaticResource BooleanToVisibilityConverter}}" />

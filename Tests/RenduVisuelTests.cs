@@ -428,6 +428,120 @@ namespace ChaturbateRecorderApp.Tests
             });
         }
 
+        /// <summary>
+        /// LA GALERIE (Premium II), au pixel — jamais tentée jusqu'ici.
+        ///
+        /// **Salons FICTIFS, comme pour "Enregistrer"** : `AppConfig.CaptureDir`
+        /// est redirigé vers un dossier jetable AVANT toute construction du
+        /// ViewModel, jamais le vrai dossier de capture de l'utilisateur, qui
+        /// contient de vrais enregistrements.
+        ///
+        /// **`RafraichirCommand` est asynchrone** : l'attendre par
+        /// `.GetAwaiter().GetResult()` depuis CE fil STA aurait fait un
+        /// blocage mutuel, exactement le risque documenté pour
+        /// `SurFilStandard` — la continuation de la tâche doit repasser par le
+        /// Dispatcher de ce même fil, qui ne tourne plus pendant qu'il attend.
+        /// `PousserJusqua` pompe la file de répartition en dessous plutôt que
+        /// de bloquer dessus.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Themes))]
+        public void LaGalerieAfficheLesCartesEnGrille(AppTheme theme)
+        {
+            var dossier = Path.Combine(Path.GetTempPath(), "cbr-galerie-rendu-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dossier);
+            var captureDirInitial = ChaturbateRecorderApp.Config.AppConfig.CaptureDir;
+
+            try
+            {
+                CreerCaptureFictive(dossier, "salon-fictif-un-2026-08-17_20-15-35.mp4", "Salon fictif un", avecVignette: true);
+                CreerCaptureFictive(dossier, "salon-fictif-deux-2026-08-10_10-00-00.mp4", "Salon fictif deux", avecVignette: false);
+
+                ChaturbateRecorderApp.Config.AppConfig.CaptureDir = dossier;
+
+                SurFilStandard(() =>
+                {
+                    var vm = new HistoryViewModel(); // lance RafraichirAsync en arrière-plan, voir le commentaire de classe
+                    PousserJusqua(() => !vm.Chargement);
+                    vm.AfficherEnGalerieCommand.Execute(null);
+
+                    var (vue, _, bitmap) = Rendre(theme, () => new HistoryView { DataContext = vm });
+                    Enregistrer(bitmap, $"galerie-{theme}".ToLowerInvariant());
+
+                    Assert.Equal(2, vm.Elements.Count);
+                    Assert.Contains(Descendants<System.Windows.Controls.WrapPanel>(vue), _ => true);
+
+                    // FORCÉ, pas déclenché : IsMouseOver ne s'active jamais
+                    // dans un rendu hors écran (pas de souris réelle). On
+                    // éprouve ainsi la MISE EN PAGE du contenu révélé (tient-il
+                    // dans 200 px sans se chevaucher ?), pas le déclencheur
+                    // lui-même — déjà validé par la seule compilation
+                    // (MC4011 aurait échoué si DataTemplate.Triggers ne
+                    // pouvait pas cibler "Survol").
+                    var survols = Descendants<Border>(vue).Where(b => b.Name == "Survol").ToList();
+                    Assert.Equal(2, survols.Count);
+                    foreach (var survol in survols) survol.Opacity = 1;
+
+                    // "vue" est l'enfant de la Border racine posée par Rendre :
+                    // la re-rendre reproduit le même cadrage que la capture
+                    // normale, avec le survol désormais forcé visible.
+                    var racine = (Border)vue.Parent;
+                    racine.UpdateLayout();
+                    var bitmapSurvol = new RenderTargetBitmap(Largeur, Hauteur, 96, 96, PixelFormats.Pbgra32);
+                    bitmapSurvol.Render(racine);
+                    Enregistrer(bitmapSurvol, $"galerie-survol-{theme}".ToLowerInvariant());
+                });
+            }
+            finally
+            {
+                ChaturbateRecorderApp.Config.AppConfig.CaptureDir = captureDirInitial;
+                try { Directory.Delete(dossier, recursive: true); } catch { /* dossier temporaire */ }
+            }
+        }
+
+        private static void CreerCaptureFictive(string dossier, string nomFichier, string salon, bool avecVignette)
+        {
+            var video = Path.Combine(dossier, nomFichier);
+            File.WriteAllBytes(video, new byte[] { 1, 2, 3 });
+            File.WriteAllText(
+                Path.Combine(dossier, Path.GetFileNameWithoutExtension(nomFichier) + ChaturbateRecorderApp.Services.CaptureFinalizer.ExtensionSidecarSalon),
+                salon);
+
+            // Peu importe que ce soit un JPEG valide, même raison que
+            // LaVignettePremiumNeCassePasLeRenduAvecOuSansElle : on éprouve que
+            // la colonne se montre, pas ce que l'image décode.
+            if (avecVignette)
+            {
+                File.WriteAllBytes(Path.Combine(dossier, Path.GetFileNameWithoutExtension(nomFichier) + ".jpg"), new byte[] { 1, 2, 3 });
+            }
+        }
+
+        /// <summary>
+        /// Pompe la file de répartition de CE fil jusqu'à ce que
+        /// <paramref name="pret"/> rende vrai, plutôt que de bloquer dessus :
+        /// une tâche qui capture le contexte de synchronisation courant (tout
+        /// `await` sans `ConfigureAwait(false)`) a besoin que CE Dispatcher
+        /// continue de tourner pour reprendre après elle. `GetAwaiter().GetResult()`
+        /// depuis ce même fil s'y opposerait — blocage mutuel.
+        /// </summary>
+        private static void PousserJusqua(Func<bool> pret, int timeoutMs = 5000)
+        {
+            var chrono = System.Diagnostics.Stopwatch.StartNew();
+            var frame = new System.Windows.Threading.DispatcherFrame();
+
+            var minuteur = new System.Windows.Threading.DispatcherTimer(
+                TimeSpan.FromMilliseconds(20),
+                System.Windows.Threading.DispatcherPriority.Background,
+                (_, _) =>
+                {
+                    if (pret() || chrono.ElapsedMilliseconds > timeoutMs) frame.Continue = false;
+                },
+                System.Windows.Threading.Dispatcher.CurrentDispatcher);
+
+            System.Windows.Threading.Dispatcher.PushFrame(frame);
+            minuteur.Stop();
+        }
+
         // --- Le harnais ----------------------------------------------------
 
         private const int Largeur = 900;
