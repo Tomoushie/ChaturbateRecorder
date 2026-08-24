@@ -87,6 +87,20 @@ namespace ChaturbateRecorderApp.Services
                         Logger.Log($"Generation de la miniature impossible pour {final} : {ex.Message}", LogLevel.WARN);
                     }
 
+                    // AVANT tout renommage intelligent : le nom du salon ne se
+                    // devine QUE depuis le nomBase D'ORIGINE ("salon-DATE_HEURE"),
+                    // jamais depuis un nom déjà personnalisé (Galerie, Premium
+                    // II). Sidecar écrit ici, jamais perdu même si le motif
+                    // transforme le nom en autre chose ensuite.
+                    try
+                    {
+                        EcrireSidecarSalon(final, nomBase!);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Sidecar de salon impossible pour {final} : {ex.Message}", LogLevel.WARN);
+                    }
+
                     // Meme regle : le nommage intelligent est un CONFORT
                     // premium, jamais une condition de reussite de la
                     // finalisation elle-meme.
@@ -162,6 +176,46 @@ namespace ChaturbateRecorderApp.Services
         /// </summary>
         private static readonly Regex ModeleNomBase =
             new(@"^(?<salon>.+)-(?<date>\d{4}-\d{2}-\d{2})_(?<heure>\d{2}-\d{2}-\d{2})$", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Extension du sidecar écrit par <see cref="EcrireSidecarSalon"/> —
+        /// même convention que <c>.jpg</c> pour la miniature : à côté du
+        /// fichier, même nom de base.
+        /// </summary>
+        internal const string ExtensionSidecarSalon = ".salon.txt";
+
+        /// <summary>
+        /// Fonction PURE, même raison que <see cref="ConstruireNomIntelligent"/> :
+        /// extrait le nom de salon d'un nomBase « salon-AAAA-MM-JJ_HH-mm-ss ».
+        /// Rend null si la forme ne colle pas — <see cref="HistoryService"/>
+        /// l'utilise en repli sur un nom de fichier qui n'a JAMAIS eu de
+        /// sidecar (captures antérieures au 24-08).
+        /// </summary>
+        internal static string? ExtraireNomSalon(string nomBase)
+        {
+            var correspondance = ModeleNomBase.Match(nomBase);
+            return correspondance.Success ? correspondance.Groups["salon"].Value : null;
+        }
+
+        /// <summary>
+        /// Écrit le nom de salon À CÔTÉ de la capture, sous son nom
+        /// D'ORIGINE — jamais après un renommage intelligent, qui peut
+        /// transformer le nom en n'importe quel texte (Galerie, Premium II,
+        /// ne doit alors plus pouvoir retrouver le salon en reparsant un nom
+        /// devenu arbitraire). Silencieux si le nomBase ne colle pas au
+        /// moule attendu : rien à écrire, pas une panne.
+        /// </summary>
+        private static void EcrireSidecarSalon(string videoPathActuel, string nomBaseOrigine)
+        {
+            var salon = ExtraireNomSalon(nomBaseOrigine);
+            if (salon == null) return;
+
+            var chemin = Path.Combine(
+                Path.GetDirectoryName(videoPathActuel)!,
+                Path.GetFileNameWithoutExtension(videoPathActuel) + ExtensionSidecarSalon);
+
+            if (!File.Exists(chemin)) File.WriteAllText(chemin, salon);
+        }
 
         /// <summary>
         /// Fonction PURE (aucune E/S), isolée exprès de tout ce qui touche au
@@ -241,6 +295,21 @@ namespace ChaturbateRecorderApp.Services
                     // simplement introuvable pour cette ligne, pas de quoi
                     // annuler un renommage déjà réussi.
                     Logger.Log($"Renommage de la miniature impossible : {ex.Message}", LogLevel.WARN);
+                }
+            }
+
+            // MÊME RAISON que la miniature : sans ce renommage, la Galerie
+            // chercherait le sidecar sous l'ANCIEN nom et ne retrouverait
+            // plus jamais le salon de cette capture après un nommage
+            // intelligent.
+            var ancienSidecar = Path.Combine(dossier, Path.GetFileNameWithoutExtension(videoPath) + ExtensionSidecarSalon);
+            if (File.Exists(ancienSidecar))
+            {
+                var nouveauSidecar = Path.Combine(dossier, nouveauNomBase + ExtensionSidecarSalon);
+                try { File.Move(ancienSidecar, nouveauSidecar); }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Renommage du sidecar de salon impossible : {ex.Message}", LogLevel.WARN);
                 }
             }
 

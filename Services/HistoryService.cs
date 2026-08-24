@@ -7,7 +7,7 @@ using ChaturbateRecorderApp.Config;
 
 namespace ChaturbateRecorderApp.Services
 {
-    public sealed record HistoryEntry(string Nom, string CheminComplet, long Taille, DateTime Date, string? CheminVignette);
+    public sealed record HistoryEntry(string Nom, string CheminComplet, long Taille, DateTime Date, string? CheminVignette, string? Salon);
 
     public static class HistoryService
     {
@@ -36,7 +36,8 @@ namespace ChaturbateRecorderApp.Services
                         f.FullName,
                         f.Length,
                         f.LastWriteTime,
-                        Vignette(f)
+                        Vignette(f),
+                        Salon(f)
                     ))
                     .ToList();
             }
@@ -51,6 +52,37 @@ namespace ChaturbateRecorderApp.Services
         {
             var chemin = Path.Combine(video.DirectoryName!, Path.GetFileNameWithoutExtension(video.Name) + ".jpg");
             return File.Exists(chemin) ? chemin : null;
+        }
+
+        /// <summary>
+        /// Le sidecar D'ABORD (écrit par <c>CaptureFinalizer</c> avant tout
+        /// nommage intelligent, donc fiable même sur un nom déjà personnalisé) ;
+        /// à défaut, tente de reparser le nom de fichier ACTUEL — repli pour
+        /// les captures antérieures au 24-08, qui n'ont pas de sidecar. Ce
+        /// repli échoue silencieusement sur un fichier déjà renommé par le
+        /// nommage intelligent : c'est justement le cas que le sidecar existe
+        /// pour couvrir désormais.
+        /// </summary>
+        private static string? Salon(FileInfo video)
+        {
+            var sidecar = Path.Combine(
+                video.DirectoryName!,
+                Path.GetFileNameWithoutExtension(video.Name) + CaptureFinalizer.ExtensionSidecarSalon);
+
+            if (File.Exists(sidecar))
+            {
+                try
+                {
+                    var lu = File.ReadAllText(sidecar).Trim();
+                    if (!string.IsNullOrEmpty(lu)) return lu;
+                }
+                catch
+                {
+                    // Fichier illisible : repli sur le nom, comme s'il n'existait pas.
+                }
+            }
+
+            return CaptureFinalizer.ExtraireNomSalon(Path.GetFileNameWithoutExtension(video.Name));
         }
 
         public static string FormaterTaille(long octets)
