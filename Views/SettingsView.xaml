@@ -43,12 +43,18 @@
                 <StackPanel>
                     <TextBlock Text="{ui:Str settings.appearance}" FontWeight="SemiBold"
                                Foreground="{DynamicResource Brush.Fg}" />
-                    <CheckBox Margin="0,8,0,0" Content="{ui:Str settings.darkTheme}"
-                              Foreground="{DynamicResource Brush.Fg}"
-                              IsChecked="{Binding Sombre, Mode=TwoWay}" />
-                    <CheckBox Margin="0,8,0,0" Content="{ui:Str settings.french}"
-                              Foreground="{DynamicResource Brush.Fg}"
-                              IsChecked="{Binding Francais, Mode=TwoWay}" />
+                    <!-- Content = un TextBlock EXPLICITE et non une chaîne
+                         nue : mesuré, une chaîne confiée telle quelle à
+                         Content ne reprend PAS le Foreground posé sur la
+                         CheckBox (noir #000000 par défaut de WPF, invisible
+                         en thème sombre) — même défaut que « Activer la
+                         planification », trouvé en écrivant ScheduleWindow. -->
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding Sombre, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.darkTheme}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding Francais, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.french}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
                     <TextBlock Margin="0,6,0,0" FontSize="11"
                                Style="{StaticResource Text.Caption}"
                                Text="{ui:Str settings.appearanceHint}" />
@@ -61,17 +67,17 @@
                     <TextBlock Text="{ui:Str settings.recording}" FontWeight="SemiBold"
                                Foreground="{DynamicResource Brush.Fg}" />
 
-                    <CheckBox Margin="0,8,0,0" Content="{ui:Str settings.autoReconnect}"
-                              Foreground="{DynamicResource Brush.Fg}"
-                              IsChecked="{Binding AutoReconnect, Mode=TwoWay}" />
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding AutoReconnect, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.autoReconnect}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
 
-                    <CheckBox Margin="0,8,0,0" Content="{ui:Str settings.checkUpdates}"
-                              Foreground="{DynamicResource Brush.Fg}"
-                              IsChecked="{Binding AutoUpdateCheck, Mode=TwoWay}" />
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding AutoUpdateCheck, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.checkUpdates}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
 
-                    <CheckBox Margin="0,8,0,0" Content="{ui:Str settings.showLogs}"
-                              Foreground="{DynamicResource Brush.Fg}"
-                              IsChecked="{Binding ShowLogs, Mode=TwoWay}" />
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding ShowLogs, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.showLogs}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
 
                     <TextBlock Margin="0,12,0,0" Text="{ui:Str settings.monitorInterval}"
                                Foreground="{DynamicResource Brush.Fg}" />

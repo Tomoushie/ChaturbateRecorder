@@ -126,6 +126,19 @@
         <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
+        <!-- BACKGROUND EXPLICITE, et c'est un correctif, pas une garniture.
+             Sans lui, Control.Background garde le blanc par defaut de WPF —
+             jamais PEINT (le gabarit ci-dessous ne le reference nulle part,
+             il pose ses propres fonds en dur) mais toujours LISIBLE comme
+             valeur de propriete. Un filet qui lit les proprietes plutot que
+             les pixels peints (LeTexteDesDialoguesEstLisible) s'y est
+             trompe : contraste mesure a 1,23 pour un texte pourtant bien
+             blanc sur fond bien sombre a l'ecran, parce qu'il comparait
+             contre ce blanc INERTE et jamais contre le vrai fond de fenetre.
+             Corriger la PROPRIETE plutot que le filet : une valeur qui ne
+             reflete pas ce qui est peint est un piege pour le prochain outil
+             qui la lira, pas seulement pour celui-ci. -->
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
@@ -182,6 +195,15 @@
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <!-- Meme correctif que le CheckBox implicite ci-dessus, et pour la
+             MEME raison mesuree : Control.Background gardait le blanc par
+             defaut de WPF, jamais peint par ce gabarit (qui pose ses propres
+             fonds en dur sur "Piste"/"Pouce"), mais lu comme le fond du
+             texte par LeTexteDesDialoguesEstLisible : 1,23 de contraste
+             mesure pour un texte pourtant correctement blanc sur fond
+             sombre a l'ecran. Touchait deja "auto" sur la carte de salon,
+             jamais mesure faute d'un dialogue teste qui l'utilisait. -->
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">

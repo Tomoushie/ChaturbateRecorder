@@ -323,6 +323,7 @@ namespace ChaturbateRecorderApp.Tests
                     ("legalite", () => new LegalWindow()),
                     ("guide", () => new TutorialWindow()),
                     ("diagnostic", () => new DiagnosticWindow()),
+                    ("planification", () => new ScheduleWindow("Salon fictif", false, -1, -1)),
                 })
                 {
                     // LA FENETRE SE CONSTRUIT DANS LA FABRIQUE, donc APRES que

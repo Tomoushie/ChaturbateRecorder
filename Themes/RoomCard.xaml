@@ -120,12 +120,17 @@
                              surveillance — sans quoi la fusion des favoris et
                              de la surveillance ferait sonder le site pour
                              chaque favori. -->
+                        <!-- Content = un TextBlock EXPLICITE et non une
+                             chaîne nue : mesuré, une chaîne confiée telle
+                             quelle à Content ne reprend PAS le Foreground
+                             posé sur la CheckBox (noir par défaut de WPF,
+                             invisible en thème sombre). -->
                         <CheckBox Style="{StaticResource Interrupteur}"
                                   IsChecked="{Binding AutoRecord, Mode=TwoWay}"
                                   VerticalAlignment="Center"
-                                  ToolTip="Enregistrer automatiquement"
-                                  Foreground="{DynamicResource Brush.FgMuted}"
-                                  Content="auto" />
+                                  ToolTip="Enregistrer automatiquement">
+                            <TextBlock Text="auto" Foreground="{DynamicResource Brush.FgMuted}" />
+                        </CheckBox>
 
                         <TextBlock Text="{Binding StateLabel}"
                                    Margin="12,0,0,0"
@@ -141,6 +146,16 @@
                                 Style="{StaticResource Button.Primary}"
                                 Content="Démarrer"
                                 Command="{Binding DataContext.BasculerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}" />
+
+                        <!-- Visible sans licence (premium) : un bouton qui
+                             disparaît selon un état non contrôlé serait
+                             déroutant. La fenêtre elle-même le rappelle. -->
+                        <Button Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="Planifier"
+                                ToolTip="Planification horaire (premium)"
+                                Command="{Binding DataContext.PlanifierCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                 CommandParameter="{Binding}" />
 
                         <Button Margin="8,0,0,0"

@@ -53,6 +53,21 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private string? _cheminApercu;
 
+        /// <summary>
+        /// Planification horaire (premium). Copiée depuis <see cref="RoomEntry"/>
+        /// à la construction de la carte ; <see cref="StreamsViewModel"/> la
+        /// réécrit dans le magasin quand l'utilisateur l'enregistre depuis la
+        /// fenêtre de planification.
+        /// </summary>
+        [ObservableProperty]
+        private bool _scheduleEnabled;
+
+        [ObservableProperty]
+        private int _scheduleStartMinutes = -1;
+
+        [ObservableProperty]
+        private int _scheduleEndMinutes = -1;
+
         public RoomRowState State
         {
             get => _state;

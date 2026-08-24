@@ -217,6 +217,8 @@ namespace ChaturbateRecorderApp.UI
             ["button.settings"] = ("Paramètres", "Settings"),
             ["window.settings"] = ("Paramètres", "Settings"),
             ["button.close"] = ("Fermer", "Close"),
+            ["button.cancel"] = ("Annuler", "Cancel"),
+            ["button.save"] = ("Enregistrer", "Save"),
             ["tray.open"] = ("Ouvrir", "Open"),
             ["tray.settings"] = ("Paramètres", "Settings"),
             ["tray.close"] = ("Fermer", "Close"),
@@ -611,6 +613,16 @@ namespace ChaturbateRecorderApp.UI
             ["settings.smartNaming.needsLicense"] = (
                 "Nécessite une licence StreamRecorderPro active — vide, le nom habituel reste inchangé.",
                 "Requires an active StreamRecorderPro licence — empty, the usual name stays unchanged."),
+            ["schedule.title"] = ("Planification — {0}", "Schedule — {0}"),
+            ["schedule.enable"] = ("Activer la planification", "Enable scheduling"),
+            ["schedule.from"] = ("De", "From"),
+            ["schedule.to"] = ("à", "to"),
+            ["schedule.help"] = (
+                "Enregistre automatiquement ce salon chaque jour, dans cette fenêtre d'heures, s'il est en ligne.",
+                "Automatically records this room every day, within this time window, if it is online."),
+            ["schedule.needsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active — enregistrable dès maintenant, prendra effet une fois la licence posée.",
+                "Requires an active StreamRecorderPro licence — savable now, takes effect once the licence is in place."),
             ["settings.tools"] = ("Outils", "Tools"),
             ["settings.diagnostic"] = ("Diagnostic...", "Diagnostics..."),
             ["settings.report"] = ("Signaler un problème...", "Report a problem..."),

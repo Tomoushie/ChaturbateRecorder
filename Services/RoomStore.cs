@@ -26,6 +26,21 @@ namespace ChaturbateRecorderApp.Services
         public bool AutoRecord { get; set; }
 
         public DateTime AddedUtc { get; set; }
+
+        /// <summary>
+        /// Planification horaire quotidienne (premium). Indépendante
+        /// d'<see cref="AutoRecord"/> : celui-ci déclenche dès que le salon
+        /// est vu en ligne, ceci seulement dans une fenêtre d'heures — les
+        /// deux peuvent être actifs ensemble sans se contredire, le second
+        /// restreint simplement quand le premier a le droit d'agir.
+        ///
+        /// -1 = jamais configuré. 0-1439 = minutes depuis minuit, heure
+        /// locale. Une fenêtre où la fin est plus PETITE que le début
+        /// traverse minuit (ex. 22:00 → 02:00).
+        /// </summary>
+        public bool ScheduleEnabled { get; set; }
+        public int ScheduleStartMinutes { get; set; } = -1;
+        public int ScheduleEndMinutes { get; set; } = -1;
     }
 
     /// <summary>
@@ -163,6 +178,25 @@ namespace ChaturbateRecorderApp.Services
             };
         }
 
+        /// <summary>
+        /// Vrai si <paramref name="maintenant"/> (minutes depuis minuit,
+        /// heure locale, 0-1439) tombe dans [début, fin). Fonction PURE :
+        /// éprouvable sans salon, sans horloge réelle, sans licence.
+        ///
+        /// **Une fenêtre de longueur NULLE (début == fin) ne couvre jamais
+        /// rien** plutôt que « toute la journée » — un réglage qu'on n'a pas
+        /// fini de saisir ne doit pas se comporter comme s'il couvrait tout.
+        /// </summary>
+        public static bool DansLaFenetreHoraire(int debut, int fin, int maintenant)
+        {
+            if (debut < 0 || fin < 0) return false;
+            if (debut == fin) return false;
+
+            return debut < fin
+                ? maintenant >= debut && maintenant < fin
+                : maintenant >= debut || maintenant < fin; // traverse minuit
+        }
+
         public void Load()
         {
             _rooms.Clear();
@@ -273,6 +307,17 @@ namespace ChaturbateRecorderApp.Services
             var entree = Find(url);
             if (entree == null || entree.AutoRecord == auto) return false;
             entree.AutoRecord = auto;
+            Save();
+            return true;
+        }
+
+        public bool SetSchedule(string url, bool enabled, int startMinutes, int endMinutes)
+        {
+            var entree = Find(url);
+            if (entree == null) return false;
+            entree.ScheduleEnabled = enabled;
+            entree.ScheduleStartMinutes = startMinutes;
+            entree.ScheduleEndMinutes = endMinutes;
             Save();
             return true;
         }

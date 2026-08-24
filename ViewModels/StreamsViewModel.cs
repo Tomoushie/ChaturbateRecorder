@@ -213,6 +213,23 @@
                 if (carte.AutoRecord && statut == RoomStatus.Online && !carte.IsRecording)
                     BasculerCommand.Execute(carte);
 
+                // LE PLANIFICATEUR (premium), INDÉPENDANT de AutoRecord : une
+                // fenêtre horaire restreint QUAND ce salon peut démarrer, elle
+                // ne remplace pas la condition « en ligne » — enregistrer un
+                // salon hors ligne ne produirait rien. La granularité est
+                // celle du sondage lui-même : pas de minuteur séparé.
+                if (App.Premium.IsLicensed && carte.ScheduleEnabled && !carte.IsRecording
+                    && statut == RoomStatus.Online
+                    && RoomStore.DansLaFenetreHoraire(carte.ScheduleStartMinutes, carte.ScheduleEndMinutes, MinutesDepuisMinuit(DateTime.Now)))
+                {
+                    // La capture s'arrête TOUTE SEULE à l'heure de fin :
+                    // même minuteur que le choix manuel de durée, calculé ici
+                    // pour couvrir exactement le temps restant dans la
+                    // fenêtre. Traverse minuit comme DansLaFenetreHoraire.
+                    var minutesRestantes = (carte.ScheduleEndMinutes - MinutesDepuisMinuit(DateTime.Now) + 1440) % 1440;
+                    DemarrerEnregistrement(carte, minutesRestantes == 0 ? 1440 : minutesRestantes);
+                }
+
                 // La vignette premium se rafraichit a chaque tour ou le salon
                 // est vu en ligne, en tache de fond (le `_ =`) : ce lambda
                 // traite aussi les autres salons du meme tour de surveillance,
@@ -293,17 +310,25 @@
                 return;
             }
 
+            DemarrerEnregistrement(carte, DureeChoisie?.Minutes ?? 0);
+        }
+
+        /// <summary>
+        /// Le cœur de <see cref="Basculer"/>, extrait pour être appelé aussi
+        /// par le planificateur — celui-ci calcule SA PROPRE durée (le temps
+        /// restant jusqu'à l'heure de fin) plutôt que d'utiliser
+        /// <see cref="DureeChoisie"/>, qui reste le choix MANUEL de l'écran.
+        /// </summary>
+        private void DemarrerEnregistrement(RoomCardViewModel carte, int minutesMinuteur)
+        {
             try
             {
                 // La reconnexion suit le réglage persisté, comme en WinForms
-                // (`UserSettings.AutoReconnectDefault`). Le minuteur reste à 0 :
-                // le choix de durée par enregistrement n'a pas encore sa place
-                // dans l'interface, et poser une valeur en dur couperait des
-                // captures que personne n'a demandé de borner.
+                // (`UserSettings.AutoReconnectDefault`).
                 _enregistrement.Demarrer(
                     carte.Url,
                     reconnexionAuto: SettingsManager.Load().AutoReconnectDefault,
-                    minutesMinuteur: DureeChoisie?.Minutes ?? 0);
+                    minutesMinuteur: minutesMinuteur);
                 carte.IsRecording = true;
             }
             catch (Exception ex)
@@ -315,6 +340,8 @@
                 carte.StateLabel = ex.Message;
             }
         }
+
+        private static int MinutesDepuisMinuit(DateTime moment) => moment.Hour * 60 + moment.Minute;
 
         public void Recharger()
         {
@@ -334,7 +361,10 @@
             var carte = new RoomCardViewModel(entree)
             {
                 RoomName = Platforms.DisplayName(entree.Url),
-                PlatformIconKey = CleDePictogramme(Platforms.Badge(Platforms.Detect(entree.Url)).Icon)
+                PlatformIconKey = CleDePictogramme(Platforms.Badge(Platforms.Detect(entree.Url)).Icon),
+                ScheduleEnabled = entree.ScheduleEnabled,
+                ScheduleStartMinutes = entree.ScheduleStartMinutes,
+                ScheduleEndMinutes = entree.ScheduleEndMinutes,
             };
             carte.DetailBase = Platforms.Badge(Platforms.Detect(entree.Url)).Label;
             carte.Detail = carte.DetailBase;
@@ -402,6 +432,28 @@
         {
             if (carte is null) return;
             _ = Task.Run(() => App.Premium.TryShowLiveWindow(carte.Url, carte.RoomName));
+        }
+
+        /// <summary>
+        /// Ouvre la fenêtre de planification (premium) pour ce salon.
+        /// Visible sans licence — un bouton qui disparaît selon un état non
+        /// contrôlé serait déroutant, la fenêtre elle-même le rappelle — et
+        /// enregistre quand même le choix : rien n'empêche de préparer une
+        /// planification avant d'acheter, elle prendra effet toute seule.
+        /// </summary>
+        [RelayCommand]
+        private void Planifier(RoomCardViewModel? carte)
+        {
+            if (carte is null) return;
+
+            var fenetre = new ChaturbateRecorderApp.Views.ScheduleWindow(
+                carte.RoomName, carte.ScheduleEnabled, carte.ScheduleStartMinutes, carte.ScheduleEndMinutes);
+            if (fenetre.ShowDialog() != true) return;
+
+            carte.ScheduleEnabled = fenetre.Active;
+            carte.ScheduleStartMinutes = fenetre.DebutMinutes;
+            carte.ScheduleEndMinutes = fenetre.FinMinutes;
+            _store.SetSchedule(carte.Url, carte.ScheduleEnabled, carte.ScheduleStartMinutes, carte.ScheduleEndMinutes);
         }
     }
 }
