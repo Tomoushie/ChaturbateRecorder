@@ -653,6 +653,53 @@ namespace ChaturbateRecorderApp.Tests
             }
         }
 
+        /// <summary>
+        /// La zone blanche signalée par Tom : « Réglages » puis basculer
+        /// « Thème sombre » — persistante, jamais un flash, et indépendante
+        /// de la taille de fenêtre ou d'un enregistrement en cours.
+        ///
+        /// **Ce que <c>LesDeuxThemesNeDonnentPasLaMemeImage</c> ne peut pas
+        /// attraper** : elle crée une vue FRAÎCHE par thème. Le scénario réel
+        /// est différent — la MÊME fenêtre, le MÊME `SettingsView`, dont le
+        /// thème change plusieurs fois sous ses pieds pendant qu'elle reste
+        /// affichée. Ce test rejoue exactement ça : sombre → clair → sombre,
+        /// sur une SEULE instance, et vérifie que le DERNIER rendu est bien
+        /// sombre — pas resté clair.
+        /// </summary>
+        [Fact]
+        public void BasculerDeuxFoisDeSuiteRedonneBienLeThemeSombre()
+        {
+            SurFilStandard(() =>
+            {
+                PreparerApplication();
+
+                var vue = new SettingsView { DataContext = new SettingsViewModel() };
+                var racine = new Border { Child = vue, Width = Largeur, Height = Hauteur };
+
+                Image RendreMaintenant(AppTheme theme)
+                {
+                    ThemeManager.Apply(theme, animate: false);
+                    racine.Background = (Brush)Application.Current.Resources[ThemeManager.BrushBg];
+                    racine.Measure(new Size(Largeur, Hauteur));
+                    racine.Arrange(new Rect(0, 0, Largeur, Hauteur));
+                    racine.UpdateLayout();
+                    var bitmap = new RenderTargetBitmap(Largeur, Hauteur, 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(racine);
+                    return new Image(bitmap);
+                }
+
+                var sombre1 = RendreMaintenant(AppTheme.Dark);
+                var clair = RendreMaintenant(AppTheme.Light);
+                var sombre2 = RendreMaintenant(AppTheme.Dark);
+
+                // Le coin de la fenêtre (le fond, pas un contrôle particulier) :
+                // sombre1 et sombre2 doivent se RESSEMBLER, clair doit DIFFÉRER
+                // des deux.
+                Assert.NotEqual(sombre1.Pixel(4, 4), clair.Pixel(4, 4));
+                Assert.Equal(sombre1.Pixel(4, 4), sombre2.Pixel(4, 4));
+            });
+        }
+
         private static Capture Rendre(AppTheme theme, Func<FrameworkElement> fabrique)
         {
             PreparerApplication();

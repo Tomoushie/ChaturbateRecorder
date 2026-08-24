@@ -356,7 +356,19 @@
             }
         }
 
-        private static RoomCardViewModel Creer(RoomEntry entree)
+        /// <summary>
+        /// **`IsRecording` reposé depuis `RecordingCoordinator`, jamais laissé
+        /// à sa valeur par défaut.** `Recharger()` tourne à CHAQUE ajout ou
+        /// retrait de salon — donc reconstruit AUSSI la carte d'un salon
+        /// DÉJÀ en cours d'enregistrement, sous une instance toute neuve qui
+        /// ne sait rien de la capture réelle. Sans cette ligne, la carte
+        /// repartait « Idle »/bouton « Démarrer » jusqu'au prochain
+        /// évènement du moteur — parfois long, un direct ne rendant souvent
+        /// aucune progression — ce qui se lisait comme « ajouter un salon
+        /// arrête les autres », trouvé par Tom. Le moteur, lui, n'était
+        /// jamais touché : seul l'AFFICHAGE se désynchronisait.
+        /// </summary>
+        private RoomCardViewModel Creer(RoomEntry entree)
         {
             var carte = new RoomCardViewModel(entree)
             {
@@ -368,6 +380,14 @@
             };
             carte.DetailBase = Platforms.Badge(Platforms.Detect(entree.Url)).Label;
             carte.Detail = carte.DetailBase;
+
+            if (_enregistrement.EnCours(entree.Url))
+            {
+                carte.IsRecording = true;
+                carte.State = RoomRowState.Recording;
+                carte.StateLabel = RecordingLabels.Libelle(DownloadState.Running);
+            }
+
             return carte;
         }
 
