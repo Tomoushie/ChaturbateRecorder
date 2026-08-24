@@ -604,6 +604,13 @@ namespace ChaturbateRecorderApp.UI
             ["settings.network"] = ("Réseau", "Network"),
             ["settings.cookiesFile"] = ("Fichier cookies.txt", "cookies.txt file"),
             ["settings.proxy"] = ("Proxy", "Proxy"),
+            ["settings.smartNaming"] = ("Nommage intelligent (premium)", "Smart naming (premium)"),
+            ["settings.smartNaming.help"] = (
+                "Jetons reconnus, entre accolades — voir l'exemple ci-dessous.",
+                "Recognised tokens, in curly braces — see the example below."),
+            ["settings.smartNaming.needsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active — vide, le nom habituel reste inchangé.",
+                "Requires an active StreamRecorderPro licence — empty, the usual name stays unchanged."),
             ["settings.tools"] = ("Outils", "Tools"),
             ["settings.diagnostic"] = ("Diagnostic...", "Diagnostics..."),
             ["settings.report"] = ("Signaler un problème...", "Report a problem..."),

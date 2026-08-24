@@ -113,6 +113,36 @@
                 </StackPanel>
             </Border>
 
+            <!-- Le champ reste visible et modifiable SANS licence — le
+                 masquer selon un état qu'on ne contrôle pas serait
+                 déroutant. C'est CaptureFinalizer qui vérifie IsLicensed
+                 avant d'appliquer quoi que ce soit. -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.smartNaming}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Style="{StaticResource Surface.Input}"
+                             Text="{Binding SmartNamingPattern, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{ui:Str settings.smartNaming.help}" />
+                    <!-- Exemple brut, PAS localise : les jetons sont une
+                         syntaxe fixe, identique quelle que soit la langue de
+                         l'interface, comme un extrait de code. Le prefixe
+                         "{}" echappe l'accolade initiale, sans quoi XAML la
+                         lirait comme le debut d'une extension de balisage. -->
+                    <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
+                               FontFamily="Consolas" FontSize="11"
+                               Foreground="{DynamicResource Brush.FgMuted}"
+                               Text="{}{salon}_{date}_{heure}_{qualite}" />
+                    <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                               Style="{StaticResource Text.Caption}"
+                               Foreground="{DynamicResource Brush.Danger}"
+                               Text="{ui:Str settings.smartNaming.needsLicense}"
+                               Visibility="{Binding EstLicencie, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                </StackPanel>
+            </Border>
+
             <!-- Les boutons d'outillage vivent dans les Reglages depuis 97.0 :
                  ils occupaient trois rangees en permanence dans la barre du
                  haut pour des actions declenchees une fois par mois. -->

@@ -62,6 +62,17 @@ namespace ChaturbateRecorderApp.Services
         // composant a l'enum ne decale pas silencieusement les reglages
         // existants.
         public List<string> DisabledComponents { get; set; } = new();
+
+        /// <summary>
+        /// Motif de nommage intelligent (premium). Nul/vide = comportement
+        /// GRATUIT inchangé (« salon-date_heure »). N'a d'effet qu'avec une
+        /// licence active — le réglage peut exister sans elle (rien ne
+        /// l'empêche), mais ne fait alors rien : la valeur payée est la
+        /// PERSONNALISATION, pas la donnée elle-même.
+        ///
+        /// Jetons reconnus : {salon}, {date}, {heure}, {qualite}.
+        /// </summary>
+        public string? SmartNamingPattern { get; set; }
     }
 
     /// <summary>

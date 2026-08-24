@@ -57,6 +57,18 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private string _message = "";
 
+        [ObservableProperty]
+        private string _smartNamingPattern = "";
+
+        /// <summary>
+        /// Vrai avec une licence StreamRecorderPro active. Le champ reste
+        /// visible et modifiable sans elle — un réglage qui disparaît selon
+        /// la licence serait déroutant — mais n'a d'effet qu'avec elle :
+        /// <see cref="CaptureFinalizer"/> vérifie la même condition avant de
+        /// l'appliquer.
+        /// </summary>
+        public bool EstLicencie => App.Premium.IsLicensed;
+
         public SettingsViewModel()
         {
             // La legende est une chaine FORMATEE, donc hors de portee de
@@ -73,6 +85,7 @@ namespace ChaturbateRecorderApp.ViewModels
             _autoUpdateCheck = _reglages.AutoUpdateCheck;
             _watchIntervalSeconds = _reglages.WatchIntervalSeconds;
             _showLogs = _reglages.ShowLogs;
+            _smartNamingPattern = _reglages.SmartNamingPattern ?? "";
             // Le CHAMP et non la propriete, VOLONTAIREMENT : passer par la
             // propriete declencherait `OnFrancaisChanged` pendant la
             // construction, donc reappliquerait la langue deja en place. On veut
@@ -149,6 +162,7 @@ namespace ChaturbateRecorderApp.ViewModels
             _reglages.AutoUpdateCheck = AutoUpdateCheck;
             _reglages.WatchIntervalSeconds = Math.Clamp(WatchIntervalSeconds, 30, 3600);
             _reglages.ShowLogs = ShowLogs;
+            _reglages.SmartNamingPattern = !string.IsNullOrEmpty(SmartNamingPattern) ? SmartNamingPattern : null;
             // Le theme suit la case, et il est desormais PERSISTE : c'etait le
             // dernier reglage de cet ecran a ne pas survivre a une fermeture.
             _reglages.Theme = Sombre ? "dark" : "light";

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ChaturbateRecorderApp.Config;
@@ -86,6 +87,18 @@ namespace ChaturbateRecorderApp.Services
                         Logger.Log($"Generation de la miniature impossible pour {final} : {ex.Message}", LogLevel.WARN);
                     }
 
+                    // Meme regle : le nommage intelligent est un CONFORT
+                    // premium, jamais une condition de reussite de la
+                    // finalisation elle-meme.
+                    try
+                    {
+                        final = await AppliquerNommageIntelligentAsync(final, nomBase!).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Nommage intelligent impossible pour {final} : {ex.Message}", LogLevel.WARN);
+                    }
+
                     return true;
                 }
                 catch (IOException) when (essai < Essais - 1)
@@ -138,6 +151,152 @@ namespace ChaturbateRecorderApp.Services
             Logger.Log(ok
                 ? $"Miniature creee : {miniature}"
                 : $"Erreur creation miniature pour {videoPath}", ok ? LogLevel.INFO : LogLevel.WARN);
+        }
+
+        /// <summary>
+        /// Reconnaît « salon-AAAA-MM-JJ_HH-mm-ss » — exactement la forme posée
+        /// par <c>RecordingCoordinator.Demarrer</c>. Un nomBase qui ne colle
+        /// pas à ce moule (jamais le cas en usage normal, mais rien ne
+        /// l'interdit techniquement) désactive simplement le nommage
+        /// intelligent plutôt que de deviner.
+        /// </summary>
+        private static readonly Regex ModeleNomBase =
+            new(@"^(?<salon>.+)-(?<date>\d{4}-\d{2}-\d{2})_(?<heure>\d{2}-\d{2}-\d{2})$", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Fonction PURE (aucune E/S), isolée exprès de tout ce qui touche au
+        /// disque ou à la licence : c'est la seule façon d'éprouver le
+        /// remplacement de jetons et le nettoyage des caractères interdits
+        /// sans avoir à fabriquer une licence ni un vrai fichier vidéo.
+        ///
+        /// Rend null si le motif ne produit rien d'utilisable (nomBase ne
+        /// colle pas au moule attendu, ou le résultat est vide/identique) —
+        /// jamais une chaîne vide qu'un appelant distrait confondrait avec un
+        /// nom valide.
+        /// </summary>
+        internal static string? ConstruireNomIntelligent(string motif, string nomBase, string? qualite)
+        {
+            var correspondance = ModeleNomBase.Match(nomBase);
+            if (!correspondance.Success) return null;
+
+            var nouveauNomBase = motif
+                .Replace("{salon}", correspondance.Groups["salon"].Value)
+                .Replace("{date}", correspondance.Groups["date"].Value)
+                .Replace("{heure}", correspondance.Groups["heure"].Value)
+                .Replace("{qualite}", qualite ?? "qualite-inconnue");
+
+            foreach (var invalide in Path.GetInvalidFileNameChars())
+            {
+                nouveauNomBase = nouveauNomBase.Replace(invalide, '_');
+            }
+
+            return string.IsNullOrWhiteSpace(nouveauNomBase) || nouveauNomBase == nomBase ? null : nouveauNomBase;
+        }
+
+        /// <summary>
+        /// Renomme la capture (et sa miniature) selon le motif premium
+        /// configuré. Rend le NOUVEAU chemin si le renommage a eu lieu, sinon
+        /// celui reçu tel quel — l'appelant n'a pas à distinguer les deux, la
+        /// fonction retourne toujours un chemin VALIDE vers le fichier.
+        ///
+        /// Gratuit sans changement : sans licence ou sans motif configuré,
+        /// rien ne se passe. Le salon, la date et la qualité sont déjà des
+        /// données gratuites — c'est la PERSONNALISATION du nom qui est
+        /// vendue, pas la mesure elle-même.
+        /// </summary>
+        private static async Task<string> AppliquerNommageIntelligentAsync(string videoPath, string nomBase)
+        {
+            if (!App.Premium.IsLicensed) return videoPath;
+
+            var motif = SettingsManager.Load().SmartNamingPattern;
+            if (string.IsNullOrWhiteSpace(motif)) return videoPath;
+
+            var qualite = await DetecterQualiteAsync(videoPath, AppConfig.FFmpegPath).ConfigureAwait(false);
+            var nouveauNomBase = ConstruireNomIntelligent(motif, nomBase, qualite);
+            if (nouveauNomBase == null) return videoPath;
+
+            var dossier = Path.GetDirectoryName(videoPath)!;
+            var extension = Path.GetExtension(videoPath);
+            var nouveauVideo = Path.Combine(dossier, nouveauNomBase + extension);
+
+            if (File.Exists(nouveauVideo))
+            {
+                // Deux captures du même salon à la même seconde : improbable,
+                // mais écraser une capture existante serait pire que garder
+                // l'ancien nom.
+                Logger.Log($"Nommage intelligent ignoré : {nouveauVideo} existe déjà.", LogLevel.WARN);
+                return videoPath;
+            }
+
+            File.Move(videoPath, nouveauVideo);
+
+            var ancienneMiniature = Path.Combine(dossier, Path.GetFileNameWithoutExtension(videoPath) + ".jpg");
+            if (File.Exists(ancienneMiniature))
+            {
+                var nouvelleMiniature = Path.Combine(dossier, nouveauNomBase + ".jpg");
+                try { File.Move(ancienneMiniature, nouvelleMiniature); }
+                catch (Exception ex)
+                {
+                    // La vidéo a déjà son nouveau nom : la miniature resterait
+                    // simplement introuvable pour cette ligne, pas de quoi
+                    // annuler un renommage déjà réussi.
+                    Logger.Log($"Renommage de la miniature impossible : {ex.Message}", LogLevel.WARN);
+                }
+            }
+
+            Logger.Log($"Nommage intelligent appliqué : {Path.GetFileName(nouveauVideo)}");
+            return nouveauVideo;
+        }
+
+        /// <summary>
+        /// Hauteur vidéo en pixels, lue dans l'en-tête du conteneur — PAS de
+        /// décodage : « -i » seul suffit à ffmpeg pour l'annoncer sur stderr
+        /// avant de se plaindre qu'aucune sortie n'est fournie. Rend null si
+        /// absent ou illisible : une capture reste une capture sans étiquette
+        /// de qualité.
+        /// </summary>
+        internal static async Task<string?> DetecterQualiteAsync(string videoPath, string ffmpegPath)
+        {
+            if (!File.Exists(ffmpegPath)) return null;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+            };
+            foreach (var a in new[] { "-hide_banner", "-i", videoPath }) psi.ArgumentList.Add(a);
+
+            using var p = Process.Start(psi);
+            if (p == null) return null;
+
+            var erreur = await p.StandardError.ReadToEndAsync().ConfigureAwait(false);
+
+            using var delai = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                await p.WaitForExitAsync(delai.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                try { p.Kill(entireProcessTree: true); } catch { /* déjà parti */ }
+                return null;
+            }
+
+            // Une ligne « Video: ..., 1920x1080 [...] » — jamais une ligne
+            // « Audio: », qui n'a pas de résolution.
+            foreach (var ligne in erreur.Split('\n'))
+            {
+                if (!ligne.Contains("Video:", StringComparison.Ordinal)) continue;
+                var correspondance = Regex.Match(ligne, @"(?<!\d)(\d{2,5})x(\d{2,5})(?!\d)");
+                if (correspondance.Success && int.TryParse(correspondance.Groups[2].Value, out var hauteur))
+                {
+                    return $"{hauteur}p";
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
