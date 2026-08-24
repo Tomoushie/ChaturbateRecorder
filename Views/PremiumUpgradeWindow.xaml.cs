@@ -19,10 +19,23 @@ namespace ChaturbateRecorderApp.Views
     /// </summary>
     public partial class PremiumUpgradeWindow : Window
     {
+        /// <summary>
+        /// FAUX tant que Tom n'a pas confirmé un fichier réellement déposé
+        /// sur la page itch.io (25-08 : la page était en brouillon, puis
+        /// publique le même jour mais toujours vide — « There doesn't appear
+        /// to be anything here… », message standard d'itch.io pour une page
+        /// sans contenu). Tant que ce drapeau reste faux, la carte itch.io ne
+        /// s'affiche pas : personne ne doit pouvoir payer pour rien.
+        /// À repasser à `true` UNE FOIS LE FICHIER CONFIRMÉ, pas avant.
+        /// </summary>
+        private const bool CarteItchIoDisponible = false;
+
         public PremiumUpgradeWindow()
         {
             InitializeComponent();
             ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
+
+            CarteItchIo.Visibility = CarteItchIoDisponible ? Visibility.Visible : Visibility.Collapsed;
 
             // Les IBAN/BIC ne sont pas dans le XAML : ce sont des données,
             // pas des libellés (voir le commentaire du fichier XAML).

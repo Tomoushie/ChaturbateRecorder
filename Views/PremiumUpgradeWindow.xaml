@@ -68,8 +68,10 @@
                            Foreground="{DynamicResource Brush.Fg}"
                            Text="{ui:Str premium.paymentTitle}" />
 
-                <!-- itch.io — même poids visuel que les deux virements ci-dessous. -->
-                <Border Style="{StaticResource Surface.Card}">
+                <!-- itch.io — même poids visuel que les deux virements ci-dessous.
+                     x:Name posé pour pouvoir la MASQUER depuis le code-behind :
+                     voir CarteItchIoDisponible dans PremiumUpgradeWindow.xaml.cs. -->
+                <Border x:Name="CarteItchIo" Style="{StaticResource Surface.Card}">
                     <StackPanel>
                         <Button Style="{StaticResource Button.Primary}"
                                 HorizontalAlignment="Left"
