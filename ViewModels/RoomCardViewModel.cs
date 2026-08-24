@@ -45,6 +45,14 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private bool _indeterminate;
 
+        /// <summary>
+        /// Chemin de la vignette premium (StreamRecorderPro) pour ce salon,
+        /// null tant qu'aucune n'a été capturée — le cas de l'immense
+        /// majorité des utilisateurs, qui n'ont pas le composant payé.
+        /// </summary>
+        [ObservableProperty]
+        private string? _cheminApercu;
+
         public RoomRowState State
         {
             get => _state;

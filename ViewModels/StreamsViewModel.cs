@@ -3,7 +3,9 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
     using System.Linq;
+    using System.Threading.Tasks;
     using CommunityToolkit.Mvvm.ComponentModel;
     using CommunityToolkit.Mvvm.Input;
     using ChaturbateRecorderApp.Config;
@@ -210,6 +212,13 @@
                 // aucune capture déjà en cours pour ce salon.
                 if (carte.AutoRecord && statut == RoomStatus.Online && !carte.IsRecording)
                     BasculerCommand.Execute(carte);
+
+                // La vignette premium se rafraichit a chaque tour ou le salon
+                // est vu en ligne, en tache de fond (le `_ =`) : ce lambda
+                // traite aussi les autres salons du meme tour de surveillance,
+                // et l'appel enchaine yt-dlp puis ffmpeg -- plusieurs secondes
+                // qu'il ne faut pas faire attendre au reste de la boucle.
+                if (statut == RoomStatus.Online) _ = RafraichirApercuAsync(carte);
             };
 
             _surveillance.Demarrer();
@@ -236,6 +245,37 @@
 
         private RoomCardViewModel? Trouver(string url) =>
             Rooms.FirstOrDefault(c => string.Equals(c.Url, url, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>
+        /// Demande une vignette au composant premium pour ce salon et la pose
+        /// sur la carte. Silencieuse en cas d'échec — pas de licence, pas de
+        /// composant, flux qui ne rend rien — car c'est le cas de la
+        /// quasi-totalité des utilisateurs, ce n'est pas une anomalie.
+        /// </summary>
+        private async Task RafraichirApercuAsync(RoomCardViewModel carte)
+        {
+            if (!App.Premium.IsLicensed) return;
+
+            // Nom de fichier dérivé de l'URL normalisée, comme côté WinForms :
+            // un nom de salon peut contenir n'importe quoi, y compris des
+            // caractères interdits en chemin.
+            var cle = Convert.ToHexString(
+                System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(RoomStore.Normalize(carte.Url))))[..16];
+            var chemin = Path.Combine(AppConfig.PreviewDir, $"{cle}.jpg");
+
+            var url = carte.Url;
+            var ok = await Task.Run(() => App.Premium.TryCapturePreview(url, chemin)).ConfigureAwait(true);
+            if (!ok || Trouver(url) is null) return;
+
+            // Le chemin est DETERMINISTE (meme cle SHA-256 a chaque tour) :
+            // reposer la MEME chaine ne leverait aucun PropertyChanged
+            // (SetProperty compare par egalite), et l'image resterait celle
+            // du tour precedent meme si le fichier vient d'etre reecrit sur
+            // le disque. Le passage par null force les deux notifications.
+            carte.CheminApercu = null;
+            carte.CheminApercu = chemin;
+        }
 
         /// <summary>
         /// Un seul bouton pour les deux actions : « Démarrer » quand rien ne

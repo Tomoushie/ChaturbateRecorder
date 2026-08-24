@@ -24,6 +24,12 @@
          présence d'un autre. Deux clés identiques dans deux dictionnaires
          fusionnés sont licites. -->
     <conv:IconTemplateConverter x:Key="IconTemplateConverter" />
+    <!-- Même raison : PathToThumbnailConverter et StringToVisibilityConverter
+         sont déjà déclarés dans App.xaml et HistoryView.xaml, mais ce
+         dictionnaire-ci ne les fusionne pas — un StaticResource ne voit que
+         ce qui lui est propre ou fusionné AVANT lui. -->
+    <conv:PathToThumbnailConverter x:Key="PathToThumbnailConverter" />
+    <conv:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
 
     <DataTemplate x:Key="RoomCard.Template">
         <Border Height="{Binding CardHeight}"
@@ -49,6 +55,7 @@
                 <Grid Grid.Row="0" Margin="14,0,14,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
@@ -63,7 +70,22 @@
                                     Foreground="{DynamicResource Brush.FgMuted}"
                                     Template="{Binding PlatformIconKey, Converter={StaticResource IconTemplateConverter}}" />
 
-                    <StackPanel Grid.Column="1" Margin="12,0,12,0" VerticalAlignment="Center">
+                    <!-- Vignette premium (StreamRecorderPro) : 64x36, le même
+                         rapport 16/9 qu'à l'historique. AUCUNE place réservée
+                         quand elle est absente — colonne Auto + Collapsed
+                         revient à une largeur de zéro, donc l'immense
+                         majorité des utilisateurs (sans le composant payé)
+                         voit un écran identique à avant cet ajout. -->
+                    <Border Grid.Column="1" Width="64" Height="36"
+                            Margin="12,0,0,0"
+                            CornerRadius="4"
+                            Background="{DynamicResource Brush.Input}"
+                            Visibility="{Binding CheminApercu, Converter={StaticResource StringToVisibilityConverter}}">
+                        <Image Stretch="UniformToFill"
+                               Source="{Binding CheminApercu, Converter={StaticResource PathToThumbnailConverter}}" />
+                    </Border>
+
+                    <StackPanel Grid.Column="2" Margin="12,0,12,0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding RoomName}"
                                    FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis"
@@ -75,7 +97,7 @@
                                    Foreground="{DynamicResource Brush.FgMuted}" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- L'interrupteur « auto » : faux par défaut. Une ligne
                              n'est qu'un salon CONNU, c'est lui qui engage la
                              surveillance — sans quoi la fusion des favoris et

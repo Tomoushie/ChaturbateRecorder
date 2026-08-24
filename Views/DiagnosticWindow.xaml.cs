@@ -11,7 +11,7 @@ namespace ChaturbateRecorderApp.Views
         {
             InitializeComponent();
             ChaturbateRecorderApp.UI.WindowChrome.Suivre(this);
-            Rapport.Text = DiagnosticReport.Statique(null);
+            Rapport.Text = DiagnosticReport.Statique(App.Premium);
             _ = ChargerAsync();
         }
 
@@ -19,7 +19,7 @@ namespace ChaturbateRecorderApp.Views
         {
             try
             {
-                Rapport.Text = await DiagnosticReport.CompletAsync(null);
+                Rapport.Text = await DiagnosticReport.CompletAsync(App.Premium);
             }
             catch (Exception ex)
             {

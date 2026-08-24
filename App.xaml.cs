@@ -19,6 +19,18 @@ namespace ChaturbateRecorderApp
         internal const string SingleInstanceMutexName = @"Local\ChaturbateRecorder.SingleInstance";
         internal const string ShowWindowEventName = @"Local\ChaturbateRecorder.ShowWindow";
 
+        /// <summary>
+        /// Passerelle vers le composant premium, PARTAGÉE par toute
+        /// l'application — chargée une seule fois au démarrage, comme
+        /// <see cref="ThemeManager"/>. Un exemplaire par consommateur
+        /// relirait la DLL et revérifierait la licence à chaque fenêtre
+        /// ouverte pour rien, et pourrait en théorie diverger entre deux
+        /// lectures. Statique plutôt qu'injectée : ce projet n'a pas de
+        /// conteneur de dépendances, et les autres services partagés
+        /// (Logger, Localization, ThemeManager) suivent déjà ce patron.
+        /// </summary>
+        public static readonly PremiumBridge Premium = new();
+
         private Mutex? _singleInstance;
 
         /// <summary>
@@ -144,6 +156,12 @@ namespace ChaturbateRecorderApp
             var themeChoisi = string.Equals(SettingsManager.Load().Theme, "dark",
                 StringComparison.OrdinalIgnoreCase) ? AppTheme.Dark : AppTheme.Light;
             ThemeManager.Apply(themeChoisi, animate: false);
+
+            // Chargé ici et pas paresseusement au premier accès : sans
+            // licence valide c'est le cas de la quasi-totalité des
+            // utilisateurs, et `Load` ne lève jamais — un composant absent ou
+            // refusé ne doit pas empêcher la fenêtre principale de s'ouvrir.
+            Premium.Load();
 
             // Le thème est posé AVANT la fenêtre : construire la fenêtre
             // d'abord la ferait apparaître avec les couleurs de départ du

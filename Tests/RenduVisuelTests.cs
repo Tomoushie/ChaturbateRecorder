@@ -210,6 +210,84 @@ namespace ChaturbateRecorderApp.Tests
         }
 
         /// <summary>
+        /// LA VIGNETTE PREMIUM (StreamRecorderPro, 24-08) NE DOIT RIEN CASSER,
+        /// AVEC OU SANS ELLE. `RoomCard.xaml` redéclare localement les deux
+        /// convertisseurs qu'elle utilise — même piège déjà payé ici que pour
+        /// `IconTemplateConverter` : un `StaticResource` ne voit que ce qui est
+        /// fusionné DANS le même dictionnaire, jamais ce que fusionne un
+        /// parent. Une clé manquante ne lève qu'à l'exécution, jamais à la
+        /// compilation — c'est exactement ce que ce test ferait échouer.
+        ///
+        /// Deux cartes FICTIVES : sans vignette (le cas de l'immense majorité
+        /// des utilisateurs, qui n'ont pas le composant payé) et avec, pour
+        /// éprouver les deux branches de la visibilité — colonne effacée dans
+        /// le premier cas, cadre visible dans le second.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Themes))]
+        public void LaVignettePremiumNeCassePasLeRenduAvecOuSansElle(AppTheme theme)
+        {
+            SurFilStandard(() =>
+            {
+                var avecVignette = new RoomCardViewModel(new ChaturbateRecorderApp.Services.RoomEntry
+                {
+                    Url = "https://chaturbate.com/salon-fictif-avec-vignette",
+                    AddedUtc = DateTime.UtcNow,
+                })
+                {
+                    RoomName = "Salon fictif (avec vignette)",
+                    PlatformIconKey = "Icon.Camera",
+                };
+                var sansVignette = new RoomCardViewModel(new ChaturbateRecorderApp.Services.RoomEntry
+                {
+                    Url = "https://chaturbate.com/salon-fictif-sans-vignette",
+                    AddedUtc = DateTime.UtcNow,
+                })
+                {
+                    RoomName = "Salon fictif (sans vignette)",
+                    PlatformIconKey = "Icon.Camera",
+                };
+
+                // Peu importe que ce soit un JPEG valide : PathToThumbnailConverter
+                // a déjà ses propres tests côté historique. Ce qui est éprouvé ici,
+                // c'est que le CHEMIN existe et que la colonne se montre — pas ce
+                // que l'image décode.
+                var image = Path.Combine(Path.GetTempPath(), "cbr-vignette-" + Guid.NewGuid().ToString("N") + ".jpg");
+                File.WriteAllBytes(image, new byte[] { 1, 2, 3 });
+                try
+                {
+                    avecVignette.CheminApercu = image;
+
+                    var (vue, _, bitmap) = Rendre(theme, () =>
+                    {
+                        var conteneur = new ItemsControl
+                        {
+                            ItemTemplate = (System.Windows.DataTemplate)Application.Current.Resources["RoomCard.Template"],
+                        };
+                        conteneur.Items.Add(avecVignette);
+                        conteneur.Items.Add(sansVignette);
+                        return conteneur;
+                    });
+                    Enregistrer(bitmap, $"vignette-premium-{theme}".ToLowerInvariant());
+
+                    // 64x36 : la taille du cadre de vignette, et d'aucun autre
+                    // Border du gabarit (la carte elle-même n'a pas de largeur
+                    // fixe, le liseré d'état fait 4 px de large).
+                    var cadres = Descendants<Border>(vue).Where(b => b.Width == 64 && b.Height == 36).ToList();
+                    Assert.Equal(2, cadres.Count);
+                    Assert.Contains(cadres, b => b.Visibility == Visibility.Visible);
+                    Assert.Contains(cadres, b => b.Visibility == Visibility.Collapsed);
+                }
+                finally
+                {
+                    avecVignette.Detach();
+                    sansVignette.Detach();
+                    try { File.Delete(image); } catch { /* dossier temporaire */ }
+                }
+            });
+        }
+
+        /// <summary>
         /// LE TEXTE DES DIALOGUES EST-IL LISIBLE ? Mesuré, pas jugé à l'œil.
         ///
         /// Sur les captures en thème SOMBRE du mainteneur, les libellés des
