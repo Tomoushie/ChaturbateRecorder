@@ -37,6 +37,12 @@ namespace ChaturbateRecorderApp.Views
 
             CarteItchIo.Visibility = CarteItchIoDisponible ? Visibility.Visible : Visibility.Collapsed;
 
+            // À transmettre avec N'IMPORTE QUEL moyen de paiement (120.0) :
+            // la licence est désormais liée à cette installation. Voir
+            // Services/MachineId.cs pour pourquoi il est généré ICI et non
+            // dans StreamRecorderPro (doit exister même sans le composant).
+            TexteIdMachine.Text = MachineId.Obtenir();
+
             // Les IBAN/BIC ne sont pas dans le XAML : ce sont des données,
             // pas des libellés (voir le commentaire du fichier XAML).
             TexteIban1.Text = FormaterIban(AppConfig.PremiumIban1);
@@ -81,6 +87,9 @@ namespace ChaturbateRecorderApp.Views
 
         private void CopierIban2_Click(object sender, RoutedEventArgs e) =>
             CopierEtConfirmer(AppConfig.PremiumIban2);
+
+        private void CopierIdMachine_Click(object sender, RoutedEventArgs e) =>
+            CopierEtConfirmer(MachineId.Obtenir());
 
         private void CopierEtConfirmer(string iban)
         {

@@ -63,6 +63,31 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ===================== IDENTIFIANT D'INSTALLATION =====================
+                     S'applique aux TROIS moyens de paiement (120.0, 25-08) : la
+                     licence est désormais liée à cette installation, quel que
+                     soit le canal. Une seule carte, au-dessus des trois, plutôt
+                     que de répéter l'ID dans chaque carte de paiement. -->
+                <Border Margin="0,16,0,0" Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.machineIdTitle}" />
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBlock x:Name="TexteIdMachine" VerticalAlignment="Center"
+                                       FontFamily="Consolas" FontSize="13"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <Button Margin="12,0,0,0"
+                                    Style="{StaticResource Button.Secondary}"
+                                    Content="{ui:Str premium.copy}"
+                                    Click="CopierIdMachine_Click" />
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.machineIdNote}" />
+                    </StackPanel>
+                </Border>
+
                 <!-- ===================== PAIEMENT ===================== -->
                 <TextBlock Margin="0,16,0,8" FontWeight="SemiBold" FontSize="14"
                            Foreground="{DynamicResource Brush.Fg}"

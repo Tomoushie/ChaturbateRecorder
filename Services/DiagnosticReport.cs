@@ -27,6 +27,10 @@ namespace ChaturbateRecorderApp.Services
 
             sb.AppendLine("Composant premium (Stream Recorder Pro)");
             sb.AppendLine(DecrirePremium(premium));
+            // 120.0 — à fournir avec une commande (itch.io, virement) : c'est
+            // sur cet identifiant que la licence sera liée. Dans le rapport
+            // Diagnostic pour qui l'a manqué dans la fenêtre Premium.
+            sb.AppendLine($"Identifiant d'installation : {MachineId.Obtenir()}");
 
             sb.AppendLine("Dossier d'exécution");
             sb.AppendLine($"Emplacement autorisé : {(WorkingDirectoryValidator.IsAuthorizedLocation(AppConfig.AppDir) ? "oui" : "non")}");

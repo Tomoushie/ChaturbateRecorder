@@ -702,16 +702,26 @@ namespace ChaturbateRecorderApp.UI
             ["premium.feature.autotag"] = (
                 "Nommage intelligent des captures et planificateur horaire par salon.",
                 "Smart naming for captures and a per-room daily schedule."),
+            // 120.0, 25-08 — corrigé après coup : ni itch.io ni un virement ne
+            // livrent la licence AUTOMATIQUEMENT, elle est désormais liée à
+            // l'installation (voir premium.machineIdNote) et signée à la main
+            // par le mainteneur une fois l'identifiant reçu. Seul le FICHIER
+            // part automatiquement via itch.io — ne jamais dire "licence"
+            // dans ce contexte, ce serait promettre ce qui ne se passe pas.
             ["premium.paymentTitle"] = ("Moyens de paiement", "Payment methods"),
             ["premium.itchio"] = ("Acheter sur itch.io", "Buy on itch.io"),
             ["premium.itchioNote"] = (
-                "Livraison automatique du fichier et de la licence — le moyen le plus rapide.",
-                "Automatic delivery of the file and the licence — the fastest option."),
+                "Téléchargement automatique du logiciel. La licence, personnalisée, suit séparément une fois ton identifiant d'installation transmis (ci-dessus).",
+                "Automatic download of the software. The licence, personalised, follows separately once you've sent your installation ID (above)."),
             ["premium.bankTitle"] = ("Virement bancaire (deux comptes au choix)", "Bank transfer (either account)"),
             ["premium.bankNote"] = (
-                "Livraison manuelle : le mainteneur envoie le fichier et la licence après réception du virement. Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
-                "Manual delivery: the maintainer sends the file and the licence after the transfer is received. Scan the QR with your banking app, or copy the IBAN by hand."),
-            ["premium.copy"] = ("Copier l'IBAN", "Copy IBAN"),
+                "Livraison manuelle : le mainteneur envoie le fichier et la licence après réception du virement et de ton identifiant d'installation (ci-dessus). Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
+                "Manual delivery: the maintainer sends the file and the licence after receiving the transfer and your installation ID (above). Scan the QR with your banking app, or copy the IBAN by hand."),
+            ["premium.machineIdTitle"] = ("Ton identifiant d'installation", "Your installation ID"),
+            ["premium.machineIdNote"] = (
+                "À transmettre avec ta commande, quel que soit le moyen de paiement — c'est à cet identifiant que ta licence sera liée. La licence est liée à ton installation actuelle : en cas de changement d'ordinateur, contacte le support pour un transfert.",
+                "Send this with your order, whichever payment method you use — your licence will be tied to this ID. The licence is tied to your current installation: if you change computers, contact support for a transfer."),
+            ["premium.copy"] = ("Copier", "Copy"),
             ["premium.copied"] = ("Copié !", "Copied!"),
         };
 
