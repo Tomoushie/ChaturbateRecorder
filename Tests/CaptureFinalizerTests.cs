@@ -159,5 +159,29 @@ namespace ChaturbateRecorderApp.Tests
                 $"rendu en {chrono.ElapsedMilliseconds} ms : le verrou n'a donc " +
                 "jamais gene, et les reessais ne sont pas exerces.");
         }
+
+        /// <summary>
+        /// Le Safe Mode doit vraiment empecher tout appel a ffmpeg : composant
+        /// desactive, aucun .jpg ne doit apparaitre, et la finalisation du
+        /// fichier lui-meme ne doit ni lever ni en dependre.
+        /// </summary>
+        [Fact]
+        public async Task SansFfmpegActifAucuneMiniatureEtAucunEchec()
+        {
+            SafeMode.SetManual(SafeComponent.Ffmpeg, true);
+            try
+            {
+                File.WriteAllText(Chemin("salon.mp4.part"), "des octets");
+
+                Assert.True(await CaptureFinalizer.FinaliserAsync(_dossier, "salon", "mp4"));
+
+                Assert.True(File.Exists(Chemin("salon.mp4")));
+                Assert.False(File.Exists(Chemin("salon.jpg")));
+            }
+            finally
+            {
+                SafeMode.SetManual(SafeComponent.Ffmpeg, false);
+            }
+        }
     }
 }

@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using ChaturbateRecorderApp.Config;
 
 namespace ChaturbateRecorderApp.Services
 {
@@ -19,9 +22,12 @@ namespace ChaturbateRecorderApp.Services
     /// Constaté au premier essai sur un vrai direct — trois `.part` dans le
     /// dossier de captures, zéro entrée dans l'historique.
     ///
-    /// La miniature n'est PAS reprise ici, décision du mainteneur : elle
-    /// demande ffmpeg, le mode sans échec et le rafraîchissement de
-    /// l'historique, et la version WinForms y a déjà payé deux défauts.
+    /// **LA MINIATURE EST DÉSORMAIS REPRISE ICI** (24-08) : `HistoryService`
+    /// et la vue Historique savaient déjà la lire (`CheminVignette`), rien ne
+    /// l'avait jamais écrite côté WPF. Portée depuis le WinForms — mêmes
+    /// arguments ffmpeg, même repli sur le début du fichier — mais volontairement
+    /// PAS sur le chemin critique : elle part une fois le fichier renommé, sans
+    /// jamais faire échouer la finalisation elle-même.
     /// </summary>
     public static class CaptureFinalizer
     {
@@ -68,6 +74,18 @@ namespace ChaturbateRecorderApp.Services
 
                     File.Move(part, final);
                     Logger.Log($"Enregistrement finalise : {Path.GetFileName(final)}");
+
+                    // Jamais sur le chemin critique : une miniature ratee ne
+                    // doit pas faire croire que la finalisation a echoue.
+                    try
+                    {
+                        await GenererVignetteAsync(final).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Generation de la miniature impossible pour {final} : {ex.Message}", LogLevel.WARN);
+                    }
+
                     return true;
                 }
                 catch (IOException) when (essai < Essais - 1)
@@ -86,6 +104,89 @@ namespace ChaturbateRecorderApp.Services
 
             Logger.Log($"Fichier encore verrouille apres {Essais} essais : {part}", LogLevel.WARN);
             return false;
+        }
+
+        /// <summary>
+        /// Extrait une image de la capture, posee en .jpg a cote d'elle —
+        /// c'est exactement le chemin que <c>HistoryService.Vignette</c> lit
+        /// deja. Respecte le Safe Mode (composant Ffmpeg) : un ffmpeg absent
+        /// ou desactive ne doit ni lever ni ralentir la finalisation.
+        /// </summary>
+        private static async Task GenererVignetteAsync(string videoPath)
+        {
+            if (!SafeMode.IsEnabled(SafeComponent.Ffmpeg) || !File.Exists(AppConfig.FFmpegPath))
+            {
+                return;
+            }
+
+            var miniature = Path.Combine(Path.GetDirectoryName(videoPath)!, Path.GetFileNameWithoutExtension(videoPath) + ".jpg");
+            if (File.Exists(miniature))
+            {
+                return;
+            }
+
+            var ok = await ExtraireImageAsync(videoPath, miniature, AppConfig.ThumbnailOffsetSeconds).ConfigureAwait(false);
+
+            // Repli sur le debut du fichier : au-dela de la fin REELLE d'un
+            // enregistrement plus court que le decalage demande, ffmpeg
+            // n'ecrit rien avec -ss place avant -i (mesure cote WinForms).
+            if (!ok && AppConfig.ThumbnailOffsetSeconds > 0)
+            {
+                ok = await ExtraireImageAsync(videoPath, miniature, 0).ConfigureAwait(false);
+            }
+
+            Logger.Log(ok
+                ? $"Miniature creee : {miniature}"
+                : $"Erreur creation miniature pour {videoPath}", ok ? LogLevel.INFO : LogLevel.WARN);
+        }
+
+        /// <summary>
+        /// Un appel a ffmpeg, une image. Le verdict est l'EXISTENCE du fichier
+        /// et non le code de sortie : c'est le fichier que l'historique ira
+        /// lire. Pas de redirection stdout/stderr : rien ne les lit, et un
+        /// ffmpeg plus bavard que prevu remplirait le tampon du pipe sans
+        /// jamais debloquer le processus avant le delai.
+        /// </summary>
+        private static async Task<bool> ExtraireImageAsync(string video, string miniature, int decalageSecondes)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = AppConfig.FFmpegPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            foreach (var a in new[]
+            {
+                "-ss", decalageSecondes.ToString(),
+                "-i", video,
+                "-frames:v", "1",
+                "-q:v", "2",
+                miniature,
+                "-y",
+                "-loglevel", "error"
+            })
+            {
+                psi.ArgumentList.Add(a);
+            }
+
+            using var p = Process.Start(psi);
+            if (p == null) return false;
+
+            using var delai = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            try
+            {
+                await p.WaitForExitAsync(delai.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Un ffmpeg fige garderait un handle de lecture sur la
+                // capture. L'ancien defaut WinForms se contentait d'abandonner
+                // l'attente en le laissant tourner.
+                try { p.Kill(entireProcessTree: true); } catch { /* deja parti */ }
+                return false;
+            }
+
+            return File.Exists(miniature);
         }
     }
 }
