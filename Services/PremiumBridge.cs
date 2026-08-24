@@ -32,16 +32,19 @@ namespace ChaturbateRecorderApp.Services
         private readonly PropertyInfo _version;
         private readonly PropertyInfo _licensedTo;
         private readonly PropertyInfo _licenceProblem;
+        private readonly PropertyInfo _usageSummary;
         private readonly MethodInfo _capturePreview;
         private readonly MethodInfo _liveWindow;
 
         private PremiumBinding(object instance, PropertyInfo version, PropertyInfo licensedTo,
-                               PropertyInfo licenceProblem, MethodInfo capturePreview, MethodInfo liveWindow)
+                               PropertyInfo licenceProblem, PropertyInfo usageSummary,
+                               MethodInfo capturePreview, MethodInfo liveWindow)
         {
             _instance = instance;
             _version = version;
             _licensedTo = licensedTo;
             _licenceProblem = licenceProblem;
+            _usageSummary = usageSummary;
             _capturePreview = capturePreview;
             _liveWindow = liveWindow;
         }
@@ -70,6 +73,9 @@ namespace ChaturbateRecorderApp.Services
 
             var licenceProblem = Chaine(type, "LicenceProblem");
             if (licenceProblem == null) { probleme = "propriété string LicenceProblem absente"; return null; }
+
+            var usageSummary = Chaine(type, "UsageSummary");
+            if (usageSummary == null) { probleme = "propriété string UsageSummary absente"; return null; }
 
             var capture = type.GetMethod("TryCapturePreview", BindingFlags.Public | BindingFlags.Instance,
                 null,
@@ -112,12 +118,13 @@ namespace ChaturbateRecorderApp.Services
 
             if (instance == null) { probleme = "construction impossible : instance nulle"; return null; }
 
-            return new PremiumBinding(instance, version, licensedTo, licenceProblem, capture, liveWindow);
+            return new PremiumBinding(instance, version, licensedTo, licenceProblem, usageSummary, capture, liveWindow);
         }
 
         internal string Version => Lire(_version);
         internal string LicensedTo => Lire(_licensedTo);
         internal string LicenceProblem => Lire(_licenceProblem);
+        internal string UsageSummary => Lire(_usageSummary);
 
         private string Lire(PropertyInfo p)
         {
@@ -197,6 +204,13 @@ namespace ChaturbateRecorderApp.Services
 
         /// <summary>Version du composant, pour le panneau Diagnostic.</summary>
         public string Version => _module?.Version ?? "";
+
+        /// <summary>
+        /// Compteurs d'usage locaux par fonctionnalité, pour le panneau
+        /// Diagnostic. Vide si le composant est absent — pas de « 0 » pour
+        /// chaque fonctionnalité, qui laisserait croire à une mesure faite.
+        /// </summary>
+        public string UsageSummary => _module?.UsageSummary ?? "";
 
         /// <summary>
         /// Cherche et charge le composant. Appelé une fois au démarrage.

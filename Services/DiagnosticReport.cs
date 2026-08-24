@@ -110,7 +110,7 @@ namespace ChaturbateRecorderApp.Services
             else if (!premium.IsLoaded)
                 return $"Non installé (normal) — {(premium.LicenceProblem.Length > 0 ? premium.LicenceProblem : "aucun StreamRecorderPro.dll à côté de l'application")}." ;
             else if (premium.IsLicensed)
-                return $"Actif, v{premium.Version} — licence au nom de {premium.LicensedTo}.";
+                return $"Actif, v{premium.Version} — licence au nom de {premium.LicensedTo}. Usage : {premium.UsageSummary}.";
             else
                 return $"Installé (v{premium.Version}) mais INACTIF — {premium.LicenceProblem}.";
         }

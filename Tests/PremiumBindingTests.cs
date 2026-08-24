@@ -26,12 +26,30 @@ namespace ChaturbateRecorderApp.Tests
             public string Version => "1.0.0";
             public string LicensedTo => "Jane Doe";
             public string LicenceProblem => "";
+            public string UsageSummary => "Vignette : 3";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => true;
             public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => true;
         }
 
         private sealed class SansVersion
         {
+            public string LicensedTo => "";
+            public string LicenceProblem => "";
+            public string UsageSummary => "";
+            public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
+        }
+
+        /// <summary>
+        /// Le pendant de <see cref="SansVersion"/> pour le troisième membre
+        /// (24-08, compteurs d'usage) : tout le reste est honoré, SEUL
+        /// UsageSummary manque. Sans ce cas, une régression sur ce contrôle
+        /// précis passerait inaperçue — les autres fixtures qui manquent
+        /// quelque chose échouent toutes AVANT d'atteindre ce contrôle-ci.
+        /// </summary>
+        private sealed class SansUsageSummary
+        {
+            public string Version => "1.0.0";
             public string LicensedTo => "";
             public string LicenceProblem => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
@@ -43,6 +61,7 @@ namespace ChaturbateRecorderApp.Tests
             public string Version => "1.0.0";
             public string LicensedTo => "";
             public string LicenceProblem => "";
+            public string UsageSummary => "";
             // int au lieu de bool, et un paramètre en moins.
             public int TryCapturePreview(string a, string b, string c) => 0;
             public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
@@ -61,6 +80,7 @@ namespace ChaturbateRecorderApp.Tests
             public string Version => "1.0.0";
             public string LicensedTo => "";
             public string LicenceProblem => "";
+            public string UsageSummary => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
             // string au lieu de bool.
             public string TryShowLiveWindow(string a, string b, string c, string d, int e) => "";
@@ -72,6 +92,7 @@ namespace ChaturbateRecorderApp.Tests
             public string Version => "1.0.0";
             public string LicensedTo => "";
             public string LicenceProblem => "";
+            public string UsageSummary => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
             public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
         }
@@ -82,6 +103,7 @@ namespace ChaturbateRecorderApp.Tests
             public string Version => "1.0.0";
             public string LicensedTo => "";
             public string LicenceProblem => "";
+            public string UsageSummary => "";
             public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
             public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
         }
@@ -99,6 +121,7 @@ namespace ChaturbateRecorderApp.Tests
             Assert.Equal("Jane Doe", lie.LicensedTo);
             Assert.True(lie.TryCapturePreview("yt", "ff", "url", "out.jpg", 20));
             Assert.True(lie.TryShowLiveWindow("yt", "ff", "url", "Salon", 20));
+            Assert.Equal("Vignette : 3", lie.UsageSummary);
         }
 
         // --- Chaque refus, pour la bonne raison ---
@@ -112,6 +135,15 @@ namespace ChaturbateRecorderApp.Tests
             // Le motif doit DÉSIGNER le membre manquant : « composant invalide »
             // n'aiderait personne à réparer.
             Assert.Contains("Version", probleme);
+        }
+
+        [Fact]
+        public void AMissingUsageSummaryIsRefusedAndNamed()
+        {
+            var lie = PremiumBinding.Bind(typeof(SansUsageSummary), out var probleme);
+
+            Assert.Null(lie);
+            Assert.Contains("UsageSummary", probleme);
         }
 
         [Fact]
