@@ -4,18 +4,20 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-24** — 64 commits, dépôt distant `origin` =
+**État au 2026-08-24** — 67 commits, dépôt distant `origin` =
 `https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
 WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
 — nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
 `dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
-**440 tests**. L'application navigue, ajoute un salon, l'enregistre, le
+**442 tests**. L'application navigue, ajoute un salon, l'enregistre, le
 surveille, le reconnecte, tient un historique et se configure.
 
-**`main` a 8 commits d'avance sur `origin/wpf-migration`, NON POUSSÉS** (choix
-explicite de Tom au moment de la clôture Premium I) : durcissement,
-changelog, Galerie. Repousser cette décision à chaque session plutôt que de
-pousser en silence.
+**POUSSÉ sur `origin/wpf-migration` le 24-08** (Tom l'a explicitement demandé,
+après être resté volontairement local à la clôture de Premium I) —
+`StreamRecorderPro` poussé au même moment sur son propre `origin` (dépôt
+confirmé PRIVÉ avant le push, jamais supposé). Vérifier `git status -sb`
+avant de reposer cette question : l'écart se recreuse à chaque nouveau
+commit, ne pas supposer l'un ou l'autre.
 
 **PREMIUM II OUVERT (24-08, même jour), DEUX MODULES EN CHANTIER, AUCUN
 FINI** : périmètre tranché avec Tom — Overlay (vidéo en direct) + Galerie,
@@ -50,6 +52,20 @@ FINI** : périmètre tranché avec Tom — Overlay (vidéo en direct) + Galerie,
   un Setter externe sur `Background` n'aurait rien changé, même piège n°8
   que les gabarits de bouton (le fond est peint en dur dans le
   `ControlTemplate`, jamais via `TemplateBinding`).
+
+**GALERIE VÉRIFIÉE VISUELLEMENT (24-08, même jour)** : nouveau test dans
+`Tests/RenduVisuelTests.cs` (salons FICTIFS, jamais le vrai dossier de
+capture qui contient de vrais enregistrements), rendu hors-écran réel de la
+grille + du survol forcé (`Opacity=1` posé à la main : `IsMouseOver` ne
+s'active jamais sans souris réelle). **A trouvé un vrai défaut** : le bouton
+« Empreinte » de la hover-card utilisait `Button.Secondary`, qui SUIT le
+thème courant — en thème clair, un bouton blanc jurait sur le bandeau sombre
+fixe (`#E6000000`) du survol, pensé pour composer sur une vignette
+quelconque. Nouveau style `Button.OnScrim` (`Themes/Controls.xaml`),
+couleurs volontairement figées. 4 PNG dans `%TEMP%\cbr-rendu\`
+(`galerie-{light,dark}`, `galerie-survol-{light,dark}`), regardés un par un.
+Reste non prouvé : une vraie vignette décodée, et le survol déclenché par
+une vraie souris.
 
 **DURCISSEMENT DE LA TROISIÈME VAGUE (24-08, même jour)** : sept tests sur
 quatre angles jamais éprouvés depuis la livraison de l'auto-tagging et du
