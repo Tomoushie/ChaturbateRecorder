@@ -4,13 +4,52 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-24** — 60 commits, dépôt distant `origin` =
+**État au 2026-08-24** — 64 commits, dépôt distant `origin` =
 `https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
 WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
 — nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
 `dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
-**426 tests**. L'application navigue, ajoute un salon, l'enregistre, le
+**440 tests**. L'application navigue, ajoute un salon, l'enregistre, le
 surveille, le reconnecte, tient un historique et se configure.
+
+**`main` a 8 commits d'avance sur `origin/wpf-migration`, NON POUSSÉS** (choix
+explicite de Tom au moment de la clôture Premium I) : durcissement,
+changelog, Galerie. Repousser cette décision à chaque session plutôt que de
+pousser en silence.
+
+**PREMIUM II OUVERT (24-08, même jour), DEUX MODULES EN CHANTIER, AUCUN
+FINI** : périmètre tranché avec Tom — Overlay (vidéo en direct) + Galerie,
+**PAS Historique** qui existe déjà. Tag `v1.37.0-premium-stable` posé sur
+`main` (local, non poussé) pour clore « Premium I » juste avant.
+
+- **Overlay « live feedback »** vit dans `StreamRecorderPro` (dépôt fermé,
+  voir son propre README) : panneau statut/durée/qualité/débit sur
+  `LiveWindow`, débit quasi toujours absent (direct HLS), lu gratuitement
+  depuis la bannière ffmpeg déjà imprimée (`-loglevel info`). Code + 10 tests
+  du parseur livrés. **Reste : l'œil du mainteneur sur un vrai bureau**,
+  jamais tenté.
+- **Galerie** vit entièrement dans ce dépôt : `HistoryView` gagne un mode
+  Galerie (grille de vignettes, tri date/durée/salon, filtre, hover-card avec
+  taille et empreinte SHA-256 premium — d'INTÉGRITÉ, pas d'authenticité, rien
+  à comparer pour un enregistrement personnel). Nouveau : sidecar
+  `<nom>.salon.txt` écrit par `CaptureFinalizer` AVANT tout nommage
+  intelligent (qui rendrait sinon le nom de salon imparsable après coup), et
+  `CaptureFinalizer.DetecterDureeAsync` (second appel ffmpeg, indépendant du
+  chemin de finalisation). 18 tests (parseurs purs + ViewModel avec
+  `CaptureDir`/`AppConfig` redirigés). **Reste : l'œil du mainteneur**, et le
+  tri par durée n'est éprouvé qu'au niveau du parseur, pas contre un vrai clip
+  au niveau du ViewModel (même motif de code que le salon, jugé suffisant).
+- **Trois erreurs XAML trouvées par la seule compilation** en construisant la
+  Galerie, avant tout commit : un commentaire XML avec `--` au milieu
+  (interdit ailleurs qu'en fin de commentaire) ; `Run.Visibility` n'existe
+  pas (`Run` n'est pas un `UIElement`) ; un `Style.Setter` ne peut pas porter
+  `TargetName` (`MC4011`) — la révélation au survol d'un élément FRÈRE ne
+  peut vivre que sur `DataTemplate.Triggers` (`SourceName`/`TargetName`),
+  jamais sur `Border.Style` : deux espaces de noms différents. Nouveau
+  `BoolToButtonStyleConverter` bascule le STYLE ENTIER d'un bouton actif —
+  un Setter externe sur `Background` n'aurait rien changé, même piège n°8
+  que les gabarits de bouton (le fond est peint en dur dans le
+  `ControlTemplate`, jamais via `TemplateBinding`).
 
 **DURCISSEMENT DE LA TROISIÈME VAGUE (24-08, même jour)** : sept tests sur
 quatre angles jamais éprouvés depuis la livraison de l'auto-tagging et du
