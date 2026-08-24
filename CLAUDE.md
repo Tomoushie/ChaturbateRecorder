@@ -4,10 +4,34 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-17** — 47 commits, dépôt local **sans distant**, `dotnet build`
-à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`), **396 tests**. L'application navigue, ajoute un
-salon, l'enregistre, le surveille, le reconnecte, tient un historique et se
-configure.
+**État au 2026-08-24** — 49 commits, dépôt distant `origin` =
+`https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
+WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
+— nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
+`dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
+**396 tests**. L'application navigue, ajoute un salon, l'enregistre, le
+surveille, le reconnecte, tient un historique et se configure.
+
+**LA MINIATURE DE L'HISTORIQUE EST DÉSORMAIS GÉNÉRÉE** (24-08) : l'affichage
+existait déjà (`HistoryService.Vignette`, XAML lié) mais rien n'écrivait le
+`.jpg`. `CaptureFinalizer.FinaliserAsync` appelle `GenererVignetteAsync` juste
+après le renommage réussi du `.part` — mêmes arguments ffmpeg qu'en WinForms,
+repli sur l'offset 0, gaté par `SafeMode.IsEnabled(SafeComponent.Ffmpeg)`,
+jamais sur le chemin critique.
+
+**LA VIGNETTE PREMIUM S'AFFICHE ENFIN SUR LA CARTE DE SALON** (24-08, première
+brique de la refonte premium) : `PremiumBridge` n'avait jamais été instanciée
+côté WPF — `DiagnosticWindow` passait littéralement `null`. `App.Premium`
+(statique, chargée une fois au démarrage comme `ThemeManager`) répare ça au
+passage. `StreamsViewModel.RafraichirApercuAsync` redemande une vignette à
+chaque salon vu en ligne, `RoomCardViewModel.CheminApercu` la porte,
+`RoomCard.xaml` l'affiche en 64×36 à côté du pictogramme — colonne totalement
+effacée sans elle, donc écran identique pour qui n'a pas le composant payé.
+**Reste (v2, déjà annoncée dans le README de StreamRecorderPro)** : aperçu
+VIDÉO en direct plutôt qu'une image fixe.
+
+**LES DEUX `.part` ORPHELINS DU PREMIER ESSAI EN DIRECT (17-08) SONT
+FINALISÉS** — renommés à la main le 24-08, ils apparaîtront dans l'historique.
 
 **LE WINFORMS N'EST PLUS INTOUCHÉ** : l'emplacement des données de
 l'utilisateur y a changé le 17-08 (voir « Données de l'utilisateur »), parce que
