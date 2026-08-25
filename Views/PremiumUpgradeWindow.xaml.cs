@@ -20,15 +20,17 @@ namespace ChaturbateRecorderApp.Views
     public partial class PremiumUpgradeWindow : Window
     {
         /// <summary>
-        /// FAUX tant que Tom n'a pas confirmé un fichier réellement déposé
-        /// sur la page itch.io (25-08 : la page était en brouillon, puis
-        /// publique le même jour mais toujours vide — « There doesn't appear
-        /// to be anything here… », message standard d'itch.io pour une page
-        /// sans contenu). Tant que ce drapeau reste faux, la carte itch.io ne
-        /// s'affiche pas : personne ne doit pouvoir payer pour rien.
-        /// À repasser à `true` UNE FOIS LE FICHIER CONFIRMÉ, pas avant.
+        /// VRAI depuis le 25-08 : page itch.io vérifiée publique et achetable
+        /// ($10 USD ou plus), les trois fichiers confirmés présents
+        /// (StreamRecorderPro.dll, LISEZMOI-ACHETEUR.txt, README-BUYER.txt).
+        /// Passée par plusieurs états avant ça — brouillon (404 public),
+        /// publique mais vide, puis Restricted (page inaccessible même avec
+        /// le lien, itch.io exige alors une autorisation explicite par
+        /// personne — pas adapté ici) — voir la mémoire du projet pour le
+        /// détail. Ne repasser à `false` que si la page redevient
+        /// indisponible.
         /// </summary>
-        private const bool CarteItchIoDisponible = false;
+        private const bool CarteItchIoDisponible = true;
 
         public PremiumUpgradeWindow()
         {
