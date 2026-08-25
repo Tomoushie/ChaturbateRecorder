@@ -1,0 +1,86 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multi-ciblage net8.0 (LTS) + net10.0 : la majorité des projets .NET vivent
+      sur la LTS, ne cibler que net10.0 réduirait fortement l'audience du package.
+      Aucune API propre à .NET 10 n'est utilisée — les deux cibles compilent sans
+      avertissement.
+
+      Windows uniquement, en connaissance de cause : AclValidator s'appuie sur
+      System.Security.AccessControl (ACL NTFS), BinaryVerifier/CertificateValidator
+      sur des vérifications Authenticode/certificats propres à Windows. Pas de
+      support cross-platform prévu pour l'instant.
+    -->
+    <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+    <!--
+      Permet de restaurer/compiler depuis un runner non-Windows (le job GitHub
+      natif "Automatic Dependency Submission" tourne sur ubuntu-latest).
+    -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Documentation XML : alimente l'IntelliSense chez les consommateurs. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>SentinelGuard</PackageId>
+    <AssemblyName>SentinelGuard</AssemblyName>
+    <RootNamespace>SentinelGuard</RootNamespace>
+    <!-- 1.1.0 (36.0) : ajout de GuardedProcessRunner et LogFileRotator.
+         1.2.0 (40.0) : ComputeSha256, et '@' accepté dans un segment d'URL —
+         sans quoi les identifiants de chaîne (YouTube /@chaine, TikTok
+         /@compte, Mastodon) sont refusés. Mineure : aucune API existante n'a
+         changé de signature, et la validation ne s'assouplit que là où elle
+         refusait à tort. -->
+    <Version>1.2.0</Version>
+    <Authors>Tomoushie</Authors>
+    <Product>SentinelGuard</Product>
+    <Title>SentinelGuard — Windows security guardrails for .NET</Title>
+    <Description>Defensive preflight checks for .NET desktop applications on Windows. Validates file paths (UNC, extended paths, alternate data streams, reserved device names, reparse points), URLs (HTTPS only, domain allow/deny lists), external binaries (SHA-256 hash, Authenticode signature, certificate chain pinning), NTFS ACLs (overly broad write access), remote TLS certificates (explicit pinning and SAN validation) and the process execution location (network share, temporary folder, recycle bin, NTFS-compressed folder). Then supervises what you launch: GuardedProcessRunner captures output line by line, kills a hung process through an inactivity watchdog, and stops the entire process tree instead of just the child you started. Validators are pure functions returning a boolean, with an optional 'out string? reason' overload giving the exact rejection cause — no logging, no hidden side effects. Battle-tested in a production Windows desktop application that launches third-party executables.</Description>
+    <PackageTags>security;sandbox;hardening;path-validation;url-validation;acl;authenticode;code-signing;tls;certificate-pinning;process;watchdog;windows;desktop</PackageTags>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Tomoushie/ChaturbateRecorder</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Tomoushie/ChaturbateRecorder</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Logo Binary Forge. Sans icône, nuget.org affiche un placeholder gris :
+         c'est la première chose que voit quelqu'un qui parcourt des résultats
+         de recherche, donc de la conversion pure. Le fichier est empaqueté à la
+         racine du package par le <None> plus bas. -->
+    <PackageIcon>icon.png</PackageIcon>
+    <Copyright>Copyright (c) Tomoushie</Copyright>
+
+    <!--
+      SourceLink + build déterministe : un consommateur peut déboguer pas-à-pas
+      dans le source du package depuis son IDE, et le binaire est reproductible
+      (même source -> même binaire). ContinuousIntegrationBuild n'est activé que
+      sur le runner : en local il normaliserait les chemins et gênerait le debug.
+    -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!--
+      SYSLIB0057 : X509Certificate.CreateFromSignedFile(...) est marquée obsolète
+      depuis .NET 8, mais reste la seule API de la BCL permettant d'extraire le
+      certificat Authenticode signataire d'un binaire PE déjà signé (même choix
+      que dans l'application principale ChaturbateRecorderApp).
+    -->
+    <NoWarn>SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.301" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

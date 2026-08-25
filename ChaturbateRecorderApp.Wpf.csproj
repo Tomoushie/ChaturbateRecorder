@@ -48,10 +48,13 @@
       et la zone de notification tombaient tous sur l'icone generique de
       Windows. `TrayIcon.ExtraireIcone` lit justement celle de l'exe.
 
-      Prise dans les Assets du depot WinForms et NON dupliquee : c'est la meme
-      identite visuelle, et deux fichiers finiraient par diverger.
+      Copiee depuis le depot WinForms (25-08, bascule vers WPF comme version
+      distribuee) : les deux etaient auparavant des dossiers freres sur le
+      meme disque, ce qui ne marche que localement — un runner CI qui ne
+      checkout QUE ce depot n'a jamais eu ce dossier voisin. Meme identite
+      visuelle, copiee une seule fois, jamais recopiee a la main ensuite.
     -->
-    <ApplicationIcon>..\ChaturbateRecorderApp\Assets\app.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
 
     <!-- Voir le csproj WinForms : permet à `dotnet restore` de résoudre les
          FrameworkReference de bureau depuis un runner non-Windows. -->
@@ -117,10 +120,15 @@
       côté WinForms : la version publiée sur nuget.org est toujours en retard
       d'un correctif sur le source du dépôt, et dépendre d'un paquet qu'on
       publie soi-même imposerait de publier avant de pouvoir corriger.
-      Le projet vit dans le dépôt public, à côté ; c'est le même fichier que
-      consomme l'application WinForms — pas une copie.
+
+      25-08 — copié DANS ce dépôt (n'était qu'une référence vers un dossier
+      voisin du disque de Tom, invisible à tout checkout CI ou tout autre
+      clone). C'est désormais LA copie de référence pour la version
+      distribuée ; le dépôt WinForms garde la sienne, les deux peuvent
+      diverger si l'un des deux corrige quelque chose sans le reporter — même
+      risque assumé que pour l'icône ci-dessus.
     -->
-    <ProjectReference Include="..\ChaturbateRecorderApp\SentinelGuard\SentinelGuard.csproj" />
+    <ProjectReference Include="SentinelGuard\SentinelGuard.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -130,39 +138,46 @@
       dans `AppContext.BaseDirectory`, et le sondage comme la capture échouent
       en silence si le fichier manque.
 
-      Ils sont pris dans le dossier `Tools\` du dépôt WinForms, PAS recopiés
-      ici : ffmpeg pèse 242 Mo, en garder deux exemplaires sur le disque n'a
-      aucun sens pendant la migration, et leurs empreintes SHA-256 sont tenues
-      à jour dans un seul `AppConfig.cs`.
-
-      Ne JAMAIS les inclure dans un ZIP de release : ffmpeg est sous licence
-      GPL — c'est la règle du dépôt public.
+      Pris dans un dossier LOCAL `Tools\`, gitignored (voir .gitignore) — ni
+      commité ni jamais présent sur un runner CI, ce qui est voulu : la
+      Condition="Exists(...)" les rend silencieusement absents du build CI, et
+      c'est exactement ce qui garantit qu'ils ne se retrouvent jamais dans un
+      ZIP de release (ffmpeg est sous licence GPL — règle du dépôt public).
+      À déposer soi-même pour un build LOCAL, voir le README.
     -->
-    <None Include="..\ChaturbateRecorderApp\Tools\yt-dlp.exe"
-          Condition="Exists('..\ChaturbateRecorderApp\Tools\yt-dlp.exe')">
+    <None Include="Tools\yt-dlp.exe"
+          Condition="Exists('Tools\yt-dlp.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>yt-dlp.exe</Link>
     </None>
-    <None Include="..\ChaturbateRecorderApp\Tools\ffmpeg.exe"
-          Condition="Exists('..\ChaturbateRecorderApp\Tools\ffmpeg.exe')">
+    <None Include="Tools\ffmpeg.exe"
+          Condition="Exists('Tools\ffmpeg.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg.exe</Link>
     </None>
-    <None Include="..\ChaturbateRecorderApp\Assets\donate_qr.png"
-          Condition="Exists('..\ChaturbateRecorderApp\Assets\donate_qr.png')">
+    <None Include="Assets\donate_qr.png"
+          Condition="Exists('Assets\donate_qr.png')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>donate_qr.png</Link>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Tests\ est un projet A PART. Sans ces retraits, le SDK globalise ses
-         .cs dans CE projet-ci, qui n'a ni xUnit ni ses paquets — c'est le meme
-         piege que le csproj WinForms documente pour Tests\ et SentinelGuard\. -->
+    <!-- Tests\ est un projet A PART, comme SentinelGuard\ et
+         SentinelGuard.Tests\ depuis qu'ils vivent DANS ce dépôt (25-08) :
+         sans ces retraits, le SDK globalise leurs .cs dans CE projet-ci, qui
+         n'a ni xUnit ni les mêmes paquets — même piège que le csproj
+         WinForms documente pour les trois mêmes dossiers. -->
     <Compile Remove="Tests\**" />
     <Page Remove="Tests\**" />
     <Content Remove="Tests\**" />
     <None Remove="Tests\**" />
+    <Compile Remove="SentinelGuard\**" />
+    <Content Remove="SentinelGuard\**" />
+    <None Remove="SentinelGuard\**" />
+    <Compile Remove="SentinelGuard.Tests\**" />
+    <Content Remove="SentinelGuard.Tests\**" />
+    <None Remove="SentinelGuard.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
