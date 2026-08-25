@@ -1,0 +1,82 @@
+name: Pages Build
+
+# Le filtre "paths: docs/**" ne suffit pas : le seul producteur de
+# docs/latest.json est le job update-latest-json de "Update Checker", qui pousse
+# avec le GITHUB_TOKEN par défaut — et un évènement créé avec ce token ne
+# déclenche AUCUN workflow (protection anti-boucle de GitHub). Le push qui
+# satisfait le filtre est donc précisément celui qui ne déclenche rien, et le
+# site resterait figé sur une vieille version sans le workflow_call que
+# "Update Checker" invoque directement après avoir poussé le fichier.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Commit exact à déployer. Vide = pointe de main."
+        type: string
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement Pages à la fois ; ne pas annuler un déploiement en cours.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # ref: main explicite, indispensable en workflow_call. Le SHA d'un run
+      # est celui de l'évènement DÉCLENCHEUR (le tag de la release, ou le point
+      # de départ du cron), pas celui du commit que "Update Checker" vient de
+      # pousser juste avant de nous appeler. Sans ce ref, on déploierait la
+      # version de docs/latest.json d'AVANT sa mise à jour — soit exactement le
+      # bug que cet appel est censé corriger. Pages ne publie que main, donc ce
+      # ref est aussi le bon pour les déclenchements push et workflow_dispatch.
+      #
+      # Quand l'appelant fournit un SHA (Update Checker le fait), on récupère CE
+      # commit precis plutôt que la pointe de main — supprime toute fenêtre de
+      # course entre le push et ce que voit ce checkout.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || 'main' }}
+
+      # Trace de diagnostic : sans elle, « le site a servi du contenu périmé »
+      # reste une impression. Avec elle, on sait quel commit a été déployé et
+      # quelle version il contenait — de quoi étayer un signalement si le
+      # défaut se reproduit malgré le SHA figé.
+      - name: Tracer le commit déployé
+        run: |
+          echo "commit déployé : $(git rev-parse HEAD)"
+          echo "version dans docs/latest.json : $(jq -r '.version' docs/latest.json)"
+
+      - uses: actions/configure-pages@v6
+
+      # Nécessaire pour que _config.yml/theme et les pages Markdown
+      # (features.md, roadmap.md, screenshots.md) soient réellement rendus :
+      # sans ce build, upload-pages-artifact publierait les fichiers .md tels
+      # quels (texte brut), pas le HTML généré par le thème Jekyll.
+      - name: Build Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./_site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

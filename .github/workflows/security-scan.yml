@@ -1,0 +1,102 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "24 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    # net10.0-windows + WPF/WinForms : CodeQL doit pouvoir compiler le code
+    # pour l'analyser, donc runner Windows (comme build-test.yml).
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: github/codeql-action/init@v4.37.4
+        with:
+          languages: csharp
+
+      - name: Build (nécessaire à l'analyse CodeQL)
+        run: |
+          dotnet build ChaturbateRecorderApp.Wpf.csproj -c Release
+          dotnet build SentinelGuard/SentinelGuard.csproj -c Release
+
+      - uses: github/codeql-action/analyze@v4.37.4
+        with:
+          category: "/language:csharp"
+
+  dependencies:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Dépendances avec vulnérabilités connues
+        run: |
+          dotnet restore ChaturbateRecorderApp.Wpf.csproj
+          dotnet list ChaturbateRecorderApp.Wpf.csproj package --vulnerable --include-transitive
+          dotnet restore SentinelGuard/SentinelGuard.csproj
+          dotnet list SentinelGuard/SentinelGuard.csproj package --vulnerable --include-transitive
+
+      - name: Dépendances obsolètes
+        run: |
+          dotnet list ChaturbateRecorderApp.Wpf.csproj package --outdated
+          dotnet list SentinelGuard/SentinelGuard.csproj package --outdated
+
+  # 86.0 — SBOM (Software Bill of Materials) au format CycloneDX.
+  #
+  # Pourquoi CycloneDX et pas un scanner de repertoire : l'outil officiel .NET
+  # lit le graphe de dependances NuGet REEL apres restore, transitives
+  # comprises, la ou un scan de fichiers devine a partir des .csproj.
+  #
+  # Piege de syntaxe : l'option "-j" n'existe pas en v6, c'est le nom de
+  # fichier qui choisit le format (bom.json -> JSON, bom.xml -> XML).
+  #
+  # Runner Windows comme les autres jobs : UseWindowsForms impose
+  # EnableWindowsTargeting hors Windows, et on evite le probleme en restant sur
+  # la meme plateforme que le build reel.
+  sbom:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      # Installation ET utilisation dans la MEME etape : "dotnet tool install
+      # --global" complete le PATH du processus courant, et une etape suivante
+      # repart d'un processus neuf qui ne le voit plus.
+      #
+      # Le dossier des outils est construit par Join-Path, jamais ecrit en
+      # toutes lettres : un antislash litteral risquerait la meme
+      # transformation en tabulation deja payee cote WinForms.
+      - name: Generer les SBOM
+        shell: pwsh
+        run: |
+          dotnet tool install --global CycloneDX
+          $env:PATH += ";" + (Join-Path $env:USERPROFILE ".dotnet" "tools")
+          dotnet CycloneDX ChaturbateRecorderApp.Wpf.csproj -o sbom -fn chaturbate-recorder-sbom.json -t
+          dotnet CycloneDX SentinelGuard/SentinelGuard.csproj -o sbom -fn sentinelguard-sbom.json -t
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom
+          path: sbom/*.json
+          retention-days: 90

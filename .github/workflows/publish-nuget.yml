@@ -1,0 +1,181 @@
+name: Publish SentinelGuard to NuGet
+
+# Publie le package SentinelGuard sur nuget.org.
+#
+# Déclencheur : un tag dédié "sentinelguard-vX.Y.Z", volontairement distinct des
+# tags "vX.Y.Z" de l'application — le package et l'app ont des cycles de version
+# indépendants, et un tag applicatif ne doit pas republier la bibliothèque.
+#
+# Authentification : Trusted Publishing (OIDC), PAS de clé API. Aucun secret
+# à stocker ni à faire tourner — le job échange un jeton OIDC signé par GitHub
+# contre une clé temporaire valable 1 h, obtenue juste avant le push.
+#
+# La politique correspondante doit exister sur nuget.org (menu utilisateur >
+# Trusted Publishing) et ses champs doivent correspondre EXACTEMENT, sinon
+# l'échange de jeton est refusé :
+#   Propriétaire du dépôt : Tomoushie
+#   Dépôt                 : ChaturbateRecorder      <- le dépôt, pas le package
+#   Flux de travail       : publish-nuget.yml       <- nom de fichier seul
+#   Environnement         : (vide, ce workflow n'en déclare aucun)
+#
+# 25-08 — bascule main -> WPF : ce workflow ET sa copie de SentinelGuard/
+# vivent désormais ICI. La politique OIDC sur nuget.org porte sur le DÉPÔT
+# (Tomoushie/ChaturbateRecorder), jamais sur une branche précise — elle
+# continue de fonctionner sans rien reconfigurer côté nuget.org.
+#
+# À savoir : une politique fraîchement créée est "temporairement active" 7
+# jours. Sans publication réussie dans ce délai elle devient inactive (la
+# fenêtre est relançable depuis nuget.org). La première publication réussie la
+# rend définitivement active, en enregistrant les identifiants GitHub du dépôt.
+
+on:
+  push:
+    tags:
+      - "sentinelguard-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Construire et vérifier le package sans le publier"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      # Autorise GitHub à émettre le jeton OIDC présenté à nuget.org.
+      # Sans ça, NuGet/login échoue faute de jeton à échanger.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # SourceLink a besoin de l'historique pour référencer le bon commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Vérifier que le tag correspond à la version du package
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}" -replace '^sentinelguard-v', ''
+          $csproj = [xml](Get-Content SentinelGuard/SentinelGuard.csproj)
+          $pkgVersion = $csproj.Project.PropertyGroup.Version | Where-Object { $_ }
+          Write-Host "Tag : $tagVersion / csproj : $pkgVersion"
+          if ($tagVersion -ne $pkgVersion) {
+            Write-Error "Le tag ($tagVersion) ne correspond pas a <Version> du csproj ($pkgVersion). Publier une version qui ne correspond pas au tag rendrait la release intracable."
+            exit 1
+          }
+
+      - name: Tests (net8.0 + net10.0)
+        run: dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
+
+      - name: Créer le package
+        run: dotnet pack SentinelGuard/SentinelGuard.csproj -c Release -o artifacts
+
+      - name: Inventaire du package
+        shell: pwsh
+        run: Get-ChildItem artifacts | Select-Object Name, Length | Format-Table -AutoSize
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sentinelguard-nupkg
+          path: artifacts/*
+
+      # Échange du jeton OIDC contre une clé temporaire (valable 1 h). Placé
+      # juste avant le push, comme recommandé : une clé demandée trop tôt
+      # pourrait expirer avant l'envoi. Un jeton = une seule clé.
+      # `user` est le nom de profil nuget.org (pas l'adresse e-mail) ; il est
+      # public — il figure déjà dans <Authors> et l'URL du dépôt — donc inutile
+      # de le cacher dans un secret.
+      - name: Obtenir une clé temporaire nuget.org (OIDC)
+        id: login
+        if: github.event_name == 'push' || inputs.dry_run == false
+        uses: NuGet/login@v1
+        with:
+          user: Tomoushie
+
+      # --skip-duplicate : republier un tag existant ne fait pas échouer le job.
+      # nuget.org refuse d'écraser une version déjà publiée, c'est voulu.
+      # Le chemin est résolu ici plutôt que passé en motif générique :
+      # `dotnet nuget push "artifacts/*.nupkg"` échoue sur Windows avec
+      # "File does not exist" — ni pwsh (motif entre guillemets) ni NuGet ne
+      # développent le motif avec des séparateurs '/'.
+      # Le .snupkg voisin est envoyé automatiquement par NuGet avec le .nupkg
+      # du même nom, il n'y a donc pas à le pousser séparément.
+      - name: Publier sur nuget.org
+        id: push
+        if: github.event_name == 'push' || inputs.dry_run == false
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem artifacts -File | Where-Object { $_.Extension -eq '.nupkg' } | Select-Object -First 1
+          if (-not $pkg) { throw "Aucun .nupkg trouve dans artifacts/." }
+          Write-Host "Publication de $($pkg.Name) ($([math]::Round($pkg.Length/1KB,1)) Ko)"
+          dotnet nuget push $pkg.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      # Résumé sans ambiguïté, affiché en tête de la page du run.
+      #
+      # Une étape sautée ne fait PAS échouer un workflow : un run lancé avec
+      # dry_run coché se termine donc en vert, exactement comme un run qui a
+      # réellement publié, et la seule façon de les distinguer est de remarquer
+      # l'absence de l'étape de publication dans les logs. D'où ce résumé
+      # explicite.
+      #
+      # `if: always()` : le résumé doit aussi s'afficher quand la publication a
+      # échoué, c'est précisément là qu'il est le plus utile.
+      - name: Résumé
+        if: always()
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem artifacts -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Extension -eq '.nupkg' } | Select-Object -First 1
+          $nom = if ($pkg) { $pkg.Name } else { "(aucun package construit)" }
+
+          switch ("${{ steps.push.outcome }}") {
+            "success" {
+              $lignes = @(
+                "# ✅ Publié sur nuget.org",
+                "",
+                "``$nom`` a été poussé avec succès.",
+                "",
+                "La fiche n'apparaît pas immédiatement : nuget.org valide le paquet",
+                "(analyse antivirus, vérification de signature) avant de l'indexer.",
+                "Comptez quelques minutes avant que <https://www.nuget.org/packages/SentinelGuard>",
+                "soit consultable et le paquet installable."
+              )
+            }
+            "skipped" {
+              $lignes = @(
+                "# ⚠️ SIMULATION — rien n'a été publié",
+                "",
+                "L'étape de publication a été **sautée** parce que l'option ``dry_run``",
+                "était cochée. Le paquet ``$nom`` a bien été construit et est",
+                "téléchargeable en artefact de ce run, mais **il n'est pas sur nuget.org**.",
+                "",
+                "Pour publier réellement : relancer ce workflow en **décochant** ``dry_run``."
+              )
+            }
+            default {
+              $lignes = @(
+                "# ❌ Échec de la publication",
+                "",
+                "L'étape de publication s'est terminée en ``${{ steps.push.outcome }}``.",
+                "Le paquet ``$nom`` n'est pas sur nuget.org — consulter le log de l'étape",
+                "``Publier sur nuget.org`` ci-dessus.",
+                "",
+                "Le numéro de version reste disponible : nuget.org n'enregistre rien",
+                "tant qu'un envoi n'a pas abouti."
+              )
+            }
+          }
+
+          $lignes -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Write-Host ($lignes -join "`n")

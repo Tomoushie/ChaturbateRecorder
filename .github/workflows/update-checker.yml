@@ -1,0 +1,127 @@
+name: Update Checker
+
+# Régénère docs/latest.json à partir de la dernière release GitHub publiée.
+#
+# Déclenchement principal : appel direct depuis "Publish Release"
+# (workflow_call). C'est le SEUL chemin fiable après une release automatisée :
+# GitHub ne déclenche jamais de workflow à partir d'un évènement créé avec le
+# GITHUB_TOKEN par défaut (protection anti-boucle), et c'est bien ce token qui
+# crée la release dans publish-release.yml. Le trigger "release: published"
+# ci-dessous ne part donc JAMAIS pour nos releases automatisées — il ne sert
+# qu'aux releases créées à la main depuis l'interface web (identité
+# utilisateur, donc évènement bien émis).
+# Le cron et workflow_dispatch restent des filets de sécurité.
+on:
+  workflow_call:
+  release:
+    types: [published]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Sérialise les exécutions : le cron, un dispatch manuel et l'appel depuis
+# "Publish Release" poussent tous un commit sur main — deux runs simultanés
+# feraient échouer le push du second (non fast-forward).
+concurrency:
+  group: update-latest-json
+  cancel-in-progress: false
+
+jobs:
+  update-latest-json:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+      # SHA exact du commit qui vient d'être poussé, transmis au déploiement.
+      # Voir le commentaire du job deploy-pages plus bas.
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Récupérer la dernière release
+        id: release
+        run: |
+          set -euo pipefail
+          data=$(curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          echo "$data" > /tmp/release.json
+          tag=$(jq -r '.tag_name' /tmp/release.json)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Générer latest.json (avec SHA256 des ZIP)
+        run: |
+          set -euo pipefail
+          version="${{ steps.release.outputs.version }}"
+          tag="${{ steps.release.outputs.tag }}"
+          notes_url=$(jq -r '.html_url' /tmp/release.json)
+          published_at=$(jq -r '.published_at' /tmp/release.json)
+
+          assets_json="[]"
+          for row in $(jq -r '.assets[] | @base64' /tmp/release.json); do
+            asset=$(echo "$row" | base64 -d)
+            name=$(echo "$asset" | jq -r '.name')
+            case "$name" in
+              *.zip) ;;
+              *) continue ;;
+            esac
+            url=$(echo "$asset" | jq -r '.browser_download_url')
+            curl -sL -o "/tmp/$name" "$url"
+            sha256=$(sha256sum "/tmp/$name" | cut -d' ' -f1 | tr '[:lower:]' '[:upper:]')
+            variant="standard"
+            case "$name" in *portable*) variant="portable" ;; esac
+            assets_json=$(jq --arg name "$name" --arg url "$url" --arg sha "$sha256" --arg variant "$variant" \
+              '. + [{name: $name, url: $url, sha256: $sha, variant: $variant}]' <<< "$assets_json")
+          done
+
+          jq -n --arg version "$version" --arg tag "$tag" --arg notes "$notes_url" \
+            --arg published "$published_at" --argjson assets "$assets_json" \
+            '{version: $version, tag: $tag, publishedAt: $published, releaseNotesUrl: $notes, assets: $assets}' \
+            > docs/latest.json
+
+      - name: Commit si changement
+        id: commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/latest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: mise à jour de latest.json (${{ steps.release.outputs.tag }})"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "Aucun changement."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Redéploie le site après la mise à jour de docs/latest.json. Sans cet appel,
+  # le fichier est bien régénéré dans le dépôt mais jamais publié : le push
+  # ci-dessus est fait avec le GITHUB_TOKEN, qui ne déclenche aucun workflow,
+  # donc le "paths: docs/**" de Pages Build ne part jamais (voir l'en-tête de
+  # pages-build.yml).
+  #
+  # Conditionné au changement réel : ce workflow tourne aussi par cron
+  # quotidien, et redéployer le site tous les jours pour un fichier identique
+  # ne sert à rien.
+  #
+  # Le SHA du commit est transmis explicitement plutôt que de laisser le
+  # déploiement suivre « la pointe de main » : une fenêtre de propagation entre
+  # le push et ce que voit le checkout suivant a déjà fait publier une version
+  # périmée par le passé (côté WinForms). Figer le SHA supprime la course quelle
+  # que soit sa cause réelle.
+  deploy-pages:
+    needs: update-latest-json
+    if: needs.update-latest-json.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages-build.yml
+    with:
+      ref: ${{ needs.update-latest-json.outputs.sha }}

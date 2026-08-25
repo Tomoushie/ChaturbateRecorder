@@ -1,0 +1,225 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag existant à republier (ex: v1.14.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Déterminer la version
+        id: version
+        shell: pwsh
+        run: |
+          $tagName = "${{ inputs.tag || github.ref_name }}"
+          $version = $tagName.TrimStart('v')
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tagName" >> $env:GITHUB_OUTPUT
+
+      - name: Build + tests
+        run: |
+          dotnet build ChaturbateRecorderApp.Wpf.csproj -c Release
+          dotnet test Tests/ChaturbateRecorderApp.Wpf.Tests.csproj -c Release
+          dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
+
+      # Tools/ (yt-dlp.exe, ffmpeg.exe) est gitignored : absent sur le runner,
+      # donc jamais copié dans publish/ (voir Condition="Exists(...)" du .csproj).
+      # C'est ce qui garantit que ces binaires ne se retrouvent jamais dans les ZIP.
+      - name: Publish - standard (framework-dependent)
+        run: dotnet publish ChaturbateRecorderApp.Wpf.csproj -c Release -r win-x64 --self-contained false -o publish/standard
+
+      - name: Publish - portable (self-contained, single-file)
+        run: dotnet publish ChaturbateRecorderApp.Wpf.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/portable
+
+      - name: Créer les archives ZIP
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          Compress-Archive -Path publish/standard/* -DestinationPath "ChaturbateRecorder-v$v-standard.zip"
+          Compress-Archive -Path publish/portable/* -DestinationPath "ChaturbateRecorder-v$v-portable.zip"
+
+      # 23.0 — installateur. Il n'embarque AUCUNE charge utile (~2 Mo) : il
+      # telecharge le ZIP portable de CETTE release au moment de l'installation.
+      # C'est pourquoi son hash est calcule ici et fige dans le binaire compile —
+      # l'installateur verifie ainsi ce qu'il telecharge, sans dependre d'un
+      # fichier de sommes publie ailleurs.
+      #
+      # Le ZIP n'existe pas encore sur la release a cet instant, et ce n'est pas
+      # un probleme : le telechargement a lieu chez l'utilisateur, apres
+      # publication.
+      - name: Compiler l'installateur
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "Inno Setup absent de l'image du runner : installation."
+            choco install innosetup -y --no-progress | Out-Null
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup introuvable apres tentative d'installation." }
+
+          $v = "${{ steps.version.outputs.version }}"
+          $zip = "ChaturbateRecorder-v$v-portable.zip"
+          $sha = (Get-FileHash $zip -Algorithm SHA256).Hash
+          Write-Host "SHA256 du ZIP portable fige dans l'installateur : $sha"
+
+          & $iscc "/DAppVersion=$v" "/DAppZipSha256=$sha" "installer\ChaturbateRecorder.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Compilation de l'installateur echouee." }
+
+          Get-ChildItem "installer\*-setup.exe" | ForEach-Object {
+            "{0} : {1:N2} Mo" -f $_.Name, ($_.Length / 1MB)
+          }
+
+      # 86.0 — le SBOM accompagne chaque release : c'est la que la liste des
+      # dependances a une valeur verifiable, attachee a un binaire precis.
+      - name: Generer le SBOM de la release
+        shell: pwsh
+        run: |
+          dotnet tool install --global CycloneDX
+          $env:PATH += ";" + (Join-Path $env:USERPROFILE ".dotnet" "tools")
+          dotnet CycloneDX ChaturbateRecorderApp.Wpf.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
+
+      - name: Publier la release GitHub
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          # En-tete fixe place AVANT les notes generees par GitHub, qui sont
+          # ajoutees a la suite. Motif : cinq fichiers sans hierarchie, c'est
+          # exactement ce qui rebutait les testeurs — le probleme n'est pas leur
+          # NOMBRE mais l'absence d'indication sur celui qu'il faut prendre.
+          # Aucun ne peut etre supprime : l'installateur telecharge le ZIP
+          # portable, et la mise a jour interne telecharge l'un ou l'autre.
+          body: |
+            ### Quelle version télécharger ? / Which file should I download?
+
+            | Fichier | Pour qui | Taille |
+            |---|---|---|
+            | **`setup.exe`** | **La plupart des gens.** Installe tout, y compris yt-dlp et ffmpeg. Propose installation ou version portable. | ~2 Mo |
+            | `portable.zip` | Aucune installation, aucun téléchargement pendant l'usage. Nécessite yt-dlp et ffmpeg à côté de l'exe. | ~46 Mo |
+            | `standard.zip` | Tu as déjà le .NET 10 Desktop Runtime. | ~0,6 Mo |
+            | `sbom.json` | Liste des dépendances (audit). Inutile pour utiliser le logiciel. | — |
+
+            *English: pick **`setup.exe`** unless you know you want one of the others.
+            `portable.zip` needs no install but requires yt-dlp/ffmpeg alongside;
+            `standard.zip` requires the .NET 10 Desktop Runtime; `sbom.json` is for audits.*
+
+            ---
+
+          # Convention semver : un tag avec un suffixe (v1.17.1-test) est une
+          # pré-version. GitHub l'exclut alors de /releases/latest, donc ni le
+          # site ni le vérificateur de mise à jour de l'app ne la voient — c'est
+          # ce qui rend la chaîne testable sans toucher à la version publiée.
+          prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
+          # Seul un tag fraîchement poussé devient "latest". Sans ça, l'action
+          # met make_latest à true par défaut, donc republier un ancien tag par
+          # workflow_dispatch (rattraper les ZIP d'une vieille release, par ex.)
+          # désigne cette vieille release comme "latest" — et update-latest-json,
+          # qui lit /releases/latest, fait aussitôt régresser le site et le
+          # vérificateur de mise à jour de l'app vers cette version.
+          # Pour qu'une exécution manuelle devienne quand même "latest" :
+          # cocher "Set as the latest release" sur la page de la release.
+          # La condition sur le suffixe reprend celle de prerelease ci-dessus :
+          # l'API refuse qu'une pré-version soit "latest", inutile de le demander.
+          make_latest: ${{ github.event_name == 'push' && !contains(steps.version.outputs.tag, '-') }}
+          files: |
+            ChaturbateRecorder-v${{ steps.version.outputs.version }}-standard.zip
+            ChaturbateRecorder-v${{ steps.version.outputs.version }}-portable.zip
+            ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json
+            installer/ChaturbateRecorder-v${{ steps.version.outputs.version }}-setup.exe
+
+      # 96.0 — publication sur itch.io, canal SECONDAIRE.
+      #
+      # Placée APRÈS la création de la release GitHub et tolérante à l'échec :
+      # GitHub est le canal principal, dont dépendent l'installateur (qui y
+      # télécharge le ZIP portable) et le vérificateur de mise à jour de
+      # l'application. Une panne d'itch.io ne doit donc rien casser ici.
+      #
+      # Sans le secret BUTLER_API_KEY, l'étape se contente d'une note et sort :
+      # un fork du dépôt, ou le dépôt avant que la clé ne soit posée, ne doit
+      # pas voir ses releases échouer pour une intégration qui ne le concerne pas.
+      - name: Publier sur itch.io
+        if: ${{ github.event_name == 'push' && !contains(steps.version.outputs.tag, '-') }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if (-not $env:BUTLER_API_KEY) {
+            Write-Host "::notice::BUTLER_API_KEY absent : publication itch.io ignoree."
+            exit 0
+          }
+
+          $v = "${{ steps.version.outputs.version }}"
+          # Doit correspondre EXACTEMENT au slug de la page itch.io (le champ
+          # URL sous le titre). butler ne cree pas la page : si le slug change
+          # la-bas, cette ligne doit changer ici, sinon l'envoi part dans le vide.
+          $target = "tomoushie/chaturbate-recorder"
+
+          # butler recupere depuis le serveur officiel d'itch.io plutot que par
+          # une action tierce du Marketplace. Ce depot verifie les empreintes de
+          # yt-dlp et de ffmpeg avant de les lancer ; introduire un intermediaire
+          # non verifie dans la chaine de PUBLICATION serait incoherent.
+          Invoke-WebRequest -Uri "https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default" -OutFile butler.zip
+          Expand-Archive butler.zip -DestinationPath butler-bin -Force
+          $butler = Join-Path "butler-bin" "butler.exe"
+          & $butler -V
+
+          # Le nom du canal contenant "windows" fait reconnaitre la plateforme
+          # par l'application itch.io, qui propose alors le bon fichier au lieu
+          # de tout lister.
+          #
+          # L'installateur d'abord, et c'est voulu : le ZIP portable NE CONTIENT
+          # PAS yt-dlp ni ffmpeg (licence GPL), il est donc inutilisable seul.
+          # Seul setup.exe va les chercher. Sur une plateforme ou personne ne lit
+          # les notes, proposer le portable en premier livrerait un logiciel qui
+          # ne demarre pas.
+          & $butler push "installer\ChaturbateRecorder-v$v-setup.exe" "${target}:windows-installer" --userversion $v
+          if ($LASTEXITCODE -ne 0) { throw "Envoi de l'installateur refuse par itch.io." }
+
+          # Le DOSSIER publish/portable, et surtout pas le ZIP. butler compare
+          # les fichiers d'un build a l'autre pour n'envoyer que les
+          # differences, et ses propres avertissements le disent : sur une
+          # archive ou un executable tout-en-un, cette comparaison ne donne
+          # rien. En poussant le dossier, une mise a jour ne transfere que ce
+          # qui a change — et itch.io reconstruit le ZIP de son cote pour qui
+          # telecharge depuis le site.
+          & $butler push "publish/portable" "${target}:windows-portable" --userversion $v
+          if ($LASTEXITCODE -ne 0) { throw "Envoi du portable refuse par itch.io." }
+
+  # Appel direct plutôt que de compter sur l'évènement "release: published" :
+  # une release créée avec le GITHUB_TOKEN par défaut ne déclenche aucun
+  # workflow (protection anti-boucle de GitHub), donc docs/latest.json restait
+  # sur la version précédente jusqu'au cron quotidien de Update Checker.
+  #
+  # Les droits Pages/id-token sont accordés ici bien que ce workflow ne déploie
+  # rien lui-même : "Update Checker" enchaîne sur "Pages Build" pour publier le
+  # docs/latest.json qu'il vient d'écrire, et les permissions d'un appel
+  # imbriqué ne peuvent QUE se restreindre le long de la chaîne, jamais
+  # s'élargir. Sans ces deux lignes, le déploiement échouerait à la fin d'une
+  # release automatisée alors qu'il passerait en exécution manuelle.
+  update-latest-json:
+    needs: publish
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/update-checker.yml
