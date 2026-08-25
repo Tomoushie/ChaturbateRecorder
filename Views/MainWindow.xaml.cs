@@ -27,7 +27,28 @@ namespace ChaturbateRecorderApp.Views
             // 120.0 — jamais montré à qui a déjà acheté StreamRecorderPro.
             // App.Premium est chargé au démarrage (voir App.xaml.cs), avant
             // la construction de cette fenêtre : pas besoin d'attendre Loaded.
-            BoutonPremium.Visibility = App.Premium.IsLicensed ? Visibility.Collapsed : Visibility.Visible;
+            //
+            // CONSTRUIT ICI, JAMAIS EN XAML STATIQUE : un `Visibility.Collapsed`
+            // posé après coup sur un élément déjà déclaré ne suffit pas — voir
+            // le commentaire XAML retiré, l'animation ambiante du bouton
+            // plantait à l'exécution (trouvé par Tom, InvalidOperationException
+            // sur le nom "Halo" introuvable) parce qu'un Control Collapsed
+            // n'applique jamais son ControlTemplate mais son EventTrigger
+            // "Loaded" se déclenche quand même. Ne jamais le construire du
+            // tout élimine le problème à la racine plutôt que de le contourner.
+            if (!App.Premium.IsLicensed)
+            {
+                // Qualifiés en toutes lettres : MainWindow hérite d'une
+                // propriété d'INSTANCE du même nom (FrameworkElement.HorizontalAlignment),
+                // qui masquerait sinon le type énuméré à cet endroit précis.
+                var boutonPremium = new PremiumButton
+                {
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Bottom,
+                    Margin = new Thickness(0, 0, 16, 16),
+                };
+                GrilleRacine.Children.Add(boutonPremium);
+            }
 
             // La fenetre principale EST la duree de vie de l'application ici :
             // sa fermeture doit arreter la surveillance, sinon la boucle

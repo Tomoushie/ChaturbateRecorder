@@ -45,7 +45,7 @@
       quelle largeur le contenu commence à se serrer.
     -->
 
-    <Grid>
+    <Grid x:Name="GrilleRacine">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -86,14 +86,18 @@
         </Grid>
 
         <!--
-          BOUTON PREMIUM FLOTTANT (120.0), bas-droite, AU-DESSUS de tout le
-          reste quelle que soit la section affichée — d'où le second Grid
-          plutôt qu'une troisième colonne, qui l'aurait confiné à la zone de
-          contenu. Visibilité pilotée depuis le code-behind
-          (App.Premium.IsLicensed) : jamais montré à qui a déjà acheté.
+          BOUTON PREMIUM FLOTTANT (120.0) : PAS déclaré ici. Il n'est ajouté à
+          GrilleRacine QUE depuis le code-behind, et seulement si l'app n'est
+          pas licenciée — voir MainWindow.xaml.cs. Un `Visibility.Collapsed`
+          posé après coup NE SUFFIT PAS : un Control Collapsed n'exécute
+          jamais Measure, donc n'applique jamais son ControlTemplate (piège
+          n°5 déjà documenté) — mais le déclencheur `EventTrigger
+          RoutedEvent="Loaded"` de Button.Premium (Themes/Premium.xaml, pour
+          l'animation ambiante) se déclenche quand même et plante en cherchant
+          un élément nommé du gabarit jamais matérialisé
+          (InvalidOperationException, trouvé par Tom contre le vrai
+          exécutable). Ne jamais le construire du tout est le seul correctif
+          fiable, pas une histoire de Visibility.
         -->
-        <vues:PremiumButton x:Name="BoutonPremium"
-                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                             Margin="0,0,16,16" />
     </Grid>
 </Window>
