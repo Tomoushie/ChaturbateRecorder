@@ -331,6 +331,13 @@ namespace ChaturbateRecorderApp.Config
                 "L'historique gagne un mode Galerie (bouton à côté de \"Liste\") : une grille de vignettes plutôt qu'une liste, avec tri par date, durée ou salon et un filtre par nom de salon.",
                 "Survoler une carte de la Galerie révèle sa taille de fichier et, pour qui a Stream Recorder Pro, une empreinte d'intégrité (SHA-256) calculée à la demande.",
             }),
+            ("2.0.0", new[]
+            {
+                "L'application est entièrement reconstruite en WPF (elle tournait jusqu'ici sur WinForms). À fonctionnalités égales, données et réglages repris tels quels : rien à reconfigurer, rien à réinstaller à part l'application elle-même.",
+                "Nouveau bouton \"Passer à Premium\" pour qui n'a pas encore Stream Recorder Pro : présente les fonctionnalités payantes et propose deux façons de payer, itch.io ou virement bancaire (IBAN, QR code SEPA à scanner). Ni PayPal ni GitHub Sponsors pour cet achat, réservés au don libre.",
+                "Nouveau compteur d'images par seconde dans l'overlay vidéo en direct (Stream Recorder Pro), affichable ou masquable d'un clic.",
+                "La licence Stream Recorder Pro est désormais liée à l'installation, pas seulement à un nom : la fenêtre Diagnostic affiche l'identifiant à transmettre à l'achat, et un transfert vers une autre machine passe par le support plutôt que par une simple copie du fichier de licence.",
+            }),
         };
 
         /// <summary>
@@ -539,6 +546,13 @@ namespace ChaturbateRecorderApp.Config
             {
                 "History gets a Gallery mode (button next to \"List\"): a grid of thumbnails instead of a list, with sorting by date, duration or room and a filter by room name.",
                 "Hovering a card in the Gallery reveals its file size and, for anyone with Stream Recorder Pro, an integrity fingerprint (SHA-256) computed on demand.",
+            },
+            ["2.0.0"] = new[]
+            {
+                "The application has been entirely rebuilt in WPF (it used to run on WinForms). Same features, same data and settings carried over as-is: nothing to reconfigure, nothing to reinstall besides the application itself.",
+                "New \"Upgrade to Premium\" button for anyone without Stream Recorder Pro yet: presents the paid features and offers two ways to pay, itch.io or a bank transfer (IBAN, scannable SEPA QR code). Neither PayPal nor GitHub Sponsors for this purchase — those stay for free donations.",
+                "New frames-per-second counter in the live video overlay (Stream Recorder Pro), shown or hidden with one click.",
+                "The Stream Recorder Pro license is now tied to the installation, not just to a name: the Diagnostics window shows the identifier to send at purchase time, and moving to another machine now goes through support instead of a simple copy of the license file.",
             },
         };
 
