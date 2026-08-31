@@ -109,7 +109,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
     <!-- L'ID est bien `.Wpf` : `Microsoft.Xaml.Behaviors` seul n'existe pas
          sur nuget.org (NU1101), et c'est ce que déclarait le squelette. -->
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
