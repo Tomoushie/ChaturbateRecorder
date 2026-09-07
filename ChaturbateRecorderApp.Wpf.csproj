@@ -112,7 +112,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <!-- L'ID est bien `.Wpf` : `Microsoft.Xaml.Behaviors` seul n'existe pas
          sur nuget.org (NU1101), et c'est ce que déclarait le squelette. -->
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.158" />
     <!-- 120.0 — bouton Premium : QR codes EPC/SEPA pour les deux virements
          bancaires. Génère un PNG en mémoire (PngByteQRCode), aucune
          dépendance System.Drawing/GDI+ malgré UseWindowsForms activé plus
