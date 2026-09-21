@@ -83,6 +83,13 @@ SetupIconFile=..\Assets\app.ico
 ; desinstalleur, ni entree dans « Applications installees ».
 Uninstallable=IsInstallMode
 CreateUninstallRegKey=IsInstallMode
+; 2.0.1 — le mutex d'instance unique de l'application (App.xaml.cs, le meme
+; dans le WinForms). Aucun fichier de l'application n'est dans [Files] : le
+; Restart Manager d'Inno n'en trouve donc aucun a liberer et ne proposait
+; JAMAIS de fermer une application ouverte — Expand-Archive butait alors sur
+; l'exe verrouille. Avec ce mutex, l'installateur et le desinstalleur
+; demandent de la fermer avant de toucher a quoi que ce soit.
+AppMutex=Local\ChaturbateRecorder.SingleInstance
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
@@ -102,6 +109,9 @@ french.LaunchApp=Lancer {#AppName}
 french.ExtractFailed=Extraction impossible. Installation interrompue.
 french.HashMismatch=Le fichier téléchargé ne correspond pas à la somme de contrôle attendue.%n%nInstallation interrompue par sécurité.
 french.NoChecksum=Somme de contrôle introuvable pour %1.%n%nInstallation interrompue : aucun binaire non vérifié n'est installé.
+french.DownloadFailed=Téléchargement impossible (%1) : %2
+french.DownloadAborted=Téléchargement annulé.
+french.Extracting=Installation de l'application, de yt-dlp et de ffmpeg...
 english.ModeCaption=Installation type
 english.ModeDescription=How do you want to use {#AppName}?
 english.ModeInstall=Install on this computer
@@ -115,6 +125,9 @@ english.LaunchApp=Launch {#AppName}
 english.ExtractFailed=Extraction failed. Setup aborted.
 english.HashMismatch=The downloaded file does not match the expected checksum.%n%nSetup aborted for safety.
 english.NoChecksum=No checksum found for %1.%n%nSetup aborted: no unverified binary is installed.
+english.DownloadFailed=Download failed (%1): %2
+english.DownloadAborted=Download cancelled.
+english.Extracting=Installing the application, yt-dlp and ffmpeg...
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Check: IsInstallMode
@@ -144,6 +157,17 @@ Type: files; Name: "{app}\ChaturbateRecorder.pdb"
 ; empecherait dirifempty de nettoyer le dossier, exactement comme le .pdb de
 ; l'application l'avait fait.
 Type: files; Name: "{app}\SentinelGuard.pdb"
+; 2.0.1 — le ZIP portable WPF contient SIX fichiers que le WinForms n'avait
+; pas : les bibliotheques natives de WPF, que PublishSingleFile laisse a cote
+; de l'exe, et la documentation XML de SentinelGuard. Oubliees en 2.0.0 :
+; mesure sur une vraie desinstallation, elles restaient seules dans le dossier
+; — exactement l'incident du .pdb decrit ci-dessus.
+Type: files; Name: "{app}\D3DCompiler_47_cor3.dll"
+Type: files; Name: "{app}\PenImc_cor3.dll"
+Type: files; Name: "{app}\PresentationNative_cor3.dll"
+Type: files; Name: "{app}\vcruntime140_cor3.dll"
+Type: files; Name: "{app}\wpfgfx_cor3.dll"
+Type: files; Name: "{app}\SentinelGuard.xml"
 Type: files; Name: "{app}\yt-dlp.exe"
 Type: files; Name: "{app}\ffmpeg.exe"
 Type: files; Name: "{app}\donate_qr.png"
@@ -157,6 +181,16 @@ Type: dirifempty; Name: "{app}"
 ; d'installation (LocalAppData, toujours inscriptible). Sans cette ligne, une
 ; desinstallation les laissait derriere elle. Les ENREGISTREMENTS ne sont jamais
 ; touches : ils sont dans les Videos de l'utilisateur, et ils lui appartiennent.
+; ATTENTION, depuis le 17-08 ce dossier porte AUSSI la liste de salons, les
+; favoris et les reglages (rooms.json, favorites.json, settings.json...) :
+; desinstaller les efface. C'etait deja le cas quand ils vivaient a cote de
+; l'exe (voir les lignes ci-dessus) — meme comportement, autre dossier.
+; Une MISE A JOUR, elle, ne desinstalle rien et ne les touche jamais.
+;
+; Le composant payant (StreamRecorderPro.dll, licence.key, machine-id.txt,
+; premium-usage.json) n'est VOLONTAIREMENT PAS dans cette liste : une
+; desinstallation suivie d'une reinstallation au meme endroit doit retrouver
+; une licence liee a machine-id.txt. Voir CurUninstallStepChanged.
 Type: filesandordirs; Name: "{localappdata}\ChaturbateRecorder"
 
 [Code]
@@ -169,7 +203,12 @@ const
 
 var
   ModePage: TInputOptionWizardPage;
+  DownloadPage: TDownloadWizardPage;
   YtDlpHash, FfmpegHash: String;
+  { Mode pour lequel le champ dossier a ete rempli, et le dossier qu'Inno avait
+    resolu pour le mode installation (/DIR= ou installation precedente). }
+  ModeDuDossier: Integer;
+  DossierInstallation: String;
 
 { Utilisee par [Setup], [Icons] et [Tasks] : le mode portable ne doit produire
   ni raccourci, ni desinstalleur, ni entree de registre. }
@@ -193,11 +232,6 @@ begin
     Result := ExpandConstant('{localappdata}\Programs\{#AppName}');
 end;
 
-function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
-begin
-  Result := True;
-end;
-
 procedure InitializeWizard;
 begin
   ModePage := CreateInputOptionPage(wpLicense,
@@ -206,14 +240,42 @@ begin
   ModePage.Add(ExpandConstant('{cm:ModeInstall}'));
   ModePage.Add(ExpandConstant('{cm:ModePortable}'));
   ModePage.Values[0] := True;
+  ModeDuDossier := 0;
+
+  { 2.0.1 — page de telechargement VISIBLE. En 2.0.0 les ~200 Mo (application,
+    yt-dlp, ffmpeg) arrivaient derriere une page « Preparation de
+    l'installation » totalement vide : aucune barre, aucun nom de fichier, et
+    le bouton Annuler GRISE. Mesure en capturant la fenetre pendant une vraie
+    installation. Sur une connexion lente, rien ne distinguait une installation
+    en cours d'une installation bloquee — signale tel quel par le mainteneur :
+    « le chargement n'avance pas, la fenetre reste ouverte a l'infini ».
+    Les deux messages ci-dessous existaient depuis la 23.0 sans jamais servir. }
+  DownloadPage := CreateDownloadPage(ExpandConstant('{cm:DownloadingTitle}'),
+    ExpandConstant('{cm:DownloadingDesc}'), nil);
+  DownloadPage.ShowBaseNameInsteadOfUrl := True;
 end;
 
-{ Le dossier par defaut depend du mode : on le repositionne quand on quitte la
-  page de choix, sinon l'utilisateur verrait le chemin de l'autre mode. }
+{ Le dossier par defaut depend du mode : on le repositionne en arrivant sur la
+  page du dossier, sinon l'utilisateur verrait le chemin de l'autre mode.
+
+  2.0.1 — SEULEMENT quand le mode a change. L'ancienne version reecrivait le
+  champ a chaque passage : un dossier choisi a la main etait perdu sur un
+  simple Precedent/Suivant, et /DIR= etait ignore — mesure, une installation
+  silencieuse avec /DIR= atterrissait quand meme dans le dossier par defaut,
+  cette procedure etant appelee meme sans assistant visible. }
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  if CurPageID = wpSelectDir then
-    WizardForm.DirEdit.Text := DefaultDir('');
+  if (CurPageID = ModePage.ID) and (DossierInstallation = '') then
+    DossierInstallation := WizardForm.DirEdit.Text;
+
+  if (CurPageID = wpSelectDir) and (ModePage.SelectedValueIndex <> ModeDuDossier) then
+  begin
+    if (ModePage.SelectedValueIndex = 0) and (DossierInstallation <> '') then
+      WizardForm.DirEdit.Text := DossierInstallation
+    else
+      WizardForm.DirEdit.Text := DefaultDir('');
+    ModeDuDossier := ModePage.SelectedValueIndex;
+  end;
 end;
 
 { Lit la somme attendue depuis le fichier publie par les auteurs. yt-dlp publie
@@ -270,25 +332,40 @@ end;
   se terminerait en « succes » sur un dossier vide. Defaut trouve en preparant
   le premier test silencieux, avant toute publication.
   PrepareToInstall s'execute dans les deux modes ; une chaine non vide y
-  interrompt l'installation en affichant son contenu. }
+  interrompt l'installation en affichant son contenu.
+
+  2.0.1 — la page de telechargement s'y affiche, et le telechargement y reste :
+  elle fonctionne aussi en silencieux (verifie : /VERYSILENT telecharge et
+  installe toujours tout). }
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Dummy: String;
 begin
   Result := '';
+  DownloadPage.Clear;
+  { Le hash du ZIP applicatif est verifie par Inno lui-meme, qui leve si la
+    somme ne correspond pas : l'echec passe donc par le meme except. }
+  DownloadPage.Add(AppZipUrl, 'app.zip', '{#AppZipSha256}');
+  DownloadPage.Add(YtDlpUrl, 'yt-dlp.exe', '');
+  DownloadPage.Add(YtDlpSumsUrl, 'yt-dlp-sums.txt', '');
+  DownloadPage.Add(FfmpegUrl, 'ffmpeg.zip', '');
+  DownloadPage.Add(FfmpegSumUrl, 'ffmpeg.zip.sha256', '');
+  DownloadPage.Show;
   try
-    DownloadTemporaryFile(AppZipUrl, 'app.zip', '{#AppZipSha256}', @OnDownloadProgress);
-    DownloadTemporaryFile(YtDlpUrl, 'yt-dlp.exe', '', @OnDownloadProgress);
-    DownloadTemporaryFile(YtDlpSumsUrl, 'yt-dlp-sums.txt', '', @OnDownloadProgress);
-    DownloadTemporaryFile(FfmpegUrl, 'ffmpeg.zip', '', @OnDownloadProgress);
-    DownloadTemporaryFile(FfmpegSumUrl, 'ffmpeg.zip.sha256', '', @OnDownloadProgress);
-  except
-    { Couvre aussi le hash du ZIP applicatif : passe en parametre a
-      DownloadTemporaryFile, il est verifie par Inno lui-meme, qui leve si la
-      somme ne correspond pas. }
-    Result := 'Telechargement impossible : ' + GetExceptionMessage;
-    Exit;
+    try
+      DownloadPage.Download;
+    except
+      if DownloadPage.AbortedByUser then
+        Result := ExpandConstant('{cm:DownloadAborted}')
+      else
+        { Tableau sur la MEME ligne : Inno lit toute ligne commencant par
+          « [ » comme une nouvelle section, meme au milieu de [Code]. }
+        Result := FmtMessage(ExpandConstant('{cm:DownloadFailed}'), [DownloadPage.LastBaseNameOrUrl, GetExceptionMessage]);
+    end;
+  finally
+    DownloadPage.Hide;
   end;
+  if Result <> '' then Exit;
 
   if not VerifyAgainst(ExpandConstant('{tmp}\yt-dlp.exe'),
          ExpectedHashFromFile(ExpandConstant('{tmp}\yt-dlp-sums.txt'), 'yt-dlp.exe'),
@@ -307,12 +384,16 @@ begin
   end;
 end;
 
+{ 2.0.1 — ErrorActionPreference a Stop : par defaut PowerShell CONTINUE apres
+  une erreur, et le code de sortie ne reflete que la DERNIERE commande. Un
+  Expand-Archive rate suivi d'un Copy-Item reussi rendait 0 — une installation
+  partielle annoncee comme reussie. }
 function RunHidden(const Cmd: String): Boolean;
 var
   ResultCode: Integer;
 begin
   Result := Exec('powershell.exe',
-    '-NoProfile -ExecutionPolicy Bypass -Command "' + Cmd + '"',
+    '-NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = ''Stop''; ' + Cmd + '"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
 end;
 
@@ -400,12 +481,40 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    if InstallPayload then
+    { 2.0.1 — l'extraction (~180 Mo) se deroulait sous une barre deja PLEINE,
+      Inno n'ayant aucun fichier a lui compter : une barre qui defile et un
+      libelle disent au moins que quelque chose travaille. }
+    WizardForm.StatusLabel.Caption := ExpandConstant('{cm:Extracting}');
+    WizardForm.ProgressGauge.Style := npbstMarquee;
+    try
+      if InstallPayload then
+      begin
+        WriteTrustedBinaries;
+        { Purement informatif : un echec ici ne doit pas faire echouer une
+          installation par ailleurs reussie. }
+        WriteInstalledComponents;
+      end;
+    finally
+      WizardForm.ProgressGauge.Style := npbstNormal;
+    end;
+  end;
+end;
+
+{ Sans licence, machine-id.txt n'est qu'un identifiant sans usage : il part avec
+  le reste, et le dossier avec lui. AVEC licence, il reste — c'est lui qui lie
+  licence.key a cette installation, et une reinstallation au meme endroit doit
+  retrouver le composant payant actif. }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  App: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    App := ExpandConstant('{app}');
+    if not FileExists(App + '\licence.key') then
     begin
-      WriteTrustedBinaries;
-      { Purement informatif : un echec ici ne doit pas faire echouer une
-        installation par ailleurs reussie. }
-      WriteInstalledComponents;
+      DeleteFile(App + '\machine-id.txt');
+      RemoveDir(App);
     end;
   end;
 end;
