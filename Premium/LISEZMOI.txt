@@ -1,0 +1,22 @@
+Stream Recorder Pro — StreamRecorderPro.dll
+============================================
+
+Complément payant de Chaturbate Recorder, livré avec l'application depuis la
+version 2.1.0. Composant PROPRIÉTAIRE (© Tomoushie) : il n'est PAS couvert par
+la licence MIT / Apache-2.0 du reste de ce dépôt. Son code source n'est pas
+publié.
+
+Sans fichier licence.key signé et lié à ton installation, il ne débloque
+rien : l'application fonctionne exactement comme sans lui. Pour obtenir une
+licence, bouton « Passer à Premium » dans l'application.
+
+----
+
+Paid add-on to Chaturbate Recorder, shipped with the application since
+version 2.1.0. PROPRIETARY component (© Tomoushie): NOT covered by the MIT /
+Apache-2.0 licence of the rest of this repository. Its source code is not
+published.
+
+Without a signed licence.key tied to your installation it unlocks nothing:
+the application behaves exactly as without it. To get a licence, use the
+"Upgrade to Premium" button in the application.

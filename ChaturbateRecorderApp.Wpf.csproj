@@ -192,12 +192,30 @@
   <ItemGroup>
     <!--
       AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
-      payant est chargé par RÉFLEXION (`Services/PremiumModuleService.cs`).
+      payant est chargé par RÉFLEXION (`Services/PremiumBridge.cs`).
       Une référence de compilation obligerait le module à connaître l'identité
       de cet assembly — or la variante portable est publiée en
       PublishSingleFile auto-contenue, où ce liage ne casse qu'à l'exécution,
       chez l'utilisateur, sur la variante la moins testée.
+
+      21-09 — LE MODULE EST LIVRÉ À TOUT LE MONDE (choix de Tom) : la DLL
+      compilée voyage avec l'application, seule la LICENCE se vend. Sans
+      licence.key signée elle ne débloque rien (contrôle dans le composant,
+      clé PUBLIQUE seulement). Copiée ici en binaire parce que son source vit
+      dans un dépôt PRIVÉ que la CI de ce dépôt ne peut pas compiler ; le hash
+      du ZIP portable, figé dans l'installateur, la couvre comme le reste.
+      Un simple fichier à côté de l'exe (pas une référence), EXCLU du bundle
+      single-file : PremiumBridge la cherche dans AppConfig.AppDir. Vérifié :
+      un hôte WPF single-file auto-contenu la charge et résout LiveWindow.
+      Pour livrer une nouvelle version : recompiler StreamRecorderPro en
+      Release et remplacer Premium\StreamRecorderPro.dll.
     -->
+    <None Include="Premium\StreamRecorderPro.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <Link>StreamRecorderPro.dll</Link>
+    </None>
   </ItemGroup>
 
 </Project>

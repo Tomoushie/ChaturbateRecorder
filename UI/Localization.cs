@@ -690,8 +690,8 @@ namespace ChaturbateRecorderApp.UI
             ["premium.button"] = ("Passer à Premium", "Upgrade to Premium"),
             ["premium.title"] = ("Stream Recorder Pro", "Stream Recorder Pro"),
             ["premium.intro"] = (
-                "Stream Recorder Pro est le complément payant de Chaturbate Recorder — un seul pack, une seule fois, aucun abonnement.",
-                "Stream Recorder Pro is the paid companion to Chaturbate Recorder — one pack, one payment, no subscription."),
+                "Stream Recorder Pro est le complément payant de Chaturbate Recorder — un seul pack, une seule fois, aucun abonnement. Il est déjà installé avec l'application : une licence suffit pour l'activer, rien d'autre à télécharger.",
+                "Stream Recorder Pro is the paid companion to Chaturbate Recorder — one pack, one payment, no subscription. It already comes installed with the application: a licence is all it takes to activate it, nothing else to download."),
             ["premium.featuresTitle"] = ("Ce que ça ajoute", "What it adds"),
             ["premium.feature.overlay"] = (
                 "Vidéo en direct dans une fenêtre dédiée, avec un panneau statut/durée/qualité/débit par-dessus l'image.",
@@ -708,15 +708,17 @@ namespace ChaturbateRecorderApp.UI
             // par le mainteneur une fois l'identifiant reçu. Seul le FICHIER
             // part automatiquement via itch.io — ne jamais dire "licence"
             // dans ce contexte, ce serait promettre ce qui ne se passe pas.
+            // 21-09 — le FICHIER non plus : le module est livré avec
+            // l'application à tout le monde. On n'achète plus que la licence.
             ["premium.paymentTitle"] = ("Moyens de paiement", "Payment methods"),
             ["premium.itchio"] = ("Acheter sur itch.io", "Buy on itch.io"),
             ["premium.itchioNote"] = (
-                "Téléchargement automatique du logiciel. La licence, personnalisée, suit séparément une fois ton identifiant d'installation transmis (ci-dessus).",
-                "Automatic download of the software. The licence, personalised, follows separately once you've sent your installation ID (above)."),
+                "Paiement en ligne. Ta licence, personnalisée, t'est envoyée une fois ton identifiant d'installation transmis (ci-dessus) : dépose-la à côté de l'application et relance-la.",
+                "Online payment. Your licence, personalised, is sent to you once you've sent your installation ID (above): drop it next to the application and restart it."),
             ["premium.bankTitle"] = ("Virement bancaire (deux comptes au choix)", "Bank transfer (either account)"),
             ["premium.bankNote"] = (
-                "Livraison manuelle : le mainteneur envoie le fichier et la licence après réception du virement et de ton identifiant d'installation (ci-dessus). Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
-                "Manual delivery: the maintainer sends the file and the licence after receiving the transfer and your installation ID (above). Scan the QR with your banking app, or copy the IBAN by hand."),
+                "Le mainteneur t'envoie ta licence après réception du virement et de ton identifiant d'installation (ci-dessus). Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
+                "The maintainer sends you your licence after receiving the transfer and your installation ID (above). Scan the QR with your banking app, or copy the IBAN by hand."),
             ["premium.machineIdTitle"] = ("Ton identifiant d'installation", "Your installation ID"),
             ["premium.machineIdNote"] = (
                 "À transmettre avec ta commande, quel que soit le moyen de paiement — c'est à cet identifiant que ta licence sera liée. La licence est liée à ton installation actuelle : en cas de changement d'ordinateur, contacte le support pour un transfert.",

@@ -166,6 +166,9 @@ Type: files; Name: "{app}\SentinelGuard.pdb"
 ; nom de plus dans une future version y serait deja couvert.
 Type: files; Name: "{app}\*_cor3.dll"
 Type: files; Name: "{app}\SentinelGuard.xml"
+; 21-09 — le module payant fait desormais partie du ZIP (livre a tous, seule
+; la licence se vend) : il part avec le reste, il revient a la reinstallation.
+Type: files; Name: "{app}\StreamRecorderPro.dll"
 Type: files; Name: "{app}\yt-dlp.exe"
 Type: files; Name: "{app}\ffmpeg.exe"
 Type: files; Name: "{app}\donate_qr.png"
@@ -185,10 +188,10 @@ Type: dirifempty; Name: "{app}"
 ; l'exe (voir les lignes ci-dessus) — meme comportement, autre dossier.
 ; Une MISE A JOUR, elle, ne desinstalle rien et ne les touche jamais.
 ;
-; Le composant payant (StreamRecorderPro.dll, licence.key, machine-id.txt,
-; premium-usage.json) n'est VOLONTAIREMENT PAS dans cette liste : une
-; desinstallation suivie d'une reinstallation au meme endroit doit retrouver
-; une licence liee a machine-id.txt. Voir CurUninstallStepChanged.
+; La LICENCE (licence.key, machine-id.txt, premium-usage.json) n'est
+; VOLONTAIREMENT PAS dans cette liste : une desinstallation suivie d'une
+; reinstallation au meme endroit doit retrouver une licence liee a
+; machine-id.txt. Voir CurUninstallStepChanged.
 Type: filesandordirs; Name: "{localappdata}\ChaturbateRecorder"
 
 [Code]
@@ -512,6 +515,7 @@ begin
     if not FileExists(App + '\licence.key') then
     begin
       DeleteFile(App + '\machine-id.txt');
+      DeleteFile(App + '\premium-usage.json');
       RemoveDir(App);
     end;
   end;

@@ -116,7 +116,10 @@ namespace ChaturbateRecorderApp.Services
             else if (premium.IsLicensed)
                 return $"Actif, v{premium.Version} — licence au nom de {premium.LicensedTo}. Usage : {premium.UsageSummary}.";
             else
-                return $"Installé (v{premium.Version}) mais INACTIF — {premium.LicenceProblem}.";
+                // Depuis le 21-09 le module est livré à TOUS : présent sans
+                // licence est l'état NORMAL d'un utilisateur gratuit, pas une
+                // panne — le dire sans majuscules d'alarme.
+                return $"Inclus (v{premium.Version}), non activé — {premium.LicenceProblem}.";
         }
 
         private static async Task<string> VersionBinaireAsync(string chemin, string arguments)
