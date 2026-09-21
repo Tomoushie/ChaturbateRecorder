@@ -14,6 +14,13 @@ Ce fichier-ci ne couvre que la migration.
 après la 2.0.0, pas le code), **454 tests** dont 2 échecs LOCAUX connus
 (`LEcranPrincipalDitQuIlEstVide`, pollué par les vraies données du poste).
 
+**v2.1.0 (préparée 21-09) = Stream Recorder Pro LIVRÉ À TOUS** :
+`Premium/StreamRecorderPro.dll` (binaire Release du dépôt PRIVÉ, commité ici
+car la CI publique ne peut pas le compiler) copié à côté de l'exe, exclu du
+bundle single-file. Inerte sans `licence.key`. Pour livrer une nouvelle
+version du module : recompiler StreamRecorderPro en Release et remplacer ce
+fichier. Composant propriétaire, hors licence MIT/Apache (README).
+
 **v2.0.1 = l'installateur seul** (`installer/ChaturbateRecorder.iss`) :
 page de téléchargement visible (la 2.0.0 affichait une page VIDE pendant
 ~200 Mo, Annuler grisé — « la fenêtre reste ouverte à l'infini »), `AppMutex`,

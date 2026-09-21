@@ -50,7 +50,7 @@
       qu'un 1.39.0 : le changement de technologie sous-jacente, pas seulement
       une fonctionnalite de plus, justifie une version majeure.
     -->
-    <Version>2.0.1</Version>
+    <Version>2.1.0</Version>
 
     <!--
       ICONE DE L'APPLICATION. Elle manquait : l'executable, la barre des taches

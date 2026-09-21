@@ -344,6 +344,11 @@ namespace ChaturbateRecorderApp.Config
                 "L'installateur demande de fermer Chaturbate Recorder s'il est ouvert, au lieu d'échouer en partie sur des fichiers verrouillés.",
                 "La désinstallation ne laisse plus de fichiers derrière elle dans le dossier de l'application.",
             }),
+            ("2.1.0", new[]
+            {
+                "Stream Recorder Pro est désormais livré avec l'application : plus aucun fichier à télécharger ni à copier. Il reste inactif sans licence — l'achat sert uniquement à obtenir ta licence, à déposer à côté de l'application.",
+                "Le panneau Diagnostic indique « Inclus, non activé » tant qu'aucune licence n'est en place.",
+            }),
         };
 
         /// <summary>
@@ -565,6 +570,11 @@ namespace ChaturbateRecorderApp.Config
                 "The installer finally shows its progress: each download (application, yt-dlp, ffmpeg) has its own bar and a stop button, then the installation step itself is shown. Until now an empty page could stay on screen for several minutes on a slow connection, with nothing to tell it apart from a stuck install.",
                 "The installer asks you to close Chaturbate Recorder if it is open, instead of partly failing on locked files.",
                 "Uninstalling no longer leaves files behind in the application folder.",
+            },
+            ["2.1.0"] = new[]
+            {
+                "Stream Recorder Pro now ships with the application: no more file to download or copy. It stays inactive without a licence — buying it only gets you your licence, to drop next to the application.",
+                "The Diagnostics panel shows \"Included, not activated\" as long as no licence is in place.",
             },
         };
 
