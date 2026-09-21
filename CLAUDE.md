@@ -4,13 +4,24 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-08-24** — 67 commits, dépôt distant `origin` =
-`https://github.com/Tomoushie/ChaturbateRecorder.git` (le dépôt PUBLIC du
-WinForms), poussé sur la branche **`wpf-migration`** (`git push` seul refuse
-— nom local `main` ≠ nom distant — utiliser `git push origin HEAD:wpf-migration`).
-`dotnet build` à 0 erreur / 0 avertissement (mesurés sur `-t:Rebuild`),
-**442 tests**. L'application navigue, ajoute un salon, l'enregistre, le
-surveille, le reconnecte, tient un historique et se configure.
+**État au 2026-09-21 — v2.0.1** : **`origin/main` EST ce dépôt depuis le
+25-08** (le WinForms est archivé sur `origin/winforms-legacy`). Pousser par
+**`git push origin main:main`** — la branche locale suit encore l'ancien
+`origin/wpf-migration`, un `git push` nu partirait au mauvais endroit. Un tag
+`vX.Y.Z` déclenche la release publique : redemander avant chaque tag.
+`dotnet build -t:Rebuild` à 0 erreur (un seul avertissement, NU1902 sur
+`Microsoft.Build.Tasks.Git` de SentinelGuard — avis de sécurité NuGet apparu
+après la 2.0.0, pas le code), **454 tests** dont 2 échecs LOCAUX connus
+(`LEcranPrincipalDitQuIlEstVide`, pollué par les vraies données du poste).
+
+**v2.0.1 = l'installateur seul** (`installer/ChaturbateRecorder.iss`) :
+page de téléchargement visible (la 2.0.0 affichait une page VIDE pendant
+~200 Mo, Annuler grisé — « la fenêtre reste ouverte à l'infini »), `AppMutex`,
+`/DIR=` respecté, natives WPF à la désinstallation. **Tester un .iss sur une
+copie à AppId DIFFÉRENT et SANS la ligne `{localappdata}\ChaturbateRecorder`**
+de `[UninstallDelete]` : désinstaller le test effacerait sinon les vraies
+données du poste. Une ligne de `[Code]` qui commence par `[` est lue comme une
+section par Inno.
 
 **POUSSÉ sur `origin/wpf-migration` le 24-08** (Tom l'a explicitement demandé,
 après être resté volontairement local à la clôture de Premium I) —
@@ -258,8 +269,8 @@ depuis le `Tools\` du dépôt WinForms. **Le mutex d'instance unique et
 `settings.json` sont désormais partagés avec l'app WinForms** (voir plus haut) : si celle-ci tourne, la
 WPF sort en silence.
 
-**Le dépôt n'a AUCUN distant** — 47 commits à un seul endroit sur un seul
-disque. C'est le risque restant, et il n'est pas technique.
+(Note périmée retirée le 21-09 : « le dépôt n'a aucun distant » — il est
+`origin/main` du dépôt public depuis le 25-08.)
 
 **LES DEUX COPIES DE `SettingsManager.cs` DIVERGENT désormais**, tranché avec le
 mainteneur le 2026-08-16 : la version WPF a un champ `Theme` que la WinForms
