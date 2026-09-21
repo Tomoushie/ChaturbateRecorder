@@ -161,12 +161,10 @@ Type: files; Name: "{app}\SentinelGuard.pdb"
 ; pas : les bibliotheques natives de WPF, que PublishSingleFile laisse a cote
 ; de l'exe, et la documentation XML de SentinelGuard. Oubliees en 2.0.0 :
 ; mesure sur une vraie desinstallation, elles restaient seules dans le dossier
-; — exactement l'incident du .pdb decrit ci-dessus.
-Type: files; Name: "{app}\D3DCompiler_47_cor3.dll"
-Type: files; Name: "{app}\PenImc_cor3.dll"
-Type: files; Name: "{app}\PresentationNative_cor3.dll"
-Type: files; Name: "{app}\vcruntime140_cor3.dll"
-Type: files; Name: "{app}\wpfgfx_cor3.dll"
+; — exactement l'incident du .pdb decrit ci-dessus. Joker plutot que cinq
+; noms : la liste des natives suit la version de WPF, pas ce script, et un
+; nom de plus dans une future version y serait deja couvert.
+Type: files; Name: "{app}\*_cor3.dll"
 Type: files; Name: "{app}\SentinelGuard.xml"
 Type: files; Name: "{app}\yt-dlp.exe"
 Type: files; Name: "{app}\ffmpeg.exe"
