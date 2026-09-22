@@ -71,6 +71,17 @@ namespace ChaturbateRecorderApp.Services
                 using (var stream = File.OpenRead(chemin))
                 {
                     var hash = Convert.ToHexString(SHA256.HashData(stream));
+
+                    // L'empreinte figée dans AppConfig n'est plus qu'un moyen
+                    // d'ÉPINGLER une build précise, et elle est vide par
+                    // défaut depuis 2.1.1 (voir le commentaire là-bas) : la
+                    // référence normale est celle que l'installateur a
+                    // inscrite dans trusted-binaries.json après avoir vérifié
+                    // le téléchargement contre la somme publiée par l'auteur
+                    // du binaire. Une constante compilée ne pouvait pas suivre
+                    // ffmpeg ni yt-dlp, qui changent de build sous la même
+                    // URL, et affichait « INATTENDU » — le mot qui signale une
+                    // altération — pour des fichiers conformes à leur source.
                     if (string.IsNullOrEmpty(attendu))
                         attendu = TrustedBinaryStore.GetTrustedHash(cle) ?? "";
 
@@ -159,6 +170,16 @@ namespace ChaturbateRecorderApp.Services
             {
                 try
                 {
+                    // 2.1.1 — L'EN-TÊTE D'IDENTIFICATION N'EST PAS DÉCORATIVE :
+                    // l'API de GitHub refuse par 403 toute requête qui n'en
+                    // porte pas, et HttpClient n'en envoie aucune par défaut.
+                    // Le Diagnostic annonçait donc « api.github.com :
+                    // injoignable » sur une machine parfaitement connectée
+                    // (constaté chez le mainteneur le 21-09), alors que la
+                    // vérification de mise à jour, elle, fonctionne — elle
+                    // s'identifie (UpdateChecker). Mesuré : HEAD sans en-tête
+                    // 403, avec en-tête 200.
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("ChaturbateRecorder-Diagnostic");
                     var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                     return response.IsSuccessStatusCode;
                 }

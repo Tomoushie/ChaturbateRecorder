@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace ChaturbateRecorderApp.Config
@@ -8,8 +8,10 @@ namespace ChaturbateRecorderApp.Config
     /// Équivalent du hashtable $Config et des variables de toggles de sécurité
     /// du script PowerShell d'origine.
     ///
-    /// A REMPLIR avant utilisation : YtDlpExpectedSha256, FfmpegExpectedSha256,
-    /// et éventuellement les valeurs de pinning CA/TLS si tu actives ces toggles.
+    /// A REMPLIR avant utilisation : éventuellement les valeurs de pinning
+    /// CA/TLS si tu actives ces toggles. YtDlpExpectedSha256 et
+    /// FfmpegExpectedSha256 ne sont PLUS à remplir depuis 2.1.1 — voir le
+    /// commentaire qui les précède.
     /// </summary>
     public static class AppConfig
     {
@@ -244,12 +246,28 @@ namespace ChaturbateRecorderApp.Config
         public static readonly string[] Whitelist = Services.Platforms.AllowedDomains;
 
         // --- Vérification binaire (hash + Authenticode) ---
-        public static string YtDlpExpectedSha256           = "52FE3C26DCF71FBDC85B528589020BB0B8E383155CFA81B64DD447BBE35E24B8";
+        //
+        // 2.1.1 — CES DEUX EMPREINTES SONT VIDES À DESSEIN, elles ne sont plus
+        // qu'un repli. L'ancre réelle est `trusted-binaries.json`, écrit par
+        // l'installateur avec ce qu'il a VRAIMENT posé après l'avoir vérifié
+        // contre la somme publiée par l'auteur du binaire. Une empreinte figée
+        // ici ne peut pas suivre deux cibles mouvantes — ffmpeg vient de l'URL
+        // « release-essentials » de gyan.dev (toujours la dernière build) et
+        // yt-dlp publie presque chaque semaine — et celle de ffmpeg, héritée du
+        // portage WinForms, affichait « INATTENDU » chez tout le monde pour un
+        // fichier conforme à sa source (constaté chez le mainteneur le 21-09).
+        // En l'absence des deux, le Diagnostic dit « non vérifié » et montre
+        // l'empreinte : c'est le cas de la variante PORTABLE, qui ne livre ni
+        // yt-dlp ni ffmpeg (ffmpeg est sous GPL) et n'a donc aucune référence
+        // à opposer. Remplir une de ces valeurs reste possible pour épingler
+        // une build précise : elle l'emporte alors sur tout, y compris sur le
+        // fichier d'installation.
+        public static string YtDlpExpectedSha256           = "";
         public static bool   YtDlpRequireAuthenticode       = false;
         public static string YtDlpExpectedSignerThumbprint  = "";
         public static string YtDlpExpectedSignerSubject     = "";
 
-        public static string FfmpegExpectedSha256           = "AD8F211BC894755E0061C55AB280AE00E8D3D4F15A8CC4372B24CFA247B5942E";
+        public static string FfmpegExpectedSha256           = "";
         public static bool   FfmpegRequireAuthenticode       = false;
         public static string FfmpegExpectedSignerThumbprint  = "";
         public static string FfmpegExpectedSignerSubject     = "";
