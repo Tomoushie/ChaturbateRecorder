@@ -1,0 +1,98 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:conv="clr-namespace:ChaturbateRecorderApp.Converters">
+
+    <!--
+      BARRE DE NAVIGATION VERTICALE (97.0), colonne de gauche de la fenêtre.
+
+      Ce qu'elle remplace : tout vivait auparavant sur un seul écran défilant —
+      enregistrement, historique, favoris, surveillance, dons et journaux
+      empilés. C'est ce qui avait rendu nécessaire le mode simple/avancé, dont
+      le seul rôle était de MASQUER la moitié de la page. Une navigation
+      supprime le besoin : on ne cache plus, on range.
+
+      LES 209 LIGNES DU CONTRÔLE WINFORMS DEVIENNENT CE STYLE. Le contrôle
+      dessinait tout à la main — fond, filet, repère, pictogramme, texte — et
+      calculait lui-même quelle entrée se trouve sous le pointeur. C'est cette
+      arithmétique que couvraient les 10 tests de `SideBarTests` : « une erreur
+      d'un pixel y sélectionnerait la mauvaise section », défaut invisible sur
+      une capture puisqu'il faut cliquer. Un ListBox fait le test de survol
+      lui-même : le calcul disparaît, et les tests qui le gardaient avec.
+    -->
+
+    <conv:IconTemplateConverter x:Key="IconTemplateConverter" />
+
+    <!-- Une ligne de navigation. Le gabarit est en types simples (deux chaînes),
+         le pictogramme étant résolu par le convertisseur. -->
+    <DataTemplate x:Key="Nav.ItemTemplate">
+        <Grid Height="44">
+            <ContentControl Width="18" Height="18"
+                            Margin="18,0,0,0"
+                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Focusable="False" IsTabStop="False"
+                            Template="{Binding IconKey, Converter={StaticResource IconTemplateConverter}}" />
+            <!-- 50 px : la colonne de texte commence après le pictogramme (18 px
+                 de marge + 18 px de glyphe), alignée sur toutes les lignes. -->
+            <TextBlock Margin="50,0,8,0" VerticalAlignment="Center"
+                       Text="{Binding Label}"
+                       TextTrimming="CharacterEllipsis" />
+        </Grid>
+    </DataTemplate>
+
+    <Style x:Key="Nav.Item" TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.FgMuted}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="Fond" Background="Transparent" />
+                        <!-- L'état se lit sur un LISERÉ VERTICAL à gauche, pas
+                             sur une pastille : lisible en un seul balayage de la
+                             colonne. Retrait de 8 px en haut et en bas, comme le
+                             contrôle d'origine. -->
+                        <Rectangle x:Name="Repere"
+                                   Width="3" Margin="0,8"
+                                   HorizontalAlignment="Left"
+                                   Fill="{DynamicResource Brush.Accent}"
+                                   Visibility="Collapsed" />
+                        <ContentPresenter />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- Survol AVANT sélection : la sélection doit gagner
+                             quand les deux sont vrais, et en XAML c'est le
+                             dernier déclencheur satisfait qui l'emporte. -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Nav.Hover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Nav.Selected}" />
+                            <Setter TargetName="Repere" Property="Visibility" Value="Visible" />
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}" />
+                            <Setter Property="FontWeight" Value="Bold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Nav.SideBar" TargetType="ListBox">
+        <Setter Property="Width" Value="196" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Nav.Surface}" />
+        <!-- Filet de séparation à droite plutôt qu'une ombre : la zone de
+             contenu a sa propre couleur, un seul trait marque la frontière
+             sans alourdir. -->
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="Padding" Value="0,12,0,0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource Nav.Item}" />
+        <Setter Property="ItemTemplate" Value="{StaticResource Nav.ItemTemplate}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+</ResourceDictionary>

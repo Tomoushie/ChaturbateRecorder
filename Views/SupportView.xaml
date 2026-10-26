@@ -1,0 +1,96 @@
+﻿<UserControl x:Class="ChaturbateRecorderApp.Views.SupportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Surface.Card}">
+            <StackPanel>
+                <TextBlock Text="{ui:Str panel.donate}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Fg}" />
+                <TextBlock Margin="0,8,0,0"
+                           Style="{StaticResource Text.Caption}"
+                           Text="{ui:Str support.body}" />
+
+                <!-- DEUX liens et non un : le don ponctuel et le parrainage
+                     récurrent ne répondent pas au même geste. -->
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Style="{StaticResource Button.Primary}"
+                            Content="{ui:Str support.donate}"
+                            Command="{Binding OuvrirDonCommand}" />
+                    <Button Margin="8,0,0,0"
+                            Style="{StaticResource Button.Secondary}"
+                            Content="{ui:Str support.sponsor}"
+                            Command="{Binding OuvrirParrainageCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource Surface.Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="{ui:Str support.thanks}" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Button Margin="12,0,0,0"
+                            Style="{StaticResource Button.Secondary}"
+                            Content="{ui:Str button.refresh}"
+                            Command="{Binding ActualiserCommand}" />
+                    <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{Binding Statut}"
+                               Visibility="{Binding Statut, Converter={StaticResource StringToVisibilityConverter}}" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" Margin="0,12,0,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Noms}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- textContent et jamais de balisage : ces noms
+                                     viennent d'un fichier de données distant. Un
+                                     TextBlock ne peut de toute façon rien
+                                     interpréter, ce qui est exactement ce qu'on
+                                     veut ici. -->
+                                <TextBlock Text="{Binding}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource Brush.Fg}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- ETAT VIDE, dans la MEME cellule que la liste. La carte prend
+                     la hauteur restante de la vue : sans ce message elle
+                     s'ouvrait sur ~450 px de blanc, entre « Actualiser » et la
+                     mention de consentement. Le vide est legitime — le projet
+                     est jeune — mais il doit se dire. -->
+                <TextBlock Grid.Row="1" Margin="16,0,16,0"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                           Style="{StaticResource Text.Caption}"
+                           Text="{ui:Str support.thanksEmpty}"
+                           Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <!-- Mention de consentement en contraste PLEIN et non atténué :
+                     l'atténuer en ferait la ligne la moins lue de l'écran, or
+                     c'est celle qui engage le mainteneur. -->
+                <TextBlock Grid.Row="2" Margin="0,12,0,0"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.Fg}"
+                           Text="{ui:Str support.thanksNote}" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

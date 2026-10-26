@@ -1,0 +1,66 @@
+<Window x:Class="ChaturbateRecorderApp.Views.ScheduleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
+        Width="360" Height="280"
+        MinWidth="320" MinHeight="260"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Content = un TextBlock EXPLICITE et non une chaîne nue : mesuré,
+             une chaîne confiée telle quelle à Content ne reprend PAS le
+             Foreground hérité (noir #000000 par défaut de WPF, invisible en
+             thème sombre) alors qu'un TextBlock explicite, comme ceux du
+             reste de cette fenêtre, s'affiche correctement. -->
+        <CheckBox x:Name="ActiverCase" Grid.Row="0"
+                  Style="{StaticResource Interrupteur}">
+            <TextBlock Text="{ui:Str schedule.enable}" Foreground="{DynamicResource Brush.Fg}" />
+        </CheckBox>
+
+        <TextBlock Grid.Row="1" Margin="0,12,0,0" TextWrapping="Wrap"
+                   Style="{StaticResource Text.Caption}"
+                   Text="{ui:Str schedule.help}" />
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                       Text="{ui:Str schedule.from}"
+                       Foreground="{DynamicResource Brush.Fg}" />
+            <ComboBox x:Name="Debut" Grid.Column="1" Margin="6,0,0,0" />
+
+            <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center"
+                       Text="{ui:Str schedule.to}"
+                       Foreground="{DynamicResource Brush.Fg}" />
+            <ComboBox x:Name="Fin" Grid.Column="3" Margin="6,0,0,0" />
+        </Grid>
+
+        <TextBlock x:Name="Avertissement" Grid.Row="3" Margin="0,12,0,0" TextWrapping="Wrap"
+                   Style="{StaticResource Text.Caption}"
+                   Foreground="{DynamicResource Brush.Danger}"
+                   Text="{ui:Str schedule.needsLicense}" />
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="Annuler" Style="{StaticResource Button.Secondary}"
+                    Content="{ui:Str button.cancel}" />
+            <Button x:Name="Enregistrer" Margin="8,0,0,0"
+                    Style="{StaticResource Button.Primary}"
+                    Content="{ui:Str button.save}" />
+        </StackPanel>
+    </Grid>
+</Window>

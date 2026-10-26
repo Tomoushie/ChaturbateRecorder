@@ -1,0 +1,194 @@
+﻿<UserControl x:Class="ChaturbateRecorderApp.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16">
+
+            <!-- SECTION : où atterrissent les fichiers -->
+            <Border Style="{StaticResource Surface.Card}">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.captureFolder}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <!-- 8 px minimum entre un intitulé et son champ : à 2 px le
+                         cadre du champ passait sous l'intitulé (défaut de rendu
+                         relevé à la capture en 102.0). -->
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource Surface.Input}"
+                                 VerticalAlignment="Center"
+                                 Text="{Binding CaptureDir, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str button.browse}"
+                                Command="{Binding ChoisirDossierCommand}" />
+                    </Grid>
+                    <!-- Chaine vide quand un dossier est choisi : la legende
+                         disparait alors avec sa hauteur, sans laisser de blanc.
+                         Un Collapsed par declencheur ferait la meme chose en
+                         plus verbeux, le TextBlock vide ne mesurant rien. -->
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LegendeDossierCapture}" />
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : apparence et langue -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.appearance}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <!-- Content = un TextBlock EXPLICITE et non une chaîne
+                         nue : mesuré, une chaîne confiée telle quelle à
+                         Content ne reprend PAS le Foreground posé sur la
+                         CheckBox (noir #000000 par défaut de WPF, invisible
+                         en thème sombre) — même défaut que « Activer la
+                         planification », trouvé en écrivant ScheduleWindow. -->
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding Sombre, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.darkTheme}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding Francais, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.french}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{ui:Str settings.appearanceHint}" />
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : surveillance et enregistrement -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.recording}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding AutoReconnect, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.autoReconnect}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding AutoUpdateCheck, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.checkUpdates}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding ShowLogs, Mode=TwoWay}">
+                        <TextBlock Text="{ui:Str settings.showLogs}" Foreground="{DynamicResource Brush.Fg}" />
+                    </CheckBox>
+
+                    <TextBlock Margin="0,12,0,0" Text="{ui:Str settings.monitorInterval}"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Width="120" HorizontalAlignment="Left"
+                             Style="{StaticResource Surface.Input}"
+                             Text="{Binding WatchIntervalSeconds, UpdateSourceTrigger=LostFocus}" />
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{ui:Str settings.monitorIntervalHint}" />
+                </StackPanel>
+            </Border>
+
+            <!-- SECTION : réseau et authentification -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.network}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+
+                    <TextBlock Margin="0,8,0,0" Text="{ui:Str settings.cookiesFile}"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource Surface.Input}"
+                                 VerticalAlignment="Center"
+                                 Text="{Binding CookiesFilePath, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str button.browse}"
+                                Command="{Binding ChoisirCookiesCommand}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,12,0,0" Text="{ui:Str settings.proxy}"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Style="{StaticResource Surface.Input}"
+                             Text="{Binding ProxyUrl, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Le champ reste visible et modifiable SANS licence — le
+                 masquer selon un état qu'on ne contrôle pas serait
+                 déroutant. C'est CaptureFinalizer qui vérifie IsLicensed
+                 avant d'appliquer quoi que ce soit. -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.smartNaming}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <TextBox Margin="0,8,0,0" Style="{StaticResource Surface.Input}"
+                             Text="{Binding SmartNamingPattern, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{ui:Str settings.smartNaming.help}" />
+                    <!-- Exemple brut, PAS localise : les jetons sont une
+                         syntaxe fixe, identique quelle que soit la langue de
+                         l'interface, comme un extrait de code. Le prefixe
+                         "{}" echappe l'accolade initiale, sans quoi XAML la
+                         lirait comme le debut d'une extension de balisage. -->
+                    <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
+                               FontFamily="Consolas" FontSize="11"
+                               Foreground="{DynamicResource Brush.FgMuted}"
+                               Text="{}{salon}_{date}_{heure}_{qualite}" />
+                    <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                               Style="{StaticResource Text.Caption}"
+                               Foreground="{DynamicResource Brush.Danger}"
+                               Text="{ui:Str settings.smartNaming.needsLicense}"
+                               Visibility="{Binding EstLicencie, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Les boutons d'outillage vivent dans les Reglages depuis 97.0 :
+                 ils occupaient trois rangees en permanence dans la barre du
+                 haut pour des actions declenchees une fois par mois. -->
+            <Border Style="{StaticResource Surface.Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{ui:Str settings.tools}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str settings.diagnostic}"
+                                Click="Diagnostic_Click" />
+                        <Button Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str settings.report}"
+                                Click="Signalement_Click" />
+                        <Button Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str settings.legal}"
+                                Click="Legalite_Click" />
+                        <Button Margin="8,0,0,0"
+                                Style="{StaticResource Button.Secondary}"
+                                Content="{ui:Str settings.tutorial}"
+                                Click="Guide_Click" />
+                    </StackPanel>
+                    <TextBlock Margin="0,6,0,0" FontSize="11"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{ui:Str settings.toolsHint}" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Style="{StaticResource Button.Primary}"
+                        Content="{ui:Str settings.save}"
+                        Command="{Binding EnregistrerCommand}" />
+                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                           Style="{StaticResource Text.Caption}"
+                           Text="{Binding Message}"
+                           Visibility="{Binding Message, Converter={StaticResource StringToVisibilityConverter}}" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

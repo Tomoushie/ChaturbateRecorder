@@ -1,0 +1,221 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+
+    <!--
+      WinForms EST ACTIVE, uniquement pour `NotifyIcon` : .NET n'offre aucune
+      autre icône de zone de notification, et WPF n'en a pas.
+
+      Choix assumé face à la dépendance NuGet qui fait la même chose : c'est une
+      référence de FRAMEWORK, déjà installée avec le runtime, pas un paquet
+      tiers de plus dans un projet qui vérifie les empreintes de ses binaires et
+      publie un SBOM. L'ironie d'activer WinForms dans une migration qui le
+      quitte est réelle mais superficielle — aucune FENÊTRE WinForms n'existe
+      ici, seulement l'objet de zone de notification.
+
+      Conséquence à connaître : `Application` devient ambigu entre
+      `System.Windows.Application` et `System.Windows.Forms.Application`. Le
+      code qualifie donc complètement partout où les deux se rencontrent.
+    -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!--
+      MÊME AssemblyName que la version WinForms, et ce n'est pas cosmétique :
+      l'installateur (setup.exe) et le vérificateur de mise à jour interne
+      ciblent tous deux `ChaturbateRecorder.exe`. Renommer ici casserait la
+      mise à jour des installations existantes, en silence.
+    -->
+    <AssemblyName>ChaturbateRecorder</AssemblyName>
+
+    <!--
+      RootNamespace identique à celui de l'app WinForms : les 21 services
+      portés gardent alors `namespace ChaturbateRecorderApp.Services` mot pour
+      mot, ce qui supprime une passe de renommage sur ~3 000 lignes — et avec
+      elle le risque d'en manquer une.
+    -->
+    <RootNamespace>ChaturbateRecorderApp</RootNamespace>
+
+    <!--
+      2.0.0 (25-08) : premiere version PUBLIEE en WPF, origin/main bascule du
+      WinForms (archive sur la branche winforms-legacy) vers ce depot. Portage
+      a fonctionnalites egales jusqu'a 1.36.0 inclus ; 1.37.0 (overlay video en
+      direct, planificateur) et 1.38.0 (Galerie) n'ont jamais existe cote
+      WinForms, batis directement ici. Saut au chiffre des dizaines plutot
+      qu'un 1.39.0 : le changement de technologie sous-jacente, pas seulement
+      une fonctionnalite de plus, justifie une version majeure.
+    -->
+    <Version>2.1.1</Version>
+
+    <!--
+      ICONE DE L'APPLICATION. Elle manquait : l'executable, la barre des taches
+      et la zone de notification tombaient tous sur l'icone generique de
+      Windows. `TrayIcon.ExtraireIcone` lit justement celle de l'exe.
+
+      Copiee depuis le depot WinForms (25-08, bascule vers WPF comme version
+      distribuee) : les deux etaient auparavant des dossiers freres sur le
+      meme disque, ce qui ne marche que localement — un runner CI qui ne
+      checkout QUE ce depot n'a jamais eu ce dossier voisin. Meme identite
+      visuelle, copiee une seule fois, jamais recopiee a la main ensuite.
+    -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+
+    <!-- Voir le csproj WinForms : permet à `dotnet restore` de résoudre les
+         FrameworkReference de bureau depuis un runner non-Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- X509Certificate.CreateFromSignedFile reste la seule API BCL qui
+         extrait le certificat Authenticode d'un PE signé (cf. csproj WinForms). -->
+    <NoWarn>SYSLIB0057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      LES QUATRE NOMS QUE WinForms REND AMBIGUS, tranches ICI et une seule fois.
+
+      Activer WinForms pour NotifyIcon fait entrer System.Drawing et
+      System.Windows.Forms par les usings implicites : `Application`, `Color`,
+      `Brush` et `UserControl` existent alors dans deux mondes. Un alias par
+      fichier aurait disperse la decision dans une dizaine d'endroits, et le
+      onzieme fichier ecrit l'aurait oublie.
+
+      DANS CE PROJET, CES QUATRE NOMS DESIGNENT TOUJOURS WPF. Un jour ou une
+      couleur System.Drawing serait reellement necessaire, il faudra la
+      qualifier completement — ce qui est exactement le bon rapport, vu qu'il
+      n'y en a aucune aujourd'hui.
+    -->
+    <Using Include="System.Windows.Application" Alias="Application" />
+    <Using Include="System.Windows.Media.Color" Alias="Color" />
+    <Using Include="System.Windows.Media.Brush" Alias="Brush" />
+    <Using Include="System.Windows.Controls.UserControl" Alias="UserControl" />
+    <Using Include="System.Windows.Clipboard" Alias="Clipboard" />
+    <!-- Sixieme ambiguite de la meme famille, apparue avec l'extension de
+         balisage de traduction : System.Windows.Forms.Binding existe aussi. -->
+    <Using Include="System.Windows.Data.Binding" Alias="Binding" />
+    <!-- Quatre de plus, meme famille : le rendu hors application manipule des
+         elements et des coordonnees WPF. `Services/TrayIcon.cs` prefixe deja
+         tout ce qu'il prend a WinForms par `WinForms.`, donc rien ne perd son
+         type ici. -->
+    <Using Include="System.Windows.Controls.Button" Alias="Button" />
+    <Using Include="System.Windows.Controls.TextBox" Alias="TextBox" />
+    <Using Include="System.Windows.Size" Alias="Size" />
+    <Using Include="System.Windows.Point" Alias="Point" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <!-- L'ID est bien `.Wpf` : `Microsoft.Xaml.Behaviors` seul n'existe pas
+         sur nuget.org (NU1101), et c'est ce que déclarait le squelette. -->
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <!-- 120.0 — bouton Premium : QR codes EPC/SEPA pour les deux virements
+         bancaires. Génère un PNG en mémoire (PngByteQRCode), aucune
+         dépendance System.Drawing/GDI+ malgré UseWindowsForms activé plus
+         haut — ce projet vérifie déjà les empreintes de ses binaires, mais
+         un paquet MIT très utilisé (Shane32/QRCoder) reste préférable à un
+         encodeur QR écrit à la main (la correction d'erreur Reed-Solomon
+         est facile à rater silencieusement). -->
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      ProjectReference et non PackageReference, pour la raison déjà tranchée
+      côté WinForms : la version publiée sur nuget.org est toujours en retard
+      d'un correctif sur le source du dépôt, et dépendre d'un paquet qu'on
+      publie soi-même imposerait de publier avant de pouvoir corriger.
+
+      25-08 — copié DANS ce dépôt (n'était qu'une référence vers un dossier
+      voisin du disque de Tom, invisible à tout checkout CI ou tout autre
+      clone). C'est désormais LA copie de référence pour la version
+      distribuée ; le dépôt WinForms garde la sienne, les deux peuvent
+      diverger si l'un des deux corrige quelque chose sans le reporter — même
+      risque assumé que pour l'icône ci-dessus.
+    -->
+    <ProjectReference Include="SentinelGuard\SentinelGuard.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      yt-dlp.exe ET ffmpeg.exe COPIÉS À CÔTÉ DE L'EXÉCUTABLE, sans quoi
+      l'application démarre mais ne peut RIEN faire : `AppConfig` les cherche
+      dans `AppContext.BaseDirectory`, et le sondage comme la capture échouent
+      en silence si le fichier manque.
+
+      Pris dans un dossier LOCAL `Tools\`, gitignored (voir .gitignore) — ni
+      commité ni jamais présent sur un runner CI, ce qui est voulu : la
+      Condition="Exists(...)" les rend silencieusement absents du build CI, et
+      c'est exactement ce qui garantit qu'ils ne se retrouvent jamais dans un
+      ZIP de release (ffmpeg est sous licence GPL — règle du dépôt public).
+      À déposer soi-même pour un build LOCAL, voir le README.
+    -->
+    <None Include="Tools\yt-dlp.exe"
+          Condition="Exists('Tools\yt-dlp.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>yt-dlp.exe</Link>
+    </None>
+    <None Include="Tools\ffmpeg.exe"
+          Condition="Exists('Tools\ffmpeg.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg.exe</Link>
+    </None>
+    <None Include="Assets\donate_qr.png"
+          Condition="Exists('Assets\donate_qr.png')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>donate_qr.png</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tests\ est un projet A PART, comme SentinelGuard\ et
+         SentinelGuard.Tests\ depuis qu'ils vivent DANS ce dépôt (25-08) :
+         sans ces retraits, le SDK globalise leurs .cs dans CE projet-ci, qui
+         n'a ni xUnit ni les mêmes paquets — même piège que le csproj
+         WinForms documente pour les trois mêmes dossiers. -->
+    <Compile Remove="Tests\**" />
+    <Page Remove="Tests\**" />
+    <Content Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <Compile Remove="SentinelGuard\**" />
+    <Content Remove="SentinelGuard\**" />
+    <None Remove="SentinelGuard\**" />
+    <Compile Remove="SentinelGuard.Tests\**" />
+    <Content Remove="SentinelGuard.Tests\**" />
+    <None Remove="SentinelGuard.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      AUCUNE référence à StreamRecorderPro, et c'est structurel : le module
+      payant est chargé par RÉFLEXION (`Services/PremiumBridge.cs`).
+      Une référence de compilation obligerait le module à connaître l'identité
+      de cet assembly — or la variante portable est publiée en
+      PublishSingleFile auto-contenue, où ce liage ne casse qu'à l'exécution,
+      chez l'utilisateur, sur la variante la moins testée.
+
+      21-09 — LE MODULE EST LIVRÉ À TOUT LE MONDE (choix de Tom) : la DLL
+      compilée voyage avec l'application, seule la LICENCE se vend. Sans
+      licence.key signée elle ne débloque rien (contrôle dans le composant,
+      clé PUBLIQUE seulement). Copiée ici en binaire parce que son source vit
+      dans un dépôt PRIVÉ que la CI de ce dépôt ne peut pas compiler ; le hash
+      du ZIP portable, figé dans l'installateur, la couvre comme le reste.
+      Un simple fichier à côté de l'exe (pas une référence), EXCLU du bundle
+      single-file : PremiumBridge la cherche dans AppConfig.AppDir. Vérifié :
+      un hôte WPF single-file auto-contenu la charge et résout LiveWindow.
+      Pour livrer une nouvelle version : recompiler StreamRecorderPro en
+      Release et remplacer Premium\StreamRecorderPro.dll.
+    -->
+    <None Include="Premium\StreamRecorderPro.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <Link>StreamRecorderPro.dll</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

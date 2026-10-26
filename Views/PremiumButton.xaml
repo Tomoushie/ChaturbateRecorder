@@ -1,0 +1,62 @@
+<UserControl x:Class="ChaturbateRecorderApp.Views.PremiumButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
+             Width="220" Height="88">
+
+    <!--
+      120.0 — bouton flottant « Passer à Premium », bas-droite de la fenêtre
+      principale. Couleurs FIGÉES (pourpre/mauve), pas liées au thème
+      courant : c'est un élément marketing, pas un contrôle applicatif — même
+      raisonnement que Button.OnScrim (Themes/Controls.xaml), qui fige aussi
+      ses couleurs pour composer sur un fond variable.
+
+      Visibilité pilotée depuis le code-behind de MainWindow
+      (App.Premium.IsLicensed), pas ici : un client déjà licencié ne doit
+      jamais voir ce bouton.
+
+      HABILLAGE REPRIS D'UNE SUGGESTION DE TOM (24-08, après un premier essai
+      jugé trop « cheap » — halo en ellipse plate + traits fins) : dégradé
+      pourpre à liseré clair, icône d'éclair fixe, reflet vitreux qui balaie
+      le bouton en boucle, halo qui respire, zoom léger au survol/appui.
+      Vit dans Themes/Premium.xaml (Button.Premium) plutôt qu'ici : un style
+      de bouton partagé, pas propre à cette seule instance.
+
+      LES ÉCLAIRS PROCÉDURAUX RESTENT ICI, EN PLUS de cet habillage (demande
+      explicite de Tom : garder un vrai déclenchement au survol, pas
+      seulement l'icône fixe + le reflet ambiant du nouveau gabarit) — Canvas
+      superposé, jamais dans le ControlTemplate : le code-behind n'aurait
+      alors pu l'atteindre qu'au prix d'un Template.FindName après
+      ApplyTemplate, plus fragile qu'un élément posé directement ici.
+    -->
+
+    <UserControl.Resources>
+        <!-- Propre à CETTE instance (les éclairs procéduraux dessinés par le
+             code-behind), contrairement aux pinceaux de Themes/Premium.xaml
+             qui sont un style de bouton partagé. Nommé EclairProcedural et
+             non Eclair tout court : Themes/Premium.xaml définit déjà
+             `Premium.Eclair` pour l'icône fixe du gabarit — même préfixe,
+             deux pinceaux différents, volontairement distingués plutôt que
+             de compter sur l'ordre de résolution local/global pour ne pas
+             se marcher dessus. -->
+        <SolidColorBrush x:Key="Premium.EclairProcedural" Color="#E0C4FF" />
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- ÉCLAIRS PROCÉDURAUX : Canvas vide au repos, rempli par le
+             code-behind pendant le survol. IsHitTestVisible=False : ne doit
+             JAMAIS intercepter le clic destiné au bouton. Au-dessus du
+             bouton dans l'ordre de déclaration : c'est ce qui le pose
+             PAR-DESSUS le halo/reflet du gabarit, comme des étincelles qui
+             crépitent devant. -->
+        <Button x:Name="Bouton" Style="{StaticResource Button.Premium}"
+                Height="40" MinWidth="190"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Content="{ui:Str premium.button}"
+                Click="Bouton_Click"
+                MouseEnter="Bouton_MouseEnter"
+                MouseLeave="Bouton_MouseLeave" />
+
+        <Canvas x:Name="CanevasEclairs" IsHitTestVisible="False" />
+    </Grid>
+</UserControl>

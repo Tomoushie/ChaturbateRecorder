@@ -1,0 +1,113 @@
+﻿<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Zone d'ajout. Le champ d'URL est en haut parce que c'est là que se
+             pose la question « qu'est-ce que je peux coller ici ? » — les
+             pictogrammes de plateforme prises en charge lui répondent juste
+             à côté (103.0). -->
+        <Border Grid.Row="0" Style="{StaticResource Surface.Card}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0"
+                         Style="{StaticResource Surface.Input}"
+                         VerticalAlignment="Center"
+                         Text="{Binding NewRoomUrl, UpdateSourceTrigger=PropertyChanged}" />
+
+                <!-- La duree est choisie AVANT le demarrage et s'applique aux
+                     prochaines captures : c'est un reglage par enregistrement
+                     dans le WinForms, pose au meme moment que la qualite. -->
+                <ComboBox Grid.Column="1" Width="130" Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding Durees}"
+                          SelectedItem="{Binding DureeChoisie, Mode=TwoWay}"
+                          DisplayMemberPath="Libelle"
+                          ToolTip="Duree maximale d'enregistrement" />
+
+                <Button Grid.Column="2"
+                        Margin="8,0,0,0"
+                        Style="{StaticResource Button.Primary}"
+                        Content="{ui:Str streams.add}"
+                        Command="{Binding AjouterCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Le motif de refus vient du bac à sable d'URL, et il est AFFICHÉ tel
+             quel : « URL invalide » sans dire pourquoi laisse coller la même
+             adresse trois fois de suite. -->
+        <TextBlock Grid.Row="1"
+                   Margin="12,8,0,0"
+                   Text="{Binding AddError}"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource Brush.Danger}"
+                   Visibility="{Binding AddError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Rooms}"
+                          ItemTemplate="{StaticResource RoomCard.Template}" />
+        </ScrollViewer>
+
+        <!-- ETAT VIDE, dans la MEME cellule que la liste : il occupe donc la
+             place que les cartes prendront, au lieu de pousser la mise en page.
+             Sans lui l'ecran principal s'ouvrait entierement blanc au premier
+             lancement, ce qui se lit comme une panne. -->
+        <TextBlock Grid.Row="2" Margin="16,0,16,0"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                   Style="{StaticResource Text.Caption}"
+                   Text="{ui:Str streams.empty}"
+                   Visibility="{Binding Vide, Converter={StaticResource BooleanToVisibilityConverter}}" />
+        <!-- PANNEAU DES JOURNAUX, masque par defaut (UserSettings.ShowLogs) :
+             il occupait de la place en permanence pour une information qu'on
+             ne consulte que quand quelque chose ne va pas. -->
+        <Border Grid.Row="3" Margin="0,12,0,0" Height="160"
+                Style="{StaticResource Surface.Card}"
+                DataContext="{Binding Journaux}"
+                Visibility="{Binding Visible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <TextBlock Text="{ui:Str streams.logs}" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Fg}" />
+                    <Button Margin="12,0,0,0" Style="{StaticResource Button.Secondary}"
+                            Content="{ui:Str streams.clearLogs}" Command="{Binding ViderCommand}" />
+                    <Button Margin="8,0,0,0" Style="{StaticResource Button.Secondary}"
+                            Content="{ui:Str streams.openLogFolder}" Command="{Binding OuvrirDossierCommand}" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Lignes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Texte}"
+                                           FontFamily="Consolas" FontSize="11"
+                                           TextWrapping="NoWrap"
+                                           Foreground="{Binding CleCouleur, Converter={StaticResource ResourceKeyToBrushConverter}}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

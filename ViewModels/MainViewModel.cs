@@ -1,0 +1,75 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using ChaturbateRecorderApp.UI;
+
+namespace ChaturbateRecorderApp.ViewModels
+{
+    public sealed partial class NavSection : ObservableObject
+    {
+        public required string Key { get; init; }
+        public required string IconKey { get; init; }
+        [ObservableProperty] private string _label = "";
+    }
+
+    public partial class MainViewModel : ObservableObject, System.IDisposable
+    {
+        public ObservableCollection<NavSection> Sections { get; } = new()
+        {
+            new NavSection { Key = "streams", IconKey = "Icon.Camera" },
+            new NavSection { Key = "history", IconKey = "Icon.Folder" },
+            new NavSection { Key = "settings", IconKey = "Icon.Sliders" },
+            new NavSection { Key = "support", IconKey = "Icon.Heart" }
+        };
+
+        [ObservableProperty] private NavSection? _selectedSection;
+
+        /// <summary>
+        /// Modèle de la section « Enregistrer ». Construit une seule fois et
+        /// gardé : le reconstruire à chaque navigation relirait le fichier des
+        /// salons et perdrait ce que l'utilisateur vient de taper dans le
+        /// champ d'URL en changeant d'onglet.
+        /// </summary>
+        public StreamsViewModel Streams { get; } = new();
+
+        /// <summary>
+        /// Modele de la section « Historique ». Construit une seule fois, comme
+        /// Streams : il relit le dossier a chaque commande Rafraichir, pas a
+        /// chaque navigation.
+        /// </summary>
+        public HistoryViewModel Historique { get; } = new();
+
+        /// <summary>Modele de la section « Reglages ».</summary>
+        public SettingsViewModel Reglages { get; } = new();
+
+        /// <summary>Modele de la section « Soutenir ».</summary>
+        public SupportViewModel Soutien { get; } = new();
+
+        public void Dispose()
+        {
+            Localization.LanguageChanged -= RefreshLabels;
+            Streams.Dispose();
+        }
+
+        public MainViewModel()
+        {
+            RefreshLabels();
+            SelectedSection = Sections[0];
+
+            // La barre de navigation ne passe PAS par `{ui:Str}` : ses libelles
+            // vivent dans un objet de section, que la liste lie par `Label`.
+            // Elle a donc besoin de son propre reveil — sans lui, `RefreshLabels`
+            // n'etait appelee qu'ici, au demarrage, et les quatre sections
+            // restaient dans la langue du lancement pendant que tout le reste de
+            // l'ecran changeait.
+            Localization.LanguageChanged += RefreshLabels;
+        }
+
+        public void RefreshLabels()
+        {
+            foreach (var section in Sections)
+            {
+                section.Label = Localization.Get("nav." + section.Key);
+            }
+        }
+    }
+}

@@ -1,0 +1,218 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Rayon de 6 px et remplissage de 10 px : ce sont les valeurs du ThemedButton WinForms (CornerRadius, EdgePadding), reprises pour que les deux interfaces ne divergent pas pendant la migration. Le survol et l'appui ne sont PAS des Setters de couleur en dur : ils pointent sur des pinceaux que ThemeManager recalcule depuis la palette. -->
+    <Style x:Key="Button.Primary" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Btn.Primary.Fg}"/>
+        <Setter Property="Background" Value="{DynamicResource Brush.Btn.Primary.Fill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Btn.Primary.Border}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Primary.Fill}" BorderBrush="{DynamicResource Brush.Btn.Primary.Border}">
+                        <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Primary.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Primary.Pressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Fond" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                            <Setter TargetName="Fond" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Fond" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="Button.Secondary" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Btn.Secondary.Fg}"/>
+        <Setter Property="Background" Value="{DynamicResource Brush.Btn.Secondary.Fill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Btn.Secondary.Border}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Secondary.Fill}" BorderBrush="{DynamicResource Brush.Btn.Secondary.Border}">
+                        <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Secondary.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Secondary.Pressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Fond" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                            <Setter TargetName="Fond" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Fond" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- Galerie (Premium II) : le bouton "Empreinte" de la hover-card repose
+         sur un bandeau sombre FIXE (#E6000000), jamais thème clair/sombre,
+         car il compose par-dessus une vignette quelconque, pas une surface
+         de l'appli. Button.Secondary suit pourtant le thème COURANT : trouvé
+         par un rendu forcé du survol en thème clair, un bouton blanc y
+         jurait sur le bandeau sombre. Couleurs volontairement EN DUR ici,
+         jamais DynamicResource, précisément pour ne plus suivre le thème. -->
+    <Style x:Key="Button.OnScrim" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1"
+                            Background="#33FFFFFF" BorderBrush="#66FFFFFF">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="#4DFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="#1AFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Fond" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="Button.Danger" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Btn.Danger.Fg}"/>
+        <Setter Property="Background" Value="{DynamicResource Brush.Btn.Danger.Fill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Btn.Danger.Border}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fond" CornerRadius="6" BorderThickness="1" Background="{DynamicResource Brush.Btn.Danger.Fill}" BorderBrush="{DynamicResource Brush.Btn.Danger.Border}">
+                        <ContentPresenter x:Name="Contenu" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Danger.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Fond" Property="Background" Value="{DynamicResource Brush.Btn.Danger.Pressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Fond" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                            <Setter TargetName="Fond" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Fond" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="Text.Body" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="Text.Caption" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.FgMuted}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <!-- Deux niveaux de lecture (39.0). Sans le second, un intitule de champ et la donnee qu'il annonce ont exactement le meme poids, et l'oeil n'a aucun repere pour parcourir l'ecran. -->
+    <Style x:Key="Surface.Card" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource Brush.Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.18" Color="Black"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--
+      STYLE IMPLICITE, en plus de la cle : un TextBox pose sans style gardait le
+      fond BLANC de WPF, invisible au build et bien visible en theme sombre.
+      Les fenetres qui veulent un fond transparent le posent en valeur LOCALE,
+      qui l'emporte sur un Setter de style — elles ne sont donc pas touchees.
+    -->
+    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="Background" Value="{DynamicResource Brush.Input}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    </Style>
+
+    <Style x:Key="Surface.Input" TargetType="TextBox">
+        <Setter Property="Background" Value="{DynamicResource Brush.Input}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Fg}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.Input}">
+                        <ScrollViewer x:Name="PART_ContentHost"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- La fenetre est un fond sur lequel sont posees des cartes, qui portent elles-memes champs et listes. Avant 39.0 les cartes prenaient la couleur du fond : elles n'existaient que par un lisere de 1 px, d'ou un ecran entierement plat. -->
+    <Style TargetType="Window">
+        <Setter Property="Background" Value="{DynamicResource Brush.Bg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Fg}"/>
+    </Style>
+    <!--
+      IL N'Y A VOLONTAIREMENT PAS DE STYLE IMPLICITE SUR TextBlock, et le
+      retirer était un CORRECTIF, pas un allègement.
+
+      Il en existait un, posé pour que « tout TextBlock non stylisé ne reste
+      pas noir en thème sombre ». Le raisonnement était faux : `Foreground` est
+      une propriété HÉRITÉE, et le style de `Window` ci-dessus la pose déjà
+      pour tout l'arbre. En revanche un Setter explicite BAT l'héritage — donc
+      ce style volait sa couleur à tout texte placé dans un conteneur qui en
+      impose une autre.
+
+      Mesuré au pixel sur le libellé « Retirer » d'un bouton Danger : (26,26,26)
+      en thème clair et (232,232,232) en sombre, c'est-à-dire `Brush.Fg` dans
+      les deux cas — au lieu du rouge du rôle. Tous les boutons Primary et
+      Danger étaient touchés, et rien ne le signalait.
+    -->
+</ResourceDictionary>
