@@ -1,0 +1,103 @@
+<Window x:Class="ChaturbateRecorderApp.Views.OnlineActivationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI"
+        Title="{ui:Str premium.onlineTitle}"
+        Width="580" Height="540"
+        MinWidth="480" MinHeight="460"
+        WindowStartupLocation="CenterOwner">
+
+    <!--
+      2.2.0 — activation en ligne. Le chemin le plus court pour un acheteur qui
+      ne lit pas les fichiers fournis : il colle la clé de téléchargement
+      itch.io, le Worker vérifie l'achat et renvoie un licence.key signé, que
+      Services/LicenceInstaller.cs installe immédiatement.
+
+      La clé de téléchargement est un SECRET : elle n'est ni journalisée ni
+      conservée après la requête. Voir Services/OnlineActivation.cs.
+    -->
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Body}"
+                                   Text="{ui:Str premium.onlineIntro}" />
+
+                        <TextBlock Margin="0,16,0,6" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.onlineKeyLabel}" />
+
+                        <TextBox x:Name="ChampCle"
+                                 Style="{StaticResource Surface.Input}"
+                                 FontFamily="Consolas" FontSize="13"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="False"
+                                 VerticalScrollBarVisibility="Auto"
+                                 MinHeight="54" />
+
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.onlineKeyHelp}" />
+                        <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.onlineKeySecretNote}" />
+
+                        <TextBlock Margin="0,18,0,6" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.onlineIdLabel}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="ChampIdMachine"
+                                     Grid.Column="0"
+                                     Style="{StaticResource Surface.Input}"
+                                     FontFamily="Consolas" FontSize="13"
+                                     IsReadOnly="True" />
+
+                            <Button Grid.Column="1" Margin="8,0,0,0"
+                                    Style="{StaticResource Button.Secondary}"
+                                    Content="{ui:Str premium.copy}"
+                                    Click="CopierId_Click" />
+                        </Grid>
+
+                        <TextBlock x:Name="TexteStatut" Margin="0,12,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"
+                                   Style="{StaticResource Text.Caption}" />
+
+                        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.onlinePageNote}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,0"
+                    HorizontalAlignment="Right">
+            <Button Style="{StaticResource Button.Secondary}"
+                    Content="{ui:Str premium.onlineOpenPage}"
+                    Click="OuvrirPage_Click" />
+            <Button Margin="8,0,0,0"
+                    Style="{StaticResource Button.Secondary}"
+                    Content="{ui:Str button.close}"
+                    Click="Fermer_Click" />
+            <Button x:Name="BoutonActiver" Margin="8,0,0,0"
+                    Style="{StaticResource Button.Primary}"
+                    Content="{ui:Str premium.onlineActivate}"
+                    Click="Activer_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
