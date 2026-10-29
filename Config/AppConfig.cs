@@ -174,6 +174,26 @@ namespace ChaturbateRecorderApp.Config
         // itch.io de l'application libre : un compte qui encaisse ne doit pas
         // porter le nom d'une plateforme adulte, sous peine de gel.
         public static string ProUrl            = "https://tomoushie.itch.io/stream-recorder-pro";
+        // 2.2.0 — adresse de support pour les acheteurs Pro. C'est la même que
+        // celle des fichiers LISEZMOI-ACHETEUR / README-BUYER : une seule
+        // adresse à surveiller, et le bouton « Recevoir ma licence » de la
+        // fenêtre Premium l'ouvre avec l'identifiant d'installation déjà
+        // rempli. Donnée, pas libellé : ne pas la mettre dans Localization.
+        public static string SupportEmail     = "nowaktombe@protonmail.com";
+        // 2.2.0 — service d'activation en ligne (Cloudflare Worker, code dans
+        // StreamRecorderPro/LicenceWorker). Chaîne VIDE = bouton masqué : une
+        // version compilée sans service déployé reste cohérente au lieu
+        // d'offrir un chemin qui échoue.
+        //
+        // Ce nom de Worker doit correspondre à celui de wrangler.toml. Si le
+        // service est déployé sous un autre nom, changer UNIQUEMENT cette
+        // ligne (et ActivationPageUrl ci-dessous).
+        public static string ActivationEndpoint =
+            "https://stream-recorder-pro-licences.tom-nowak.workers.dev/activate";
+        // Page publique de secours, ouverte si l'activation dans l'application
+        // échoue. L'identifiant d'installation y est ajouté en paramètre.
+        public static string ActivationPageUrl =
+            "https://tomoushie.github.io/ChaturbateRecorder/activer.html";
         // 120.0 — deux comptes bancaires, alternative directe à itch.io pour
         // payer StreamRecorderPro. VOLONTAIREMENT PAS PayPal.me/GitHub
         // Sponsors ici (voir le commentaire de ProUrl juste au-dessus, même

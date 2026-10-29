@@ -725,6 +725,98 @@ namespace ChaturbateRecorderApp.UI
                 "Send this with your order, whichever payment method you use — your licence will be tied to this ID. The licence is tied to your current installation: if you change computers, contact support for a transfer."),
             ["premium.copy"] = ("Copier", "Copy"),
             ["premium.copied"] = ("Copié !", "Copied!"),
+
+            // 2.2.0 — parcours « déjà acheté ».
+            //
+            // Le défaut constaté : un acheteur recevait licence.key par email,
+            // ne lisait pas le LISEZMOI, ne comprenait pas pourquoi le premium
+            // restait absent, et pouvait conclure à une arnaque. Ces chaînes
+            // rendent l'activation faisable DEPUIS l'application, sans savoir
+            // où copier un fichier.
+            ["premium.alreadyBoughtTitle"] = ("Déjà acheté ?", "Already bought?"),
+            ["premium.alreadyBoughtNote"] = (
+                "Tu as reçu un fichier licence.key ? Installe-le ici : les fonctions Pro s'activent tout de suite, sans redémarrer l'application. Rien reçu ? Demande ta licence ci-dessous, ton identifiant d'installation est ajouté automatiquement.",
+                "Got a licence.key file? Install it here: Pro features activate right away, without restarting the application. Nothing yet? Request your licence below, your installation ID is added automatically."),
+            ["premium.installLicence"] = ("Installer ma licence…", "Install my licence…"),
+            ["premium.requestLicence"] = ("Recevoir ma licence", "Get my licence"),
+            ["premium.choisirLicence"] = ("Choisir le fichier licence.key", "Choose the licence.key file"),
+            ["premium.filtreLicence"] = (
+                "Fichier de licence (*.key)|*.key|Tous les fichiers (*.*)|*.*",
+                "Licence file (*.key)|*.key|All files (*.*)|*.*"),
+            ["premium.installOk"] = (
+                "Licence installée pour {0}. Les fonctions Pro sont actives, sans redémarrage.",
+                "Licence installed for {0}. Pro features are active, no restart needed."),
+            ["premium.installRefusee"] = (
+                "Licence refusée. Vérifie que le fichier vient bien de nous et qu'il correspond à cette installation.",
+                "Licence refused. Check that the file comes from us and matches this installation."),
+            ["premium.installMachine"] = (
+                "Cette licence est liée à une autre installation. Envoie ton identifiant d'installation actuel au support avec « Recevoir ma licence » : le transfert est gratuit.",
+                "This licence is tied to another installation. Send your current installation ID to support with “Get my licence”: the transfer is free."),
+            ["premium.installSource"] = (
+                "Le fichier choisi est introuvable, vide ou trop volumineux.",
+                "The selected file is missing, empty, or too large."),
+            ["premium.installErreur"] = (
+                "L'installation a échoué (droits d'écriture ou antivirus ?). Le détail est dans le journal.",
+                "Installation failed (write permissions or antivirus?). Details are in the log."),
+
+            // Activation en ligne (2.2.0) — le chemin le plus court pour un
+            // acheteur qui ne lit rien : il colle la clé de téléchargement
+            // itch.io, l'application fait le reste.
+            ["premium.onlineButton"] = ("Activer en ligne", "Activate online"),
+            ["premium.onlineTitle"] = ("Activation en ligne", "Online activation"),
+            ["premium.onlineIntro"] = (
+                "Colle la clé de téléchargement reçue d'itch.io. Elle sert à vérifier ton achat ; l'application installe ensuite la licence automatiquement, sans redémarrage.",
+                "Paste the download key you received from itch.io. It verifies your purchase; the application then installs the licence automatically, without restarting."),
+            ["premium.onlineKeyLabel"] = ("Clé de téléchargement itch.io", "itch.io download key"),
+            ["premium.onlineKeyHelp"] = (
+                "C'est la longue suite de caractères à la fin du lien de téléchargement reçu par email. Tu peux coller le lien entier.",
+                "It's the long string at the end of the download link in your email. You can paste the whole link."),
+            ["premium.onlineIdLabel"] = ("Identifiant d'installation", "Installation ID"),
+            ["premium.onlineActivate"] = ("Activer maintenant", "Activate now"),
+            ["premium.onlineActivating"] = ("Vérification de l'achat…", "Checking your purchase…"),
+            ["premium.onlineKeyRequired"] = (
+                "Colle d'abord ta clé de téléchargement.",
+                "Paste your download key first."),
+            ["premium.onlineInvalidKey"] = (
+                "Cette clé de téléchargement n'est pas reconnue. Vérifie que tu as bien acheté Stream Recorder Pro avec ce compte itch.io, et colle la clé entière.",
+                "This download key is not recognised. Check that you bought Stream Recorder Pro with this itch.io account, and paste the whole key."),
+            ["premium.onlineTransfer"] = (
+                "Cette clé a atteint le nombre maximum d'installations. Écris au support pour un transfert gratuit, en précisant ton identifiant d'installation.",
+                "This key has reached the maximum number of installations. Write to support for a free transfer, including your installation ID."),
+            ["premium.onlineRateLimited"] = (
+                "Trop de tentatives en peu de temps. Réessaie dans une heure, ou installe ta licence avec « Installer ma licence… ».",
+                "Too many attempts in a short time. Try again in an hour, or install your licence with “Install my licence….”"),
+            ["premium.onlineUnavailable"] = (
+                "Le service d'activation est momentanément indisponible. Tu peux installer ta licence manuellement, ou réessayer plus tard.",
+                "The activation service is temporarily unavailable. You can install your licence manually, or try again later."),
+            ["premium.onlineNetwork"] = (
+                "Impossible de joindre le service d'activation. Vérifie ta connexion Internet, ou installe ta licence manuellement.",
+                "Could not reach the activation service. Check your Internet connection, or install your licence manually."),
+            ["premium.onlineOpenPage"] = ("Ouvrir la page d'activation", "Open the activation page"),
+            ["premium.onlineKeySecretNote"] = (
+                "Cette clé prouve ton achat : ne la partage pas.",
+                "This key proves your purchase: don't share it."),
+            ["premium.onlinePageNote"] = (
+                "Si l'activation échoue ici, la page web fait exactement la même chose dans ton navigateur.",
+                "If activation fails here, the web page does exactly the same thing in your browser."),
+            ["premium.requestSubject"] = (
+                "Stream Recorder Pro — demande de licence",
+                "Stream Recorder Pro — licence request"),
+            ["premium.requestBody"] = (
+                "Bonjour,\n\nJ'ai acheté Stream Recorder Pro, mais je n'ai pas encore reçu ma licence.\n\nIdentifiant d'installation : {0}\n\nMerci !",
+                "Hello,\n\nI bought Stream Recorder Pro, but I haven't received my licence yet.\n\nInstallation ID: {0}\n\nThanks!"),
+
+            // Bannière de la fenêtre principale, affichée UNIQUEMENT quand un
+            // licence.key existe mais a été refusé : un utilisateur qui n'a
+            // jamais acheté ne doit pas voir d'avertissement permanent.
+            ["premium.bannerTitle"] = ("Licence Pro non activée", "Pro licence not activated"),
+            ["premium.bannerRefused"] = (
+                "Une licence est présente mais n'a pas été acceptée. Ouvre l'activation pour réessayer ou demander de l'aide.",
+                "A licence file is present but was not accepted. Open activation to try again or ask for help."),
+            ["premium.bannerMachine"] = (
+                "Ta licence est liée à une autre installation. Demande un transfert gratuit avec ton identifiant actuel.",
+                "Your licence is tied to another installation. Request a free transfer with your current ID."),
+            ["premium.bannerAction"] = ("Activer", "Activate"),
         };
 
         /// <summary>
