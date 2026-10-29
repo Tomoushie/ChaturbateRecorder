@@ -302,6 +302,11 @@ L'utilisateur est seul responsable de l'usage qu'il fait des enregistrements. Il
 
 Double licence, au choix : [MIT](LICENSE-MIT) ou [Apache License 2.0](LICENSE-APACHE).
 
+**Exception : `Premium/StreamRecorderPro.dll`** (Stream Recorder Pro, le
+complément payant) est un composant **propriétaire**, fourni en binaire et
+**non couvert** par cette double licence. Il est livré avec l'application mais
+ne s'active qu'avec une licence achetée — voir [`Premium/LISEZMOI.txt`](Premium/LISEZMOI.txt).
+
 Sauf mention contraire explicite de ta part, toute contribution soumise pour
 inclusion dans ce projet est placée sous cette double licence, sans condition
 supplémentaire.

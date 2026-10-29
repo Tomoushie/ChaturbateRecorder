@@ -338,6 +338,22 @@ namespace ChaturbateRecorderApp.Config
                 "Nouveau compteur d'images par seconde dans l'overlay vidéo en direct (Stream Recorder Pro), affichable ou masquable d'un clic.",
                 "La licence Stream Recorder Pro est désormais liée à l'installation, pas seulement à un nom : la fenêtre Diagnostic affiche l'identifiant à transmettre à l'achat, et un transfert vers une autre machine passe par le support plutôt que par une simple copie du fichier de licence.",
             }),
+            ("2.0.1", new[]
+            {
+                "L'installateur affiche enfin sa progression : chaque fichier téléchargé (application, yt-dlp, ffmpeg) a sa barre et un bouton d'arrêt, puis l'installation elle-même est signalée. Jusqu'ici une page vide pouvait rester affichée plusieurs minutes sur une connexion lente, sans rien qui la distingue d'une installation bloquée.",
+                "L'installateur demande de fermer Chaturbate Recorder s'il est ouvert, au lieu d'échouer en partie sur des fichiers verrouillés.",
+                "La désinstallation ne laisse plus de fichiers derrière elle dans le dossier de l'application.",
+            }),
+            ("2.1.0", new[]
+            {
+                "Stream Recorder Pro est désormais livré avec l'application : plus aucun fichier à télécharger ni à copier. Il reste inactif sans licence — l'achat sert uniquement à obtenir ta licence, à déposer à côté de l'application.",
+                "Le panneau Diagnostic indique « Inclus, non activé » tant qu'aucune licence n'est en place.",
+            }),
+            ("2.1.1", new[]
+            {
+                "Le panneau Diagnostic ne signale plus à tort ffmpeg comme modifié. Il comparait le fichier à une empreinte figée dans l'application, alors que l'installateur télécharge toujours la dernière version publiée : la référence est désormais l'empreinte vérifiée au moment de l'installation.",
+                "Le panneau Diagnostic ne dit plus « api.github.com : injoignable » sur une machine parfaitement connectée. La vérification des mises à jour, elle, n'était pas affectée.",
+            }),
         };
 
         /// <summary>
@@ -553,6 +569,22 @@ namespace ChaturbateRecorderApp.Config
                 "New \"Upgrade to Premium\" button for anyone without Stream Recorder Pro yet: presents the paid features and offers two ways to pay, itch.io or a bank transfer (IBAN, scannable SEPA QR code). Neither PayPal nor GitHub Sponsors for this purchase — those stay for free donations.",
                 "New frames-per-second counter in the live video overlay (Stream Recorder Pro), shown or hidden with one click.",
                 "The Stream Recorder Pro license is now tied to the installation, not just to a name: the Diagnostics window shows the identifier to send at purchase time, and moving to another machine now goes through support instead of a simple copy of the license file.",
+            },
+            ["2.0.1"] = new[]
+            {
+                "The installer finally shows its progress: each download (application, yt-dlp, ffmpeg) has its own bar and a stop button, then the installation step itself is shown. Until now an empty page could stay on screen for several minutes on a slow connection, with nothing to tell it apart from a stuck install.",
+                "The installer asks you to close Chaturbate Recorder if it is open, instead of partly failing on locked files.",
+                "Uninstalling no longer leaves files behind in the application folder.",
+            },
+            ["2.1.0"] = new[]
+            {
+                "Stream Recorder Pro now ships with the application: no more file to download or copy. It stays inactive without a licence — buying it only gets you your licence, to drop next to the application.",
+                "The Diagnostics panel shows \"Included, not activated\" as long as no licence is in place.",
+            },
+            ["2.1.1"] = new[]
+            {
+                "The Diagnostics panel no longer reports ffmpeg as altered when it is not. It compared the file against a fingerprint frozen into the application, while the installer always downloads the latest published build: the reference is now the fingerprint verified at install time.",
+                "The Diagnostics panel no longer says \"api.github.com: unreachable\" on a perfectly connected machine. Update checking itself was never affected.",
             },
         };
 
