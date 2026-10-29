@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
+<UserControl x:Class="ChaturbateRecorderApp.Views.StreamsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:ChaturbateRecorderApp.UI">
@@ -19,6 +19,7 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
@@ -43,6 +44,15 @@
                         Style="{StaticResource Button.Primary}"
                         Content="{ui:Str streams.add}"
                         Command="{Binding AjouterCommand}" />
+
+                <!-- v2.3 — grille multi-live (premium). Visible sans licence :
+                     la fenêtre de choix dit elle-même que c'est premium. -->
+                <Button Grid.Column="3"
+                        Margin="8,0,0,0"
+                        Style="{StaticResource Button.Secondary}"
+                        Content="{ui:Str streams.multilive}"
+                        ToolTip="{ui:Str streams.multiliveTooltip}"
+                        Command="{Binding OuvrirMultiLiveCommand}" />
             </Grid>
         </Border>
 

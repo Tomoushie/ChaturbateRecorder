@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace ChaturbateRecorderApp.UI
@@ -674,6 +674,36 @@ namespace ChaturbateRecorderApp.UI
             ["streams.clearLogs"] = ("Vider", "Clear"),
             ["streams.openLogFolder"] = ("Ouvrir le dossier", "Open the folder"),
 
+            // v2.3 — multi-live (premium).
+            ["streams.multilive"] = ("Multi-live", "Multi-live"),
+            ["streams.multiliveTooltip"] = (
+                "Grille de 2 à 4 directs simultanés (premium)",
+                "Grid of 2 to 4 simultaneous live streams (premium)"),
+            ["multilive.title"] = ("Multi-live — choisir les salons", "Multi-live — choose rooms"),
+            ["multilive.help"] = (
+                "Sélectionne 2 à 4 salons. Chaque flux décode une vidéo en continu : le CPU et la bande passante augmentent nettement.",
+                "Select 2 to 4 rooms. Each stream decodes video continuously: CPU and bandwidth usage rise noticeably."),
+            ["multilive.max4"] = (
+                "Maximum 4 salons simultanés.", "Maximum 4 simultaneous rooms."),
+            ["multilive.launch"] = ("Lancer la grille", "Start the grid"),
+            ["multilive.loading"] = ("Ouverture des flux…", "Opening streams…"),
+            ["multilive.needsLicense"] = (
+                "La grille multi-live est une fonctionnalité premium.",
+                "The multi-live grid is a premium feature."),
+            ["multilive.selectAtLeastOne"] = (
+                "Choisis au moins un salon.", "Select at least one room."),
+            ["multilive.failed"] = (
+                "Impossible d'ouvrir la grille : licence, composant ou flux indisponible.",
+                "Could not open the grid: licence, component or stream unavailable."),
+
+            // v2.3 — clips et marqueurs.
+            ["marker.count"] = ("{0} marqueur(s)", "{0} marker(s)"),
+            ["clip.saving"] = ("Clip en cours…", "Saving clip…"),
+            ["clip.saved"] = ("Clip 60 s enregistré", "60 s clip saved"),
+            ["clip.failed"] = ("Clip impossible", "Clip failed"),
+            ["clip.premiumOnly"] = (
+                "Réservé à Stream Recorder Pro", "Stream Recorder Pro only"),
+
             ["support.body"] = (
                 "Le logiciel est gratuit et le restera. Les dons couvrent le temps passé, pas l'accès.",
                 "The software is free and will stay free. Donations cover the time spent, not access."),
@@ -696,9 +726,18 @@ namespace ChaturbateRecorderApp.UI
             ["premium.feature.overlay"] = (
                 "Vidéo en direct dans une fenêtre dédiée, avec un panneau statut/durée/qualité/débit par-dessus l'image.",
                 "Live video in a dedicated window, with a status/duration/quality/bitrate panel over the picture."),
+            ["premium.feature.pip"] = (
+                "Picture-in-Picture : la même vidéo en fenêtre compacte, déplaçable et toujours au-dessus des autres.",
+                "Picture-in-Picture: the same video in a compact window that can be moved and always stays on top."),
+            ["premium.feature.multilive"] = (
+                "Grille multi-live : 2 à 4 directs simultanés dans une seule fenêtre, avec un avertissement de charge CPU.",
+                "Multi-live grid: 2 to 4 simultaneous streams in a single window, with a CPU-load warning."),
+            ["premium.feature.clips"] = (
+                "Rétro-clip des 60 dernières secondes et marqueurs exportés automatiquement en clips.",
+                "60-second retro clip and markers exported as clips automatically."),
             ["premium.feature.gallery"] = (
-                "Galerie de l'historique : grille de vignettes, tri par date, durée ou salon, empreinte SHA-256 à la demande.",
-                "History gallery: thumbnail grid, sort by date, duration or room, on-demand SHA-256 fingerprint."),
+                "Empreinte SHA-256 à la demande dans l'historique (la galerie, le tri et le filtre restent gratuits).",
+                "On-demand SHA-256 fingerprint in the history (the gallery, sorting and filtering stay free)."),
             ["premium.feature.autotag"] = (
                 "Nommage intelligent des captures et planificateur horaire par salon.",
                 "Smart naming for captures and a per-room daily schedule."),

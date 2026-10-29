@@ -45,5 +45,20 @@ namespace ChaturbateRecorderApp.Services
         // RoomName seul qui peut confondre deux enregistrements différents du
         // même salon (miniature/réencodage attribués au mauvais fichier).
         public string? OutputBaseName { get; set; }
+
+        // --- Clips et marqueurs (v2.3) ---
+
+        /// <summary>
+        /// Début de la TENTATIVE en cours, en UTC. Remis à zéro à chaque
+        /// (re)démarrage : un marqueur posé pendant la tentative 2 ne doit pas
+        /// être appliqué au fichier de la tentative 1, qui est un autre fichier.
+        /// </summary>
+        public DateTime? AttemptStartedAtUtc { get; set; }
+
+        /// <summary>
+        /// Positions (secondes depuis le début de la tentative) marquées par
+        /// l'utilisateur. Vidées à chaque nouvelle tentative, après export.
+        /// </summary>
+        public System.Collections.Generic.List<double> Markers { get; } = new();
     }
 }

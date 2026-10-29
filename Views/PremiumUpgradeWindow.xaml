@@ -90,6 +90,27 @@
                                        Foreground="{DynamicResource Brush.Fg}" />
                             <TextBlock TextWrapping="Wrap" MaxWidth="480"
                                        Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.pip}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.multilive}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
+                                       Text="{ui:Str premium.feature.clips}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                            <TextBlock Text="•" Margin="0,0,8,0"
+                                       Foreground="{DynamicResource Brush.Fg}" />
+                            <TextBlock TextWrapping="Wrap" MaxWidth="480"
+                                       Style="{StaticResource Text.Caption}"
                                        Text="{ui:Str premium.feature.gallery}" />
                         </StackPanel>
                         <StackPanel Margin="0,6,0,0" Orientation="Horizontal">

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,7 +52,8 @@ namespace ChaturbateRecorderApp.Services
         /// démarrage qui échoue immédiatement en produit un.
         /// </summary>
         /// <returns>Vrai si un fichier a bien été renommé.</returns>
-        public static async Task<bool> FinaliserAsync(string dossier, string? nomBase, string extension)
+        public static async Task<bool> FinaliserAsync(string dossier, string? nomBase, string extension,
+                                                      IReadOnlyList<double>? marqueurs = null)
         {
             if (string.IsNullOrWhiteSpace(nomBase)) return false;
 
@@ -104,6 +107,25 @@ namespace ChaturbateRecorderApp.Services
                     // Meme regle : le nommage intelligent est un CONFORT
                     // premium, jamais une condition de reussite de la
                     // finalisation elle-meme.
+                    try
+                    {
+                        // v2.3 — les clips de marqueurs sont produits ICI, sur
+                        // le chemin FINALISÉ et AVANT le nommage intelligent
+                        // (qui change le nom du fichier). Le composant fermé
+                        // contrôle la licence ; sans elle, cet appel ne fait
+                        // rien et la capture reste intacte.
+                        if (marqueurs is { Count: > 0 })
+                        {
+                            var json = JsonSerializer.Serialize(marqueurs);
+                            var resultat = App.Premium.ExportMarkerClips(final, json, AppConfig.ClipsDir, 15);
+                            Logger.Log($"Clips de marqueurs ({marqueurs.Count}) pour {Path.GetFileName(final)} : {resultat}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Export des clips de marqueurs impossible : {ex.Message}", LogLevel.WARN);
+                    }
+
                     try
                     {
                         final = await AppliquerNommageIntelligentAsync(final, nomBase!).ConfigureAwait(false);

@@ -1,4 +1,4 @@
-﻿namespace ChaturbateRecorderApp.ViewModels
+namespace ChaturbateRecorderApp.ViewModels
 {
     using System;
     using System.Collections.Generic;
@@ -84,6 +84,7 @@
                     // Le decompte rendait la place : on remet la plateforme et
                     // la date, sinon la carte garderait « 0 s » pour toujours.
                     carte.Detail = carte.DetailBase;
+                    carte.Info = "";
                 }
                 else
                 {
@@ -282,7 +283,14 @@
             var chemin = Path.Combine(AppConfig.PreviewDir, $"{cle}.jpg");
 
             var url = carte.Url;
-            var ok = await Task.Run(() => App.Premium.TryCapturePreview(url, chemin)).ConfigureAwait(true);
+            // v2.3 : la session (cookies/proxy) est transmise comme pour
+            // l'enregistrement, sinon un salon réservé à un compte connecté
+            // n'aurait toujours aucune vignette. SafeMode garde le dernier mot :
+            // un composant désactivé n'est pas transmis.
+            var cookies = SafeMode.IsEnabled(SafeComponent.Cookies) ? AppConfig.CookiesFilePath : "";
+            var proxy = SafeMode.IsEnabled(SafeComponent.Proxy) ? AppConfig.ProxyUrl : "";
+            var ok = await Task.Run(() => App.Premium.TryCapturePreviewWithSession(url, chemin, cookies, proxy))
+                               .ConfigureAwait(true);
             if (!ok || Trouver(url) is null) return;
 
             // Le chemin est DETERMINISTE (meme cle SHA-256 a chaque tour) :
@@ -452,6 +460,79 @@
         {
             if (carte is null) return;
             _ = Task.Run(() => App.Premium.TryShowLiveWindow(carte.Url, carte.RoomName));
+        }
+
+        /// <summary>
+        /// v2.3 — même direct, mais en fenêtre compacte toujours au-dessus
+        /// (Picture-in-Picture). Le composant fermé décide seul si la licence
+        /// l'autorise ; sans elle, l'appel est un non-évènement.
+        /// </summary>
+        [RelayCommand]
+        private void VoirEnPiP(RoomCardViewModel? carte)
+        {
+            if (carte is null) return;
+            _ = Task.Run(() => App.Premium.TryShowLiveWindowEx(carte.Url, carte.RoomName,
+                                                               compact: true, topmost: true));
+        }
+
+        /// <summary>
+        /// v2.3 — grille multi-live (premium). La fenêtre de choix rappelle
+        /// elle-même l'avertissement CPU ; on peut la préparer sans licence,
+        /// comme la planification, mais le lancement reste gaté par le
+        /// composant fermé.
+        /// </summary>
+        [RelayCommand]
+        private void OuvrirMultiLive()
+        {
+            var fenetre = new ChaturbateRecorderApp.Views.MultiLivePickerWindow(Rooms.ToList())
+            {
+                Owner = System.Windows.Application.Current?.MainWindow,
+            };
+            fenetre.ShowDialog();
+        }
+
+        /// <summary>
+        /// v2.3 — pose un marqueur sur la capture en cours. Le clip sera
+        /// exporté à la finalisation (les marqueurs survivent à une
+        /// reconnexion, car ils sont rattachés à la tentative).
+        /// </summary>
+        [RelayCommand]
+        private void Marquer(RoomCardViewModel? carte)
+        {
+            if (carte is null) return;
+            if (!App.Premium.IsLicensed)
+            {
+                carte.Info = Localization.Get("clip.premiumOnly");
+                return;
+            }
+            if (!_enregistrement.AjouterMarqueur(carte.Url)) return;
+
+            carte.Info = Localization.Format("marker.count", _enregistrement.NombreMarqueurs(carte.Url));
+        }
+
+        /// <summary>
+        /// v2.3 — garde les 60 dernières secondes de la capture en cours.
+        /// Bloquant côté ffmpeg : exécuté hors du fil d'interface.
+        /// </summary>
+        [RelayCommand]
+        private async Task Clip60(RoomCardViewModel? carte)
+        {
+            if (carte is null) return;
+            if (!App.Premium.IsLicensed)
+            {
+                carte.Info = Localization.Get("clip.premiumOnly");
+                return;
+            }
+
+            var url = carte.Url;
+            carte.Info = Localization.Get("clip.saving");
+
+            var ok = await Task.Run(() => _enregistrement.TryEnregistrerClipRecent(url, 60, out _))
+                               .ConfigureAwait(true);
+            if (Trouver(url) is not { } encore) return;
+
+            encore.Info = Localization.Get(ok ? "clip.saved" : "clip.failed");
+            if (ok) Logger.Log($"Rétro-clip de 60 s enregistré pour {url}.");
         }
 
         /// <summary>

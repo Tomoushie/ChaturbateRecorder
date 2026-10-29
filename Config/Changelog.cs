@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ChaturbateRecorderApp.Config
@@ -354,6 +354,13 @@ namespace ChaturbateRecorderApp.Config
                 "Le panneau Diagnostic ne signale plus à tort ffmpeg comme modifié. Il comparait le fichier à une empreinte figée dans l'application, alors que l'installateur télécharge toujours la dernière version publiée : la référence est désormais l'empreinte vérifiée au moment de l'installation.",
                 "Le panneau Diagnostic ne dit plus « api.github.com : injoignable » sur une machine parfaitement connectée. La vérification des mises à jour, elle, n'était pas affectée.",
             }),
+            ("2.3.0", new[]
+            {
+                "Stream Recorder Pro 2.3.0 : Picture-in-Picture compacte et toujours au-dessus, grille multi-live de 2 à 4 directs (avec un avertissement de charge CPU au survol du « i »), rétro-clip des 60 dernières secondes, et marqueurs exportés automatiquement en clips à la fin de l'enregistrement.",
+                "L'aperçu des salons réservés à un compte connecté fonctionne désormais : les cookies et le proxy configurés sont transmis à yt-dlp, comme pour l'enregistrement.",
+                "La grille multi-live, les clips et le PiP sont réservés à Stream Recorder Pro. La galerie de l'historique, le tri et le filtre restent gratuits : seule l'empreinte SHA-256 est premium.",
+                "Le composant premium 2.3.0 est livré avec l'application ; les licences existantes restent valables sans réémission.",
+            }),
         };
 
         /// <summary>
@@ -585,6 +592,13 @@ namespace ChaturbateRecorderApp.Config
             {
                 "The Diagnostics panel no longer reports ffmpeg as altered when it is not. It compared the file against a fingerprint frozen into the application, while the installer always downloads the latest published build: the reference is now the fingerprint verified at install time.",
                 "The Diagnostics panel no longer says \"api.github.com: unreachable\" on a perfectly connected machine. Update checking itself was never affected.",
+            },
+            ["2.3.0"] = new[]
+            {
+                "Stream Recorder Pro 2.3.0: compact always-on-top Picture-in-Picture, a multi-live grid of 2 to 4 streams (with a CPU-load warning when hovering the \"i\"), a 60-second retro clip, and markers exported as clips automatically when the recording ends.",
+                "Preview now works on rooms that require a logged-in account: the configured cookies and proxy are passed to yt-dlp, exactly as for recording.",
+                "The multi-live grid, clips and PiP require Stream Recorder Pro. The history gallery, sorting and filtering remain free: only the SHA-256 fingerprint is premium.",
+                "The 2.3.0 premium component ships with the application; existing licences keep working with no reissue.",
             },
         };
 

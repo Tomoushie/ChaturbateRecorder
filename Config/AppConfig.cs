@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace ChaturbateRecorderApp.Config
@@ -46,6 +46,14 @@ namespace ChaturbateRecorderApp.Config
         /// </summary>
         public static string PreviewDir => Path.Combine(
             Path.GetDirectoryName(LogDir) ?? AppDir, "previews");
+
+        /// <summary>
+        /// v2.3 — dossier des clips (rétro-clip et clips de marqueurs). Sous le
+        /// dossier de capture : ils sont produits À PARTIR des enregistrements,
+        /// l'utilisateur les attend au même endroit. Un sous-dossier les tient
+        /// hors de l'historique, qui ne liste que les vidéos complètes.
+        /// </summary>
+        public static string ClipsDir => Path.Combine(CaptureDir, "Clips");
 
         /// <summary>
         /// Dossier de capture par defaut : "Vidéos" de l'utilisateur. Repli sur

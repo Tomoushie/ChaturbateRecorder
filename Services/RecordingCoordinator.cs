@@ -39,6 +39,50 @@ namespace ChaturbateRecorderApp.Services
             return _enCours.ContainsKey(url);
         }
 
+        /// <summary>
+        /// v2.3 — pose un marqueur à l'instant courant de CETTE tentative.
+        /// Le temps est relatif au début de la tentative (pas du job) : c'est
+        /// ce fichier-là qui sera découpé.
+        /// </summary>
+        public bool AjouterMarqueur(string url)
+        {
+            if (!_enCours.TryGetValue(url, out var job) || job.AttemptStartedAtUtc is not { } debut)
+                return false;
+
+            var ecoule = (DateTime.UtcNow - debut).TotalSeconds;
+            if (ecoule < 0) return false;
+
+            job.Markers.Add(ecoule);
+            Logger.Log($"Marqueur {job.Markers.Count} posé sur {url} à {ecoule:0.0}s.");
+            return true;
+        }
+
+        public int NombreMarqueurs(string url) =>
+            _enCours.TryGetValue(url, out var job) ? job.Markers.Count : 0;
+
+        /// <summary>
+        /// v2.3 — enregistre les N dernières secondes de la capture en cours.
+        /// Bloquant (ffmpeg) : à appeler depuis un fil de fond. Faux si le
+        /// `.part` est introuvable ou si le conteneur refuse le seek — le
+        /// rétro-clip est un best effort, les marqueurs sont la voie fiable.
+        /// </summary>
+        public bool TryEnregistrerClipRecent(string url, int secondes, out string? destinationPath)
+        {
+            destinationPath = null;
+            if (!_enCours.TryGetValue(url, out var job) || job.OutputBaseName is null) return false;
+
+            var final = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.{job.ContainerExt}");
+            var part = final + ".part";
+            var source = File.Exists(part) ? part : (File.Exists(final) ? final : null);
+            if (source is null) return false;
+
+            Directory.CreateDirectory(AppConfig.ClipsDir);
+            destinationPath = Path.Combine(AppConfig.ClipsDir,
+                $"{job.OutputBaseName}_clip{secondes}s_{DateTime.Now:HH-mm-ss}.mp4");
+
+            return App.Premium.TrySaveReplayClip(source, destinationPath, secondes);
+        }
+
         /// <summary>Reconnexion programmée en attente, par URL.</summary>
         private readonly Dictionary<string, DispatcherTimer> _reconnexions = new(StringComparer.OrdinalIgnoreCase);
 
@@ -134,6 +178,10 @@ namespace ChaturbateRecorderApp.Services
         {
             var horodatage = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             job.OutputBaseName = $"{job.RoomName}-{horodatage}";
+            // Nouvelle tentative = nouveau fichier = nouveaux marqueurs. Les
+            // précédents ont été remis à la finalisation (voir SurEtat).
+            job.AttemptStartedAtUtc = DateTime.UtcNow;
+            job.Markers.Clear();
             var journal = Path.Combine(AppConfig.LogDir, $"{job.OutputBaseName}.log");
             var sortie = Path.Combine(job.CaptureDir, $"{job.OutputBaseName}.%(ext)s");
             var (format, conteneur) = _parametres.TryGetValue(url, out var p) ? p : (null, "mp4");
@@ -174,7 +222,14 @@ namespace ChaturbateRecorderApp.Services
                 // Sans attendre : le renommage reessaie pendant trois secondes
                 // le temps que Windows relache le handle du processus tue, et
                 // l'interface n'a pas a se figer pour cela.
-                _ = CaptureFinalizer.FinaliserAsync(job.CaptureDir, job.OutputBaseName, job.ContainerExt);
+                // v2.3 : les marqueurs de CETTE tentative sont exportés sur le
+                // fichier finalisé, avant le nommage intelligent qui change le
+                // chemin. Un instantané est passé : la liste peut être vidée
+                // tout de suite pour la tentative suivante.
+                var marqueurs = job.Markers.Count > 0 ? job.Markers.ToArray() : null;
+                job.Markers.Clear();
+                _ = CaptureFinalizer.FinaliserAsync(job.CaptureDir, job.OutputBaseName,
+                                                    job.ContainerExt, marqueurs);
 
                 // **SEUL `Failed` déclenche une reconnexion.** `Stopped` est un
                 // arrêt DEMANDÉ et `Completed` une fin normale : rejouer l'un

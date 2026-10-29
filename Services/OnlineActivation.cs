@@ -75,7 +75,7 @@ namespace ChaturbateRecorderApp.Services
             {
                 Content = new StringContent(corps, Encoding.UTF8, "application/json"),
             };
-            requete.Headers.UserAgent.ParseAdd("ChaturbateRecorder/2.2.0");
+            requete.Headers.UserAgent.ParseAdd("ChaturbateRecorder/2.3.0");
 
             HttpResponseMessage reponse;
             try

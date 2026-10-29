@@ -4,7 +4,8 @@ Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
-**État au 2026-10-29 — v2.2.0 branchée, build CI et scan sécurité VERTS** :
+**État au 2026-10-29 — v2.3.0 « Direct+ » en préparation, build et tests
+VERTS** :
 le merge `041ee82` du 26-10 avait fusionné une histoire WinForms SANS ancêtre
 commun en gardant `--ours` ; `main` contenait alors l'UNION des deux dépôts et
 le workflow compilait le csproj WinForms (10 erreurs « Data/Media/Controls
@@ -13,9 +14,22 @@ merge `ab18283` (arbre WPF de `f6831de` + `docs/activer.html`, la seule
 modification que le merge voulait garder), puis `dab9531` (le test supporters
 exigeait un dépôt WinForms voisin, impossible sur un runner). Vérifié depuis :
 Build + Test et Security Scan verts sur `dab9531`, et sur les PR dependabot
-rebasées. **478 tests** passent en CI. Le WinForms reste sur
+rebasées. **478 tests** passaient en CI. Le WinForms reste sur
 `origin/winforms-legacy`, avancé à `8bfcbf9` pour ne rien perdre du travail
 local de l'ancienne version.
+
+**v2.3.0 — PREMIUM « DIRECT+ » (2026-10-29)** : PiP compacte et toujours
+au-dessus, grille multi-live 2 à 4 avec avertissement CPU au survol du « i »,
+rétro-clip des 60 dernières secondes, marqueurs exportés automatiquement en
+clips à la finalisation, et aperçu des salons réservés avec cookies/proxy.
+Le contrat premium gagne cinq membres **OPTIONNELS** : `PremiumBinding.Bind`
+ne refuse plus tout le composant si l'un manque, donc une application 2.3.0
+reste pleinement fonctionnelle avec une ancienne DLL (seules les nouvelles
+fonctions sont indisponibles). **482 tests WPF + 47 tests PRO** verts, dont un
+test qui charge la VRAIE `Premium/StreamRecorderPro.dll` et vérifie ses
+signatures. App et module alignés en 2.3.0 ; `docs/latest.json` reste à 2.1.1
+tant que la release n'est pas publiée (le bump de `docs/latest.json` se fait
+au tag, pas avant).
 
 **État au 2026-09-21 — v2.0.1** : **`origin/main` EST ce dépôt depuis le
 25-08** (le WinForms est archivé sur `origin/winforms-legacy`). Pousser par

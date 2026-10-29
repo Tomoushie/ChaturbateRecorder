@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -41,6 +41,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChaturbateRecorderApp.Wpf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- v2.3 — la VRAIE DLL livrée, pour vérifier que le contrat étendu est
+         réellement honoré (les autres tests utilisent des types factices : ils
+         prouvent le liage, pas que la DLL expédiée a les bonnes signatures). -->
+    <None Include="..\Premium\StreamRecorderPro.dll" Link="StreamRecorderPro.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

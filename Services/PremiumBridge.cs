@@ -46,9 +46,23 @@ namespace ChaturbateRecorderApp.Services
         private readonly MethodInfo _capturePreview;
         private readonly MethodInfo _liveWindow;
 
+        // Membres OPTIONNELS (v2.3). Une application à jour doit continuer de
+        // fonctionner avec une DLL plus ancienne : si l'un de ces membres
+        // manque, le composant reste utilisable pour le reste, et seule la
+        // fonctionnalité correspondante est indisponible. Les rendre OBLIGATOIRES
+        // casserait le premium de tous les acheteurs qui n'ont pas encore la
+        // nouvelle DLL.
+        private readonly MethodInfo? _capturePreviewWithSession;
+        private readonly MethodInfo? _liveWindowEx;
+        private readonly MethodInfo? _multiLive;
+        private readonly MethodInfo? _saveReplayClip;
+        private readonly MethodInfo? _exportMarkerClips;
+
         private PremiumBinding(object instance, PropertyInfo version, PropertyInfo licensedTo,
                                PropertyInfo licenceProblem, PropertyInfo usageSummary,
-                               MethodInfo capturePreview, MethodInfo liveWindow)
+                               MethodInfo capturePreview, MethodInfo liveWindow,
+                               MethodInfo? capturePreviewWithSession, MethodInfo? liveWindowEx,
+                               MethodInfo? multiLive, MethodInfo? saveReplayClip, MethodInfo? exportMarkerClips)
         {
             _instance = instance;
             _version = version;
@@ -57,6 +71,11 @@ namespace ChaturbateRecorderApp.Services
             _usageSummary = usageSummary;
             _capturePreview = capturePreview;
             _liveWindow = liveWindow;
+            _capturePreviewWithSession = capturePreviewWithSession;
+            _liveWindowEx = liveWindowEx;
+            _multiLive = multiLive;
+            _saveReplayClip = saveReplayClip;
+            _exportMarkerClips = exportMarkerClips;
         }
 
         /// <summary>
@@ -107,6 +126,48 @@ namespace ChaturbateRecorderApp.Services
                 return null;
             }
 
+            // OPTIONNELS : absents d'une DLL antérieure à la v2.3. Une
+            // signature incorrecte est traitée comme absente — une nouvelle
+            // version du composant doit pouvoir évoluer sans rendre
+            // l'application inutilisable.
+            static MethodInfo? Optionnelle(Type t, string nom, Type[] arguments, Type retour)
+            {
+                var m = t.GetMethod(nom, BindingFlags.Public | BindingFlags.Instance, null, arguments, null);
+                return m != null && m.ReturnType == retour ? m : null;
+            }
+
+            var captureSession = Optionnelle(type, "TryCapturePreviewWithSession",
+                new[]
+                {
+                    typeof(string), typeof(string), typeof(string), typeof(string),
+                    typeof(string), typeof(string), typeof(int)
+                },
+                typeof(bool));
+
+            var liveEx = Optionnelle(type, "TryShowLiveWindowEx",
+                new[]
+                {
+                    typeof(string), typeof(string), typeof(string), typeof(string),
+                    typeof(bool), typeof(bool), typeof(int)
+                },
+                typeof(bool));
+
+            var multiLive = Optionnelle(type, "TryShowMultiLive",
+                new[]
+                {
+                    typeof(string), typeof(string), typeof(string), typeof(string),
+                    typeof(string), typeof(bool), typeof(int)
+                },
+                typeof(bool));
+
+            var replay = Optionnelle(type, "TrySaveReplayClip",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(int) },
+                typeof(bool));
+
+            var markers = Optionnelle(type, "ExportMarkerClips",
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(int) },
+                typeof(string));
+
             if (type.GetConstructor(Type.EmptyTypes) == null)
             {
                 probleme = "constructeur sans argument absent";
@@ -128,7 +189,9 @@ namespace ChaturbateRecorderApp.Services
 
             if (instance == null) { probleme = "construction impossible : instance nulle"; return null; }
 
-            return new PremiumBinding(instance, version, licensedTo, licenceProblem, usageSummary, capture, liveWindow);
+            return new PremiumBinding(instance, version, licensedTo, licenceProblem, usageSummary,
+                                      capture, liveWindow, captureSession, liveEx,
+                                      multiLive, replay, markers);
         }
 
         internal string Version => Lire(_version);
@@ -170,6 +233,109 @@ namespace ChaturbateRecorderApp.Services
             {
                 Logger.Log($"Premium : vidéo en direct impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// v2.3 — null si la DLL chargée est antérieure à la v2.3 : l'appelant
+        /// obtient alors simplement « non disponible », sans perdre le reste du
+        /// premium.
+        /// </summary>
+        internal bool TryCapturePreviewWithSession(string ytDlpPath, string ffmpegPath, string roomUrl,
+                                                   string destinationJpg, string cookiesPath, string proxyUrl,
+                                                   int timeoutSeconds)
+        {
+            // COMPATIBILITÉ : une DLL antérieure à la v2.3 ne connaît pas la
+            // session. On retombe alors sur l'ancien aperçu SANS cookies plutôt
+            // que de priver l'acheteur de TOUTES ses vignettes.
+            if (_capturePreviewWithSession == null)
+            {
+                try
+                {
+                    return _capturePreview.Invoke(_instance,
+                        new object[] { ytDlpPath, ffmpegPath, roomUrl, destinationJpg, timeoutSeconds }) is true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Premium : aperçu (repli DLL antérieure) impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                    return false;
+                }
+            }
+
+            try
+            {
+                return _capturePreviewWithSession.Invoke(_instance,
+                    new object[] { ytDlpPath, ffmpegPath, roomUrl, destinationJpg,
+                                   cookiesPath ?? "", proxyUrl ?? "", timeoutSeconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : aperçu avec session impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
+
+        internal bool TryShowLiveWindowEx(string ytDlpPath, string ffmpegPath, string roomUrl, string titre,
+                                          bool compact, bool topmost, int timeoutSeconds)
+        {
+            if (_liveWindowEx == null) return false;
+            try
+            {
+                return _liveWindowEx.Invoke(_instance,
+                    new object[] { ytDlpPath, ffmpegPath, roomUrl, titre, compact, topmost, timeoutSeconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : direct PiP impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
+
+        internal bool TryShowMultiLive(string ytDlpPath, string ffmpegPath, string jsonRooms,
+                                       string cookiesPath, string proxyUrl, bool topmost, int timeoutSeconds)
+        {
+            if (_multiLive == null) return false;
+            try
+            {
+                return _multiLive.Invoke(_instance,
+                    new object[] { ytDlpPath, ffmpegPath, jsonRooms, cookiesPath, proxyUrl, topmost, timeoutSeconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : multi-live impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
+
+        internal bool TrySaveReplayClip(string ffmpegPath, string captureFilePath, string destinationPath, int seconds)
+        {
+            if (_saveReplayClip == null) return false;
+            try
+            {
+                return _saveReplayClip.Invoke(_instance,
+                    new object[] { ffmpegPath, captureFilePath, destinationPath, seconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : rétro-clip impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
+
+        internal string ExportMarkerClips(string ffmpegPath, string captureFilePath, string markersJson,
+                                          string outputDirectory, int paddingSeconds)
+        {
+            if (_exportMarkerClips == null) return "";
+            try
+            {
+                return _exportMarkerClips.Invoke(_instance,
+                    new object[] { ffmpegPath, captureFilePath, markersJson, outputDirectory, paddingSeconds })
+                    as string ?? "";
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : clips de marqueurs impossibles — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return "";
             }
         }
     }
@@ -383,6 +549,61 @@ namespace ChaturbateRecorderApp.Services
             if (_module == null || !IsLicensed) return false;
             return _module.TryShowLiveWindow(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
                 roomUrl, titre, timeoutSeconds);
+        }
+
+        /// <summary>
+        /// v2.3 — aperçu résolu avec la session (cookies/proxy) : indispensable
+        /// pour les salons réservés à un compte connecté. Faux si le composant
+        /// est absent, sa licence refusée, ou si la DLL ne connaît pas encore
+        /// ce membre (acheteur qui n'a pas mis à jour le module).
+        /// </summary>
+        public bool TryCapturePreviewWithSession(string roomUrl, string destinationJpg,
+                                                 string? cookiesPath, string? proxyUrl,
+                                                 int timeoutSeconds = 20)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TryCapturePreviewWithSession(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
+                roomUrl, destinationJpg, cookiesPath ?? "", proxyUrl ?? "", timeoutSeconds);
+        }
+
+        /// <summary>
+        /// v2.3 — direct en fenêtre normale ou en Picture-in-Picture compacte.
+        /// </summary>
+        public bool TryShowLiveWindowEx(string roomUrl, string titre, bool compact, bool topmost,
+                                        int timeoutSeconds = 20)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TryShowLiveWindowEx(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
+                roomUrl, titre, compact, topmost, timeoutSeconds);
+        }
+
+        /// <summary>v2.3 — grille multi-live (1 à 4 directs).</summary>
+        public bool TryShowMultiLive(string jsonRooms, string? cookiesPath, string? proxyUrl,
+                                     bool topmost, int timeoutSeconds = 20)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TryShowMultiLive(AppConfig.YtDlpPath, AppConfig.FFmpegPath, jsonRooms,
+                cookiesPath ?? "", proxyUrl ?? "", topmost, timeoutSeconds);
+        }
+
+        /// <summary>
+        /// v2.3 — « garder les N dernières secondes » de la capture en cours.
+        /// Faux si la DLL est antérieure à la v2.3 ou si le `.part` refuse le
+        /// seek (MP4 non finalisé).
+        /// </summary>
+        public bool TrySaveReplayClip(string captureFilePath, string destinationPath, int seconds)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TrySaveReplayClip(AppConfig.FFmpegPath, captureFilePath, destinationPath, seconds);
+        }
+
+        /// <summary>v2.3 — exporte les clips des marqueurs sur le fichier finalisé.</summary>
+        public string ExportMarkerClips(string captureFilePath, string markersJson, string outputDirectory,
+                                        int paddingSeconds = 15)
+        {
+            if (_module == null || !IsLicensed) return "";
+            return _module.ExportMarkerClips(AppConfig.FFmpegPath, captureFilePath, markersJson,
+                                             outputDirectory, paddingSeconds);
         }
 
         private static string Empreinte(string chemin)

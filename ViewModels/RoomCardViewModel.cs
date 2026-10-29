@@ -39,6 +39,15 @@ namespace ChaturbateRecorderApp.ViewModels
         [ObservableProperty]
         private string _stateLabel = "";
 
+        /// <summary>
+        /// v2.3 — retour court affiché pendant l'enregistrement : nombre de
+        /// marqueurs posés, ou résultat du dernier clip. Remis à zéro quand la
+        /// capture se termine, pour ne pas laisser « Clip enregistré » sur une
+        /// carte au repos.
+        /// </summary>
+        [ObservableProperty]
+        private string _info = "";
+
         [ObservableProperty]
         private int _progress;
 

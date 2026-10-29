@@ -31,6 +31,39 @@ namespace ChaturbateRecorderApp.Tests
             public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => true;
         }
 
+        /// <summary>Composant v2.3 : le contrat historique PLUS les membres
+        /// optionnels. C'est ce que la nouvelle DLL expose.</summary>
+        private sealed class ConformeV23
+        {
+            public string Version => "2.3.0";
+            public string LicensedTo => "Jane Doe";
+            public string LicenceProblem => "";
+            public string UsageSummary => "";
+            public bool TryCapturePreview(string a, string b, string c, string d, int e) => true;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => true;
+            public bool TryCapturePreviewWithSession(string a, string b, string c, string d,
+                                                     string e, string f, int g) => true;
+            public bool TryShowLiveWindowEx(string a, string b, string c, string d,
+                                            bool e, bool f, int g) => true;
+        }
+
+        /// <summary>Un membre optionnel dont la signature a changé doit être
+        /// ignoré, PAS refuser tout le composant : une DLL d'une autre version
+        /// ne doit jamais rendre le premium inerte.</summary>
+        private sealed class OptionnelleMauvaiseSignature
+        {
+            public string Version => "2.3.0";
+            public string LicensedTo => "";
+            public string LicenceProblem => "";
+            public string UsageSummary => "";
+            public bool TryCapturePreview(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindow(string a, string b, string c, string d, int e) => false;
+            public bool TryShowLiveWindowEx(string a, string b, string c, string d,
+                                            bool e, bool f, int g) => true; // correcte
+            public string TryCapturePreviewWithSession(string a, string b, string c, string d,
+                                                       string e, string f, int g) => ""; // mauvais type
+        }
+
         private sealed class SansVersion
         {
             public string LicensedTo => "";
@@ -122,6 +155,98 @@ namespace ChaturbateRecorderApp.Tests
             Assert.True(lie.TryCapturePreview("yt", "ff", "url", "out.jpg", 20));
             Assert.True(lie.TryShowLiveWindow("yt", "ff", "url", "Salon", 20));
             Assert.Equal("Vignette : 3", lie.UsageSummary);
+        }
+
+        /// <summary>
+        /// Le test qui protège le CONTRAT RÉEL : la DLL effectivement livrée
+        /// doit exposer les signatures exactes de la v2.3. Les fixtures
+        /// précédentes prouvent le liage, pas que la DLL expédiée est à jour.
+        /// </summary>
+        [Fact]
+        public void TheShippedV23DllExposesTheExtendedContract()
+        {
+            var chemin = System.IO.Path.Combine(System.AppContext.BaseDirectory, "StreamRecorderPro.dll");
+            Assert.True(System.IO.File.Exists(chemin), $"DLL premium absente du dossier de test : {chemin}");
+
+            var assembly = System.Reflection.Assembly.LoadFrom(chemin);
+            var type = assembly.GetType("StreamRecorderPro.PremiumModule", throwOnError: false);
+            Assert.NotNull(type);
+
+            Assert.NotNull(type!.GetMethod("TryShowLiveWindowEx", new[]
+            {
+                typeof(string), typeof(string), typeof(string), typeof(string),
+                typeof(bool), typeof(bool), typeof(int)
+            }));
+            Assert.NotNull(type.GetMethod("TryCapturePreviewWithSession", new[]
+            {
+                typeof(string), typeof(string), typeof(string), typeof(string),
+                typeof(string), typeof(string), typeof(int)
+            }));
+            Assert.NotNull(type.GetMethod("TryShowMultiLive", new[]
+            {
+                typeof(string), typeof(string), typeof(string), typeof(string),
+                typeof(string), typeof(bool), typeof(int)
+            }));
+            Assert.NotNull(type.GetMethod("TrySaveReplayClip", new[]
+            {
+                typeof(string), typeof(string), typeof(string), typeof(int)
+            }));
+            Assert.NotNull(type.GetMethod("ExportMarkerClips", new[]
+            {
+                typeof(string), typeof(string), typeof(string), typeof(string), typeof(int)
+            }));
+
+            var lie = PremiumBinding.Bind(type, out var probleme);
+            Assert.NotNull(lie);
+            Assert.Equal("", probleme);
+        }
+
+        /// <summary>
+        /// La DLL v2.3 expose les nouveaux membres : ils doivent être résolus.
+        /// </summary>
+        [Fact]
+        public void AV23ModuleExposesOptionalMembers()
+        {
+            var lie = PremiumBinding.Bind(typeof(ConformeV23), out var probleme);
+
+            Assert.NotNull(lie);
+            Assert.Equal("", probleme);
+            Assert.True(lie!.TryShowLiveWindowEx("yt", "ff", "url", "Salon", true, true, 20));
+            Assert.True(lie.TryCapturePreviewWithSession("yt", "ff", "url", "out.jpg", "cookies.txt", "socks5://x", 20));
+        }
+
+        /// <summary>
+        /// LE CAS COMMERCIAL QUI COMPTE : une application mise à jour avec
+        /// l'ANCIENNE DLL de l'acheteur. Le composant doit rester utilisable
+        /// (vignette, direct) et seules les nouvelles fonctions sont
+        /// indisponibles — jamais tout le premium.
+        /// </summary>
+        [Fact]
+        public void AnOlderModuleStillBindsAndOptionalMembersStayUnavailable()
+        {
+            var lie = PremiumBinding.Bind(typeof(Conforme), out var probleme);
+
+            Assert.NotNull(lie);
+            Assert.Equal("", probleme);
+            Assert.True(lie!.TryCapturePreview("yt", "ff", "url", "out.jpg", 20));
+            Assert.False(lie.TryShowLiveWindowEx("yt", "ff", "url", "Salon", true, true, 20));
+            // Repli : l'ancien aperçu reste disponible, sans cookies.
+            Assert.True(lie.TryCapturePreviewWithSession("yt", "ff", "url", "out.jpg", "", "", 20));
+        }
+
+        /// <summary>
+        /// Un membre optionnel mal typé est ignoré (traité comme absent) au lieu
+        /// de faire échouer le liage entier.
+        /// </summary>
+        [Fact]
+        public void AnOptionalMemberWithTheWrongSignatureIsIgnored()
+        {
+            var lie = PremiumBinding.Bind(typeof(OptionnelleMauvaiseSignature), out var probleme);
+
+            Assert.NotNull(lie);
+            Assert.Equal("", probleme);
+            Assert.True(lie!.TryShowLiveWindowEx("yt", "ff", "url", "Salon", true, true, 20));
+            Assert.False(lie.TryCapturePreviewWithSession("yt", "ff", "url", "out.jpg", "", "", 20));
         }
 
         // --- Chaque refus, pour la bonne raison ---
