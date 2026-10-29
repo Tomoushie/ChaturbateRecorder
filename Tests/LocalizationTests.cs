@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,6 +14,7 @@ namespace ChaturbateRecorderApp.Tests
     /// une FormatException dans une seule des deux, cas qu'un test manuel en
     /// français ne révèle jamais.
     /// </summary>
+    [Collection("EtatDeProcessus")]
     public class LocalizationTests
     {
         private static readonly Regex PlaceholderRegex = new(@"\{(\d+)\}", RegexOptions.Compiled);
@@ -109,10 +110,15 @@ namespace ChaturbateRecorderApp.Tests
         [Fact]
         public void EveryTutorialStepKeyExists()
         {
-            Assert.NotEmpty(TutorialForm.Steps);
+            // Le guide WPF compose ses cles depuis TutorialViewModel.Cles, la
+            // ou le WinForms tenait un tableau de paires. L'invariant teste est
+            // le meme : chaque etape doit avoir un titre ET un corps traduits.
+            Assert.NotEmpty(ViewModels.TutorialViewModel.Cles);
 
-            foreach (var (titleKey, bodyKey) in TutorialForm.Steps)
+            foreach (var cle in ViewModels.TutorialViewModel.Cles)
             {
+                var titleKey = "tutorial." + cle + ".title";
+                var bodyKey = "tutorial." + cle + ".body";
                 Assert.True(Localization.AllStrings.ContainsKey(titleKey), $"Clé de titre inconnue : '{titleKey}'.");
                 Assert.True(Localization.AllStrings.ContainsKey(bodyKey), $"Clé de corps inconnue : '{bodyKey}'.");
             }

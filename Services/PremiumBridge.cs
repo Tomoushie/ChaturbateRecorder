@@ -28,20 +28,35 @@ namespace ChaturbateRecorderApp.Services
         internal const string AssemblyFileName = "StreamRecorderPro.dll";
         internal const string TypeName = "StreamRecorderPro.PremiumModule";
 
+        /// <summary>
+        /// Même nom que <c>StreamRecorderPro.Licence.FileName</c>. Dupliqué
+        /// volontairement : l'application libre ne référence PAS l'assembly
+        /// payante (voir le commentaire de classe), et cette constante ne sert
+        /// qu'à répondre à « y a-t-il un fichier de licence à côté de
+        /// l'exécutable ? » pour l'affichage. Les deux doivent rester
+        /// synchronisés à la main, comme <c>machine-id.txt</c>.
+        /// </summary>
+        internal const string LicenceFileName = "licence.key";
+
         private readonly object _instance;
         private readonly PropertyInfo _version;
         private readonly PropertyInfo _licensedTo;
         private readonly PropertyInfo _licenceProblem;
+        private readonly PropertyInfo _usageSummary;
         private readonly MethodInfo _capturePreview;
+        private readonly MethodInfo _liveWindow;
 
         private PremiumBinding(object instance, PropertyInfo version, PropertyInfo licensedTo,
-                               PropertyInfo licenceProblem, MethodInfo capturePreview)
+                               PropertyInfo licenceProblem, PropertyInfo usageSummary,
+                               MethodInfo capturePreview, MethodInfo liveWindow)
         {
             _instance = instance;
             _version = version;
             _licensedTo = licensedTo;
             _licenceProblem = licenceProblem;
+            _usageSummary = usageSummary;
             _capturePreview = capturePreview;
+            _liveWindow = liveWindow;
         }
 
         /// <summary>
@@ -69,6 +84,9 @@ namespace ChaturbateRecorderApp.Services
             var licenceProblem = Chaine(type, "LicenceProblem");
             if (licenceProblem == null) { probleme = "propriété string LicenceProblem absente"; return null; }
 
+            var usageSummary = Chaine(type, "UsageSummary");
+            if (usageSummary == null) { probleme = "propriété string UsageSummary absente"; return null; }
+
             var capture = type.GetMethod("TryCapturePreview", BindingFlags.Public | BindingFlags.Instance,
                 null,
                 new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(int) },
@@ -76,6 +94,16 @@ namespace ChaturbateRecorderApp.Services
             if (capture == null || capture.ReturnType != typeof(bool))
             {
                 probleme = "méthode bool TryCapturePreview(string, string, string, string, int) absente";
+                return null;
+            }
+
+            var liveWindow = type.GetMethod("TryShowLiveWindow", BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(int) },
+                null);
+            if (liveWindow == null || liveWindow.ReturnType != typeof(bool))
+            {
+                probleme = "méthode bool TryShowLiveWindow(string, string, string, string, int) absente";
                 return null;
             }
 
@@ -100,12 +128,13 @@ namespace ChaturbateRecorderApp.Services
 
             if (instance == null) { probleme = "construction impossible : instance nulle"; return null; }
 
-            return new PremiumBinding(instance, version, licensedTo, licenceProblem, capture);
+            return new PremiumBinding(instance, version, licensedTo, licenceProblem, usageSummary, capture, liveWindow);
         }
 
         internal string Version => Lire(_version);
         internal string LicensedTo => Lire(_licensedTo);
         internal string LicenceProblem => Lire(_licenceProblem);
+        internal string UsageSummary => Lire(_usageSummary);
 
         private string Lire(PropertyInfo p)
         {
@@ -129,6 +158,20 @@ namespace ChaturbateRecorderApp.Services
                 return false;
             }
         }
+
+        internal bool TryShowLiveWindow(string ytDlpPath, string ffmpegPath, string roomUrl, string titre, int timeoutSeconds)
+        {
+            try
+            {
+                return _liveWindow.Invoke(_instance,
+                    new object[] { ytDlpPath, ffmpegPath, roomUrl, titre, timeoutSeconds }) is true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Premium : vidéo en direct impossible — {(ex.InnerException ?? ex).Message}", LogLevel.WARN);
+                return false;
+            }
+        }
     }
 
     /// <summary>
@@ -149,8 +192,46 @@ namespace ChaturbateRecorderApp.Services
     {
         private PremiumBinding? _module;
 
+        /// <summary>
+        /// Levé après un <see cref="Reload"/> qui a changé l'état de licence
+        /// (acceptée, refusée, ou nom de l'acheteur différent).
+        ///
+        /// **Pourquoi un événement** : installer une licence depuis la fenêtre
+        /// Premium ne doit pas demander de redémarrer l'application. La fenêtre
+        /// principale s'y abonne pour retirer le bouton « Passer à Premium » et
+        /// sa bannière ; sans ça, l'acheteur verrait encore « acheter » alors
+        /// que le produit est déjà actif.
+        /// </summary>
+        public event Action? LicenceChanged;
+
         /// <summary>Le composant est présent ET honore le contrat.</summary>
         public bool IsLoaded => _module != null;
+
+        /// <summary>
+        /// Un fichier <c>licence.key</c> existe-t-il à côté de l'exécutable ?
+        ///
+        /// Sert UNIQUEMENT à distinguer « jamais activé » (cas normal d'un
+        /// utilisateur de la version gratuite : on ne l'importune pas) de
+        /// « licence présente mais refusée » (quelqu'un a payé et croit être
+        /// activé : il faut le lui dire). Ne prouve rien sur la validité.
+        /// </summary>
+        public bool LicenceFilePresent =>
+            File.Exists(Path.Combine(AppConfig.AppDir, PremiumBinding.LicenceFileName));
+
+        /// <summary>
+        /// Vrai quand le refus vient d'une licence AUTHENTIQUE liée à une autre
+        /// installation — le cas d'un changement d'ordinateur, qui se règle par
+        /// un transfert gratuit et non par un nouvel achat.
+        ///
+        /// **Comparaison sur le texte, faute de mieux** : l'application libre
+        /// ne référence pas l'assembly payante, donc elle ne peut pas comparer
+        /// à <c>Licence.MessageDesaccordMachine</c>. La chaîne « autre
+        /// installation » est stable depuis la 2.2.0 ; si elle change côté
+        /// premium, ce test silencieux retombera simplement sur le message
+        /// générique — jamais sur un faux positif alarmant.
+        /// </summary>
+        public bool IsMachineMismatch =>
+            LicenceProblem.Contains("autre installation", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Nom de l'acheteur, tel qu'il est SIGNÉ dans sa licence. Vide si le
@@ -173,6 +254,13 @@ namespace ChaturbateRecorderApp.Services
         public string Version => _module?.Version ?? "";
 
         /// <summary>
+        /// Compteurs d'usage locaux par fonctionnalité, pour le panneau
+        /// Diagnostic. Vide si le composant est absent — pas de « 0 » pour
+        /// chaque fonctionnalité, qui laisserait croire à une mesure faite.
+        /// </summary>
+        public string UsageSummary => _module?.UsageSummary ?? "";
+
+        /// <summary>
         /// Cherche et charge le composant. Appelé une fois au démarrage.
         ///
         /// **L'empreinte SHA-256 est journalisée à chaque chargement.** Cette
@@ -183,19 +271,65 @@ namespace ChaturbateRecorderApp.Services
         /// dossier peut déjà remplacer l'exécutable — mais un journal permet de
         /// répondre à « qu'est-ce qui tournait sur cette machine ? ».
         /// </summary>
-        public void Load()
+        public void Load() => Charger(rechargement: false);
+
+        /// <summary>
+        /// Relit <c>licence.key</c> et reconstruit le composant, SANS redémarrer
+        /// l'application. Appelé après une installation de licence depuis la
+        /// fenêtre Premium.
+        ///
+        /// Reconstruire est nécessaire, pas paresseux : le composant vérifie sa
+        /// licence dans son constructeur (voir <c>PremiumModule</c>). Une simple
+        /// relecture de propriété ne verrait jamais le nouveau fichier.
+        ///
+        /// **L'événement n'est levé que si l'état a changé.** L'appelant de
+        /// l'installation teste <see cref="IsLicensed"/> de toute façon ; lever
+        /// pour rien ferait repeindre la fenêtre principale à chaque tentative
+        /// refusée.
+        /// </summary>
+        public void Reload()
+        {
+            var etaitLicencie = IsLicensed;
+            var nomAvant = LicensedTo;
+
+            Charger(rechargement: true);
+
+            if (etaitLicencie == IsLicensed &&
+                string.Equals(nomAvant, LicensedTo, StringComparison.Ordinal)) return;
+
+            Logger.Log(IsLicensed
+                ? $"Premium : licence installée à chaud, au nom de {LicensedTo}."
+                : $"Premium : licence rechargée mais refusée — {LicenceProblem}.", LogLevel.INFO);
+
+            LicenceChanged?.Invoke();
+        }
+
+        private void Charger(bool rechargement)
         {
             var chemin = Path.Combine(AppConfig.AppDir, PremiumBinding.AssemblyFileName);
-            if (!File.Exists(chemin)) return;
+            if (!File.Exists(chemin))
+            {
+                // Au démarrage, l'absence est le cas NORMAL : on ne touche à
+                // rien. En rechargement, c'est un composant qui a disparu
+                // pendant la session — l'état doit suivre le disque.
+                if (rechargement)
+                {
+                    _module = null;
+                    LicenceProblem = $"composant {PremiumBinding.AssemblyFileName} absent";
+                }
+                return;
+            }
 
             try
             {
-                Logger.Log($"Premium : composant trouvé, SHA-256 {Empreinte(chemin)}", LogLevel.INFO);
+                if (!rechargement)
+                    Logger.Log($"Premium : composant trouvé, SHA-256 {Empreinte(chemin)}", LogLevel.INFO);
 
                 var assembly = Assembly.LoadFrom(chemin);
                 var type = assembly.GetType(PremiumBinding.TypeName, throwOnError: false);
                 if (type == null)
                 {
+                    _module = null;
                     LicenceProblem = $"type {PremiumBinding.TypeName} introuvable";
                     Logger.Log($"Premium : {LicenceProblem}.", LogLevel.WARN);
                     return;
@@ -204,6 +338,7 @@ namespace ChaturbateRecorderApp.Services
                 var lie = PremiumBinding.Bind(type, out var probleme);
                 if (lie == null)
                 {
+                    _module = null;
                     LicenceProblem = probleme;
                     Logger.Log($"Premium : composant ignoré — {probleme}.", LogLevel.WARN);
                     return;
@@ -220,6 +355,7 @@ namespace ChaturbateRecorderApp.Services
             {
                 // Assembly incompatible, tronquée, compilée pour une autre
                 // architecture : l'application continue sans premium.
+                _module = null;
                 LicenceProblem = ex.Message;
                 Logger.Log($"Premium : chargement impossible ({chemin}) — {ex.Message}", LogLevel.WARN);
             }
@@ -235,6 +371,18 @@ namespace ChaturbateRecorderApp.Services
             if (_module == null || !IsLicensed) return false;
             return _module.TryCapturePreview(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
                 roomUrl, destinationJpg, timeoutSeconds);
+        }
+
+        /// <summary>
+        /// Ouvre une fenêtre de vidéo en direct pour ce salon. Faux si le
+        /// composant est absent, sa licence refusée, ou l'ouverture ratée —
+        /// l'appelant n'a rien d'autre à faire dans ce cas.
+        /// </summary>
+        public bool TryShowLiveWindow(string roomUrl, string titre, int timeoutSeconds = 20)
+        {
+            if (_module == null || !IsLicensed) return false;
+            return _module.TryShowLiveWindow(AppConfig.YtDlpPath, AppConfig.FFmpegPath,
+                roomUrl, titre, timeoutSeconds);
         }
 
         private static string Empreinte(string chemin)

@@ -318,7 +318,41 @@ namespace ChaturbateRecorderApp.Config
                 "Tes favoris et ta liste de surveillance sont repris automatiquement au premier lancement. Les anciens fichiers ne sont pas supprimés : revenir à une version antérieure reste possible.",
                 "Ajouter un salon à la liste ne le met plus sous surveillance : c'est l'interrupteur de sa carte qui l'active, comme avant.",
                 "Retirer un salon en cours d'enregistrement demande maintenant confirmation.",
-                "Ta liste de salons, tes réglages et ta surveillance sont désormais rangés avec les journaux, dans ton dossier de données personnel, au lieu du dossier de l'application. Ils survivent donc à une mise à jour et à un déplacement du logiciel. La reprise est automatique et les anciens fichiers ne sont pas supprimés.",
+            }),
+            ("1.37.0", new[]
+            {
+                "La vignette d'un salon en ligne s'affiche désormais sur sa carte pour qui a Stream Recorder Pro — cliquer dessus ouvre la vidéo en direct dans une fenêtre séparée.",
+                "Nommage intelligent (Stream Recorder Pro) : personnalise le nom des fichiers enregistrés selon un motif au choix (salon, date, heure, qualité détectée).",
+                "Planificateur (Stream Recorder Pro) : une fenêtre horaire quotidienne par salon restreint quand l'enregistrement automatique a le droit de démarrer.",
+                "Le panneau Diagnostic affiche l'usage local de ces fonctionnalités (jamais transmis).",
+            }),
+            ("1.38.0", new[]
+            {
+                "L'historique gagne un mode Galerie (bouton à côté de \"Liste\") : une grille de vignettes plutôt qu'une liste, avec tri par date, durée ou salon et un filtre par nom de salon.",
+                "Survoler une carte de la Galerie révèle sa taille de fichier et, pour qui a Stream Recorder Pro, une empreinte d'intégrité (SHA-256) calculée à la demande.",
+            }),
+            ("2.0.0", new[]
+            {
+                "L'application est entièrement reconstruite en WPF (elle tournait jusqu'ici sur WinForms). À fonctionnalités égales, données et réglages repris tels quels : rien à reconfigurer, rien à réinstaller à part l'application elle-même.",
+                "Nouveau bouton \"Passer à Premium\" pour qui n'a pas encore Stream Recorder Pro : présente les fonctionnalités payantes et propose deux façons de payer, itch.io ou virement bancaire (IBAN, QR code SEPA à scanner). Ni PayPal ni GitHub Sponsors pour cet achat, réservés au don libre.",
+                "Nouveau compteur d'images par seconde dans l'overlay vidéo en direct (Stream Recorder Pro), affichable ou masquable d'un clic.",
+                "La licence Stream Recorder Pro est désormais liée à l'installation, pas seulement à un nom : la fenêtre Diagnostic affiche l'identifiant à transmettre à l'achat, et un transfert vers une autre machine passe par le support plutôt que par une simple copie du fichier de licence.",
+            }),
+            ("2.0.1", new[]
+            {
+                "L'installateur affiche enfin sa progression : chaque fichier téléchargé (application, yt-dlp, ffmpeg) a sa barre et un bouton d'arrêt, puis l'installation elle-même est signalée. Jusqu'ici une page vide pouvait rester affichée plusieurs minutes sur une connexion lente, sans rien qui la distingue d'une installation bloquée.",
+                "L'installateur demande de fermer Chaturbate Recorder s'il est ouvert, au lieu d'échouer en partie sur des fichiers verrouillés.",
+                "La désinstallation ne laisse plus de fichiers derrière elle dans le dossier de l'application.",
+            }),
+            ("2.1.0", new[]
+            {
+                "Stream Recorder Pro est désormais livré avec l'application : plus aucun fichier à télécharger ni à copier. Il reste inactif sans licence — l'achat sert uniquement à obtenir ta licence, à déposer à côté de l'application.",
+                "Le panneau Diagnostic indique « Inclus, non activé » tant qu'aucune licence n'est en place.",
+            }),
+            ("2.1.1", new[]
+            {
+                "Le panneau Diagnostic ne signale plus à tort ffmpeg comme modifié. Il comparait le fichier à une empreinte figée dans l'application, alors que l'installateur télécharge toujours la dernière version publiée : la référence est désormais l'empreinte vérifiée au moment de l'installation.",
+                "Le panneau Diagnostic ne dit plus « api.github.com : injoignable » sur une machine parfaitement connectée. La vérification des mises à jour, elle, n'était pas affectée.",
             }),
         };
 
@@ -516,7 +550,41 @@ namespace ChaturbateRecorderApp.Config
                 "Your favorites and your monitoring list are carried over automatically on first launch. The old files are not deleted: going back to an earlier version stays possible.",
                 "Adding a room to the list no longer puts it under monitoring: the switch on its card does that, as before.",
                 "Removing a room while it is recording now asks for confirmation.",
-                "Your room list, your settings and your monitoring list now live alongside the logs, in your personal data folder, instead of the application folder. They therefore survive an update and a move of the software. The carry-over is automatic and the old files are not deleted.",
+            },
+            ["1.37.0"] = new[]
+            {
+                "The thumbnail of a room that is live now shows on its card for anyone with Stream Recorder Pro — clicking it opens the live video in a separate window.",
+                "Smart naming (Stream Recorder Pro): customise the file name of each recording with a pattern of your choice (room, date, time, detected quality).",
+                "Scheduler (Stream Recorder Pro): a daily time window per room restricts when automatic recording is allowed to start.",
+                "The Diagnostics panel shows local usage of these features (never sent anywhere).",
+            },
+            ["1.38.0"] = new[]
+            {
+                "History gets a Gallery mode (button next to \"List\"): a grid of thumbnails instead of a list, with sorting by date, duration or room and a filter by room name.",
+                "Hovering a card in the Gallery reveals its file size and, for anyone with Stream Recorder Pro, an integrity fingerprint (SHA-256) computed on demand.",
+            },
+            ["2.0.0"] = new[]
+            {
+                "The application has been entirely rebuilt in WPF (it used to run on WinForms). Same features, same data and settings carried over as-is: nothing to reconfigure, nothing to reinstall besides the application itself.",
+                "New \"Upgrade to Premium\" button for anyone without Stream Recorder Pro yet: presents the paid features and offers two ways to pay, itch.io or a bank transfer (IBAN, scannable SEPA QR code). Neither PayPal nor GitHub Sponsors for this purchase — those stay for free donations.",
+                "New frames-per-second counter in the live video overlay (Stream Recorder Pro), shown or hidden with one click.",
+                "The Stream Recorder Pro license is now tied to the installation, not just to a name: the Diagnostics window shows the identifier to send at purchase time, and moving to another machine now goes through support instead of a simple copy of the license file.",
+            },
+            ["2.0.1"] = new[]
+            {
+                "The installer finally shows its progress: each download (application, yt-dlp, ffmpeg) has its own bar and a stop button, then the installation step itself is shown. Until now an empty page could stay on screen for several minutes on a slow connection, with nothing to tell it apart from a stuck install.",
+                "The installer asks you to close Chaturbate Recorder if it is open, instead of partly failing on locked files.",
+                "Uninstalling no longer leaves files behind in the application folder.",
+            },
+            ["2.1.0"] = new[]
+            {
+                "Stream Recorder Pro now ships with the application: no more file to download or copy. It stays inactive without a licence — buying it only gets you your licence, to drop next to the application.",
+                "The Diagnostics panel shows \"Included, not activated\" as long as no licence is in place.",
+            },
+            ["2.1.1"] = new[]
+            {
+                "The Diagnostics panel no longer reports ffmpeg as altered when it is not. It compared the file against a fingerprint frozen into the application, while the installer always downloads the latest published build: the reference is now the fingerprint verified at install time.",
+                "The Diagnostics panel no longer says \"api.github.com: unreachable\" on a perfectly connected machine. Update checking itself was never affected.",
             },
         };
 

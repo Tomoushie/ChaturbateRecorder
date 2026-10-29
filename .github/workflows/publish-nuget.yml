@@ -18,6 +18,11 @@ name: Publish SentinelGuard to NuGet
 #   Flux de travail       : publish-nuget.yml       <- nom de fichier seul
 #   Environnement         : (vide, ce workflow n'en déclare aucun)
 #
+# 25-08 — bascule main -> WPF : ce workflow ET sa copie de SentinelGuard/
+# vivent désormais ICI. La politique OIDC sur nuget.org porte sur le DÉPÔT
+# (Tomoushie/ChaturbateRecorder), jamais sur une branche précise — elle
+# continue de fonctionner sans rien reconfigurer côté nuget.org.
+#
 # À savoir : une politique fraîchement créée est "temporairement active" 7
 # jours. Sans publication réussie dans ce délai elle devient inactive (la
 # fenêtre est relançable depuis nuget.org). La première publication réussie la
@@ -103,8 +108,7 @@ jobs:
       # Le chemin est résolu ici plutôt que passé en motif générique :
       # `dotnet nuget push "artifacts/*.nupkg"` échoue sur Windows avec
       # "File does not exist" — ni pwsh (motif entre guillemets) ni NuGet ne
-      # développent le motif avec des séparateurs '/'. Constaté en vrai sur le
-      # premier essai de publication de la v1.0.0.
+      # développent le motif avec des séparateurs '/'.
       # Le .snupkg voisin est envoyé automatiquement par NuGet avec le .nupkg
       # du même nom, il n'y a donc pas à le pousser séparément.
       - name: Publier sur nuget.org
@@ -122,9 +126,8 @@ jobs:
       # Une étape sautée ne fait PAS échouer un workflow : un run lancé avec
       # dry_run coché se termine donc en vert, exactement comme un run qui a
       # réellement publié, et la seule façon de les distinguer est de remarquer
-      # l'absence de l'étape de publication dans les logs. Confusion vécue en
-      # vrai lors de la v1.0.0, où une simulation a été prise pour une
-      # publication réussie. D'où ce résumé explicite.
+      # l'absence de l'étape de publication dans les logs. D'où ce résumé
+      # explicite.
       #
       # `if: always()` : le résumé doit aussi s'afficher quand la publication a
       # échoué, c'est précisément là qu'il est le plus utile.

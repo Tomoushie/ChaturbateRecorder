@@ -163,14 +163,33 @@ namespace ChaturbateRecorderApp.Tests
         /// Cherché plutôt que compté : le nombre de niveaux change avec la
         /// configuration et le TFM.
         /// </summary>
+        /// <summary>
+        /// Racine du depot WinForms, qui heberge `docs/supporters.json`.
+        ///
+        /// **Ce test lit le fichier du SITE, pas un fichier de ce depot-ci**, et
+        /// c'est deliberement conserve : c'est le seul lien entre le JSON servi
+        /// aux utilisateurs et le code qui le consomme, et rien d'autre ne le
+        /// verifierait. Le fichier n'a pas ete duplique dans le depot WPF —
+        /// deux sources pour une meme liste finiraient par diverger, et
+        /// l'application lit de toute facon la version en ligne.
+        ///
+        /// La remontee CHERCHE le marqueur au lieu de compter les niveaux : leur
+        /// nombre change avec la configuration et le TFM. Ici elle remonte
+        /// jusqu'au dossier qui contient les deux depots, puis redescend.
+        /// </summary>
         internal static string RepoRoot
         {
             get
             {
                 var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
-                while (dir is not null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "ChaturbateRecorderApp.csproj")))
+                while (dir is not null &&
+                       !System.IO.File.Exists(System.IO.Path.Combine(
+                           dir.FullName, "ChaturbateRecorderApp", "ChaturbateRecorderApp.csproj")))
                     dir = dir.Parent;
-                return dir?.FullName ?? System.AppContext.BaseDirectory;
+
+                return dir is null
+                    ? System.AppContext.BaseDirectory
+                    : System.IO.Path.Combine(dir.FullName, "ChaturbateRecorderApp");
             }
         }
     }

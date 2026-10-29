@@ -5,7 +5,6 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
 using ChaturbateRecorderApp.UI;
 
@@ -88,7 +87,11 @@ namespace ChaturbateRecorderApp.Services
             var extractDir = Path.Combine(tempDir, "extracted");
             ZipFile.ExtractToDirectory(zipPath, extractDir);
 
-            var exeName = Path.GetFileName(Application.ExecutablePath);
+            // `Application.ExecutablePath` (WinForms) -> `Environment.ProcessPath`.
+            // Le script PowerShell attend le nom de l'apphost pour le relancer :
+            // se rabattre sur le nom de l'assembly donnerait « ChaturbateRecorder.dll »,
+            // que `Start-Process` ne sait pas lancer.
+            var exeName = Path.GetFileName(Environment.ProcessPath ?? string.Empty);
             var scriptPath = Path.Combine(tempDir, "update.ps1");
             var statusLog = Path.Combine(AppConfig.LogDir, "update.log");
 
@@ -158,7 +161,20 @@ try {{
                 CreateNoWindow = true,
             });
 
-            Application.Exit();
+            // WinForms : `Application.Exit()`. En WPF le pendant est
+            // `Application.Current.Shutdown()` — mais `Current` est nul si le
+            // service tourne hors application (tests, outil en ligne de
+            // commande), d'où le repli : le script de mise à jour attend que ce
+            // processus RENDE LA MAIN sur les fichiers, un exit manqué le
+            // ferait boucler jusqu'à son délai d'attente.
+            if (System.Windows.Application.Current is { } app)
+            {
+                app.Dispatcher.Invoke(app.Shutdown);
+            }
+            else
+            {
+                Environment.Exit(0);
+            }
         }
 
         internal static string ComputeSha256(string path)

@@ -3,11 +3,9 @@ name: Pages Build
 # Le filtre "paths: docs/**" ne suffit pas : le seul producteur de
 # docs/latest.json est le job update-latest-json de "Update Checker", qui pousse
 # avec le GITHUB_TOKEN par défaut — et un évènement créé avec ce token ne
-# déclenche AUCUN workflow (protection anti-boucle de GitHub, déjà rencontrée
-# en 38.0). Le push qui satisfait le filtre est donc précisément celui qui ne
-# déclenche rien, et le site restait figé sur une vieille version : constaté le
-# 2026-08-04, Pages n'avait plus été déployé depuis le 2026-08-03 et annonçait
-# encore la 1.18.0 alors que la 1.19.1 était publiée. D'où workflow_call, que
+# déclenche AUCUN workflow (protection anti-boucle de GitHub). Le push qui
+# satisfait le filtre est donc précisément celui qui ne déclenche rien, et le
+# site resterait figé sur une vieille version sans le workflow_call que
 # "Update Checker" invoque directement après avoir poussé le fichier.
 on:
   workflow_call:
@@ -48,11 +46,9 @@ jobs:
       # bug que cet appel est censé corriger. Pages ne publie que main, donc ce
       # ref est aussi le bon pour les déclenchements push et workflow_dispatch.
       #
-      # Quand l'appelant fournit un SHA (Update Checker le fait depuis le
-      # 2026-08-08), on récupère CE commit precis plutôt que la pointe de main.
-      # Motif : à la v1.21.0, ce job a réussi tout en publiant le latest.json
-      # d'avant sa régénération, bien qu'il démarre après le push. Suivre une
-      # branche mouvante laisse une fenêtre ; un SHA figé n'en laisse aucune.
+      # Quand l'appelant fournit un SHA (Update Checker le fait), on récupère CE
+      # commit precis plutôt que la pointe de main — supprime toute fenêtre de
+      # course entre le push et ce que voit ce checkout.
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref != '' && inputs.ref || 'main' }}
@@ -68,7 +64,7 @@ jobs:
 
       - uses: actions/configure-pages@v6
 
-      # Nécessaire pour que _config.yml/theme (37.0) et les pages Markdown
+      # Nécessaire pour que _config.yml/theme et les pages Markdown
       # (features.md, roadmap.md, screenshots.md) soient réellement rendus :
       # sans ce build, upload-pages-artifact publierait les fichiers .md tels
       # quels (texte brut), pas le HTML généré par le thème Jekyll.
