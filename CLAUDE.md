@@ -1,18 +1,32 @@
-﻿# Chaturbate Recorder — version WPF (application GRATUITE)
+# Chaturbate Recorder — version WPF (application GRATUITE)
 
 Portage WinForms → WPF de `..\ChaturbateRecorderApp\`, dont le `CLAUDE.md`
 reste la référence pour TOUT le contexte produit, commercial et historique.
 Ce fichier-ci ne couvre que la migration.
 
+**État au 2026-10-29 — v2.2.0 branchée, build CI et scan sécurité VERTS** :
+le merge `041ee82` du 26-10 avait fusionné une histoire WinForms SANS ancêtre
+commun en gardant `--ours` ; `main` contenait alors l'UNION des deux dépôts et
+le workflow compilait le csproj WinForms (10 erreurs « Data/Media/Controls
+n'existent pas dans System.Windows »). Réparé sans réécriture d'histoire :
+merge `ab18283` (arbre WPF de `f6831de` + `docs/activer.html`, la seule
+modification que le merge voulait garder), puis `dab9531` (le test supporters
+exigeait un dépôt WinForms voisin, impossible sur un runner). Vérifié depuis :
+Build + Test et Security Scan verts sur `dab9531`, et sur les PR dependabot
+rebasées. **478 tests** passent en CI. Le WinForms reste sur
+`origin/winforms-legacy`, avancé à `8bfcbf9` pour ne rien perdre du travail
+local de l'ancienne version.
+
 **État au 2026-09-21 — v2.0.1** : **`origin/main` EST ce dépôt depuis le
 25-08** (le WinForms est archivé sur `origin/winforms-legacy`). Pousser par
-**`git push origin main:main`** — la branche locale suit encore l'ancien
-`origin/wpf-migration`, un `git push` nu partirait au mauvais endroit. Un tag
+**`git push origin main:main`** — la branche locale suit désormais
+`origin/main` (elle suivait `origin/wpf-migration` avant le 29-10). Un tag
 `vX.Y.Z` déclenche la release publique : redemander avant chaque tag.
-`dotnet build -t:Rebuild` à 0 erreur (un seul avertissement, NU1902 sur
-`Microsoft.Build.Tasks.Git` de SentinelGuard — avis de sécurité NuGet apparu
-après la 2.0.0, pas le code), **454 tests** dont 2 échecs LOCAUX connus
-(`LEcranPrincipalDitQuIlEstVide`, pollué par les vraies données du poste).
+`dotnet build -t:Rebuild` à 0 erreur (l'avertissement NU1902 sur
+`Microsoft.Build.Tasks.Git` de SentinelGuard a disparu avec le bump
+SourceLink 10.0.403). Les deux échecs LOCAUX anciennement connus
+(`LEcranPrincipalDitQuIlEstVide`, pollué par les vraies données du poste) ne
+se reproduisent plus : 478/478 en local comme en CI.
 
 **v2.1.0 (préparée 21-09) = Stream Recorder Pro LIVRÉ À TOUS** :
 `Premium/StreamRecorderPro.dll` (binaire Release du dépôt PRIVÉ, commité ici
