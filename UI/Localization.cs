@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ChaturbateRecorderApp.UI
 {
@@ -153,11 +154,18 @@ namespace ChaturbateRecorderApp.UI
             ["report.intro"] = (
                 "Décris ce qui ne va pas, ou ce que tu aimerais voir. Aucun compte n'est nécessaire : le signalement est transmis pour toi.",
                 "Describe what went wrong, or what you would like to see. No account is needed: the report is submitted for you."),
-            ["report.kind"] = ("Type :", "Type:"),
+            // LES DEUX-POINTS TOMBENT, et le libelle raccourcit : ces quatre
+            // valeurs venaient du formulaire WinForms, ou l'intitule precede le
+            // champ SUR LA MEME LIGNE. Dans cette interface il est AU-DESSUS, et
+            // tous ses voisins s'ecrivent sans deux-points (« Dossier de
+            // capture », « Proxy », « Reseau »). En pointant sur ces cles le
+            // 17-08 j'ai fait entrer le style de l'ancienne interface dans la
+            // nouvelle — vu sur une capture du mainteneur.
+            ["report.kind"] = ("Type", "Type"),
             ["report.kind.bug"] = ("Un bug", "A bug"),
             ["report.kind.feature"] = ("Une idée", "An idea"),
             ["report.kind.feedback"] = ("Un retour", "Feedback"),
-            ["report.title"] = ("Résumé en une ligne :", "One-line summary:"),
+            ["report.title"] = ("Résumé", "Summary"),
             ["report.body"] = ("Description — que se passe-t-il, et à quel moment ?", "Description — what happens, and when?"),
             ["report.contextCaption"] = ("Ces informations partent aussi, et rien d'autre :", "This is also sent, and nothing else:"),
             ["report.context.ffmpegOn"] = ("ffmpeg présent", "ffmpeg present"),
@@ -170,7 +178,7 @@ namespace ChaturbateRecorderApp.UI
             ["report.noRelay"] = (
                 "L'envoi depuis l'application n'est pas disponible dans cette version. Le bouton ci-dessous ouvre la page GitHub du projet.",
                 "Sending from the application is not available in this build. The button below opens the project's GitHub page."),
-            ["report.send"] = ("Envoyer le signalement", "Send the report"),
+            ["report.send"] = ("Envoyer", "Send"),
             ["report.viaGitHub"] = ("Passer par GitHub", "Use GitHub instead"),
             ["report.sending"] = ("Envoi en cours…", "Sending…"),
             ["report.sent"] = ("Signalement envoyé. Merci.", "Report sent. Thank you."),
@@ -209,6 +217,8 @@ namespace ChaturbateRecorderApp.UI
             ["button.settings"] = ("Paramètres", "Settings"),
             ["window.settings"] = ("Paramètres", "Settings"),
             ["button.close"] = ("Fermer", "Close"),
+            ["button.cancel"] = ("Annuler", "Cancel"),
+            ["button.save"] = ("Enregistrer", "Save"),
             ["tray.open"] = ("Ouvrir", "Open"),
             ["tray.settings"] = ("Paramètres", "Settings"),
             ["tray.close"] = ("Fermer", "Close"),
@@ -351,7 +361,7 @@ namespace ChaturbateRecorderApp.UI
                 "Chaturbate Recorder — update v{0} available"),
             // --- Favoris : deux causes distinctes, deux messages ---
             ["info.favoriteAlreadyPresent"] = (
-                "{0} est deja dans tes favoris.",
+                "{0} est déjà dans tes favoris.",
                 "{0} is already in your favorites."),
             ["info.favoriteInvalidUrl"] = (
                 "Cette URL n'est pas une adresse de salon valide.",
@@ -510,6 +520,303 @@ namespace ChaturbateRecorderApp.UI
             ["tutorial.security.body"] = (
                 "Avant chaque enregistrement, l'appli vérifie le hash de yt-dlp.exe et ffmpeg.exe, et surveille l'emplacement d'exécution du programme.\n\nLe bouton \"Rechercher une mise à jour\" en haut de la fenêtre vérifie automatiquement les nouvelles versions publiées sur GitHub.",
                 "Before each recording, the app verifies the hash of yt-dlp.exe and ffmpeg.exe, and checks where the program is running from.\n\nThe \"Check for updates\" button at the top of the window looks for new versions published on GitHub."),
+
+            // ---------------------------------------------------------------
+            // 2026-08-17 — libellés des vues WPF.
+            //
+            // Ils étaient écrits EN DUR dans neuf fichiers XAML : ils ne
+            // suivaient donc pas la case « Français », alors que les Réglages
+            // promettent que la langue s'applique immédiatement. Seule la barre
+            // de navigation changeait, parce qu'elle seule passait par ici.
+            //
+            // Quatre d'entre eux étaient AUSSI privés de leurs accents
+            // (« Legalite... », « Signaler un probleme... », « Guide de
+            // demarrage... », et la légende des outils) — visible sur une
+            // capture d'écran envoyée par le mainteneur.
+            // ---------------------------------------------------------------
+
+            ["crash.intro"] = (
+                "L'application a rencontré une erreur inattendue.",
+                "The application ran into an unexpected error."),
+            ["crash.openLogs"] = ("Ouvrir le dossier des logs", "Open the log folder"),
+            ["crash.restart"] = ("Redémarrer", "Restart"),
+
+            ["button.copy"] = ("Copier", "Copy"),
+
+            ["history.recentCount"] = (
+                "Les 50 enregistrements les plus récents.",
+                "The 50 most recent recordings."),
+            ["history.loading"] = (
+                "Lecture du dossier de capture...",
+                "Reading the capture folder..."),
+            ["history.empty"] = (
+                "Aucun enregistrement dans le dossier de capture.",
+                "No recordings in the capture folder."),
+            ["history.open"] = ("Ouvrir", "Open"),
+            ["history.folder"] = ("Dossier", "Folder"),
+
+            ["gallery.viewList"] = ("Liste", "List"),
+            ["gallery.viewGrid"] = ("Galerie", "Gallery"),
+            ["gallery.sortDate"] = ("Date", "Date"),
+            ["gallery.sortDuration"] = ("Durée", "Duration"),
+            ["gallery.sortRoom"] = ("Salon", "Room"),
+            ["gallery.filterByRoom"] = ("Filtrer par salon", "Filter by room"),
+            ["gallery.unknownRoom"] = ("Salon inconnu", "Unknown room"),
+            ["gallery.fingerprint"] = ("Empreinte (premium)", "Fingerprint (premium)"),
+            ["gallery.fingerprintComputing"] = ("Calcul…", "Computing…"),
+            ["gallery.fingerprintNeedsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active.",
+                "Requires an active StreamRecorderPro licence."),
+            ["gallery.fingerprintHelp"] = (
+                "Empreinte d'intégrité locale (SHA-256) : atteste que ce fichier n'a pas changé depuis son calcul, pas son authenticité.",
+                "Local integrity fingerprint (SHA-256): attests this file has not changed since it was computed, not its authenticity."),
+
+            ["legal.disclaimer"] = (
+                "Texte informatif, il ne constitue pas un avis juridique.",
+                "Informational text; it is not legal advice."),
+
+            ["report.intro"] = (
+                "Décris ce qui s'est passé. Le rapport est transmis au dépôt du projet.",
+                "Describe what happened. The report is sent to the project repository."),
+            ["report.context"] = ("Informations techniques jointes", "Technical details attached"),
+            ["report.publicWarning"] = (
+                "Ce rapport sera publié sur une page publique, avec tout ce qui est affiché ci-dessus. N'y mets aucune information personnelle.",
+                "This report will be published on a public page, together with everything shown above. Do not put any personal information in it."),
+            ["report.sent"] = ("Rapport envoyé.", "Report sent."),
+            ["report.sentDetail"] = (
+                "Le suivi se fait sur la page de l'issue. Aucune adresse de contact n'a été transmise.",
+                "Follow-up happens on the issue page. No contact address was sent."),
+            ["report.openIssue"] = ("Ouvrir l'issue", "Open the issue"),
+
+            ["settings.captureFolder"] = ("Dossier de capture", "Capture folder"),
+            // Affiché SOUS le champ et non dedans : laissé vide, le réglage vaut
+            // null, et l'application suit alors le dossier « Vidéos » du
+            // système. Pré-remplir le champ figerait ce chemin dans
+            // settings.json au premier enregistrement — le défaut cesserait de
+            // suivre le système. La légende dit donc où vont les fichiers sans
+            // rien décider à la place de l'utilisateur.
+            ["settings.captureFolderDefault"] = ("Par défaut : {0}", "Default: {0}"),
+            ["settings.appearance"] = ("Apparence", "Appearance"),
+            ["settings.darkTheme"] = ("Thème sombre", "Dark theme"),
+            // La case porte le nom de la langue qu'elle ACTIVE, dans cette
+            // langue : « Français » coché en anglais dirait au lecteur anglais
+            // ce qu'il obtiendrait en cochant. Elle ne se traduit donc pas.
+            ["settings.french"] = ("Français", "Français"),
+            ["settings.appearanceHint"] = (
+                "Thème et langue s'appliquent immédiatement. Le thème est mémorisé à l'enregistrement.",
+                "Theme and language apply immediately. The theme is remembered when you save."),
+            ["settings.recording"] = ("Enregistrement", "Recording"),
+            ["settings.autoReconnect"] = (
+                "Reconnexion automatique par défaut",
+                "Automatic reconnection by default"),
+            ["settings.checkUpdates"] = (
+                "Vérifier les mises à jour au démarrage",
+                "Check for updates at startup"),
+            ["settings.showLogs"] = ("Afficher le panneau des journaux", "Show the log panel"),
+            ["settings.monitorInterval"] = (
+                "Intervalle de surveillance (secondes)",
+                "Monitoring interval (seconds)"),
+            ["settings.monitorIntervalHint"] = (
+                "Borné entre 30 et 3600 à l'enregistrement. Sonder plus souvent lance un processus par salon et par tour sans rendre l'information plus fraîche.",
+                "Clamped between 30 and 3600 when saving. Polling more often starts one process per room per round without making the information any fresher."),
+            ["settings.network"] = ("Réseau", "Network"),
+            ["settings.cookiesFile"] = ("Fichier cookies.txt", "cookies.txt file"),
+            ["settings.proxy"] = ("Proxy", "Proxy"),
+            ["settings.smartNaming"] = ("Nommage intelligent (premium)", "Smart naming (premium)"),
+            ["settings.smartNaming.help"] = (
+                "Jetons reconnus, entre accolades — voir l'exemple ci-dessous.",
+                "Recognised tokens, in curly braces — see the example below."),
+            ["settings.smartNaming.needsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active — vide, le nom habituel reste inchangé.",
+                "Requires an active StreamRecorderPro licence — empty, the usual name stays unchanged."),
+            ["schedule.title"] = ("Planification — {0}", "Schedule — {0}"),
+            ["schedule.enable"] = ("Activer la planification", "Enable scheduling"),
+            ["schedule.from"] = ("De", "From"),
+            ["schedule.to"] = ("à", "to"),
+            ["schedule.help"] = (
+                "Enregistre automatiquement ce salon chaque jour, dans cette fenêtre d'heures, s'il est en ligne.",
+                "Automatically records this room every day, within this time window, if it is online."),
+            ["schedule.needsLicense"] = (
+                "Nécessite une licence StreamRecorderPro active — enregistrable dès maintenant, prendra effet une fois la licence posée.",
+                "Requires an active StreamRecorderPro licence — savable now, takes effect once the licence is in place."),
+            ["settings.tools"] = ("Outils", "Tools"),
+            ["settings.diagnostic"] = ("Diagnostic...", "Diagnostics..."),
+            ["settings.report"] = ("Signaler un problème...", "Report a problem..."),
+            ["settings.legal"] = ("Légalité...", "Legal..."),
+            ["settings.tutorial"] = ("Guide de démarrage...", "Getting started guide..."),
+            ["settings.toolsHint"] = (
+                "Versions des binaires, empreintes SHA-256, droits des dossiers et joignabilité du réseau. C'est ce qu'il faut regarder quand une capture échoue.",
+                "Binary versions, SHA-256 fingerprints, folder permissions and network reachability. This is what to look at when a capture fails."),
+            // « Enregistrer » au sens SAUVEGARDER. Volontairement distinct de
+            // `nav.streams`, qui est le même mot français au sens ENREGISTRER
+            // UN DIRECT — et qui se traduit par « Record ».
+            ["settings.save"] = ("Enregistrer", "Save"),
+            // Le SEUL libelle visible qui vivait encore en dur hors du XAML, et
+            // il etait lui aussi sans accents. Trouve en balayant les modeles de
+            // vue apres coup : les filets de ViewLocalizationTests ne lisent que
+            // les .xaml, et ne l'auraient jamais vu.
+            ["settings.saved"] = ("Réglages enregistrés.", "Settings saved."),
+
+            // Les deux ÉTATS VIDES, ajoutés le 17-08 : ces deux écrans
+            // s'ouvraient sur du blanc, ce qui se lit comme une panne plutôt
+            // que comme une liste à remplir. Ils disent ce qu'il n'y a pas ET
+            // le geste qui suit — un état vide qui ne fait que constater
+            // laisse l'utilisateur au même point.
+            ["streams.empty"] = (
+                "Aucun salon pour l'instant. Colle l'adresse d'un direct ci-dessus pour l'ajouter à ta liste.",
+                "No rooms yet. Paste the address of a live stream above to add it to your list."),
+            ["support.thanksEmpty"] = (
+                "Personne n'est encore remercié ici. La liste se remplira au premier don.",
+                "Nobody is thanked here yet. The list will fill up with the first donation."),
+
+            ["streams.add"] = ("Ajouter", "Add"),
+            ["streams.logs"] = ("Journaux", "Logs"),
+            ["streams.clearLogs"] = ("Vider", "Clear"),
+            ["streams.openLogFolder"] = ("Ouvrir le dossier", "Open the folder"),
+
+            ["support.body"] = (
+                "Le logiciel est gratuit et le restera. Les dons couvrent le temps passé, pas l'accès.",
+                "The software is free and will stay free. Donations cover the time spent, not access."),
+            ["support.donate"] = ("Faire un don", "Donate"),
+            ["support.sponsor"] = ("Parrainer", "Sponsor"),
+            ["support.thanks"] = ("Remerciements", "Thanks"),
+            ["support.thanksNote"] = (
+                "Pseudonymes publiés avec l'accord des personnes concernées.",
+                "Nicknames published with the agreement of the people concerned."),
+
+            // 120.0 — bouton Premium (bas droite de la fenêtre principale) et
+            // sa fenêtre de présentation. PAS de PayPal/GitHub Sponsors ici,
+            // volontairement : voir AppConfig.PremiumIban1.
+            ["premium.button"] = ("Passer à Premium", "Upgrade to Premium"),
+            ["premium.title"] = ("Stream Recorder Pro", "Stream Recorder Pro"),
+            ["premium.intro"] = (
+                "Stream Recorder Pro est le complément payant de Chaturbate Recorder — un seul pack, une seule fois, aucun abonnement. Il est déjà installé avec l'application : une licence suffit pour l'activer, rien d'autre à télécharger.",
+                "Stream Recorder Pro is the paid companion to Chaturbate Recorder — one pack, one payment, no subscription. It already comes installed with the application: a licence is all it takes to activate it, nothing else to download."),
+            ["premium.featuresTitle"] = ("Ce que ça ajoute", "What it adds"),
+            ["premium.feature.overlay"] = (
+                "Vidéo en direct dans une fenêtre dédiée, avec un panneau statut/durée/qualité/débit par-dessus l'image.",
+                "Live video in a dedicated window, with a status/duration/quality/bitrate panel over the picture."),
+            ["premium.feature.gallery"] = (
+                "Galerie de l'historique : grille de vignettes, tri par date, durée ou salon, empreinte SHA-256 à la demande.",
+                "History gallery: thumbnail grid, sort by date, duration or room, on-demand SHA-256 fingerprint."),
+            ["premium.feature.autotag"] = (
+                "Nommage intelligent des captures et planificateur horaire par salon.",
+                "Smart naming for captures and a per-room daily schedule."),
+            // 120.0, 25-08 — corrigé après coup : ni itch.io ni un virement ne
+            // livrent la licence AUTOMATIQUEMENT, elle est désormais liée à
+            // l'installation (voir premium.machineIdNote) et signée à la main
+            // par le mainteneur une fois l'identifiant reçu. Seul le FICHIER
+            // part automatiquement via itch.io — ne jamais dire "licence"
+            // dans ce contexte, ce serait promettre ce qui ne se passe pas.
+            // 21-09 — le FICHIER non plus : le module est livré avec
+            // l'application à tout le monde. On n'achète plus que la licence.
+            ["premium.paymentTitle"] = ("Moyens de paiement", "Payment methods"),
+            ["premium.itchio"] = ("Acheter sur itch.io", "Buy on itch.io"),
+            ["premium.itchioNote"] = (
+                "Paiement en ligne. Ta licence, personnalisée, t'est envoyée une fois ton identifiant d'installation transmis (ci-dessus) : dépose-la à côté de l'application et relance-la.",
+                "Online payment. Your licence, personalised, is sent to you once you've sent your installation ID (above): drop it next to the application and restart it."),
+            ["premium.bankTitle"] = ("Virement bancaire (deux comptes au choix)", "Bank transfer (either account)"),
+            ["premium.bankNote"] = (
+                "Le mainteneur t'envoie ta licence après réception du virement et de ton identifiant d'installation (ci-dessus). Scanne le QR avec ton application bancaire, ou recopie l'IBAN.",
+                "The maintainer sends you your licence after receiving the transfer and your installation ID (above). Scan the QR with your banking app, or copy the IBAN by hand."),
+            ["premium.machineIdTitle"] = ("Ton identifiant d'installation", "Your installation ID"),
+            ["premium.machineIdNote"] = (
+                "À transmettre avec ta commande, quel que soit le moyen de paiement — c'est à cet identifiant que ta licence sera liée. La licence est liée à ton installation actuelle : en cas de changement d'ordinateur, contacte le support pour un transfert.",
+                "Send this with your order, whichever payment method you use — your licence will be tied to this ID. The licence is tied to your current installation: if you change computers, contact support for a transfer."),
+            ["premium.copy"] = ("Copier", "Copy"),
+            ["premium.copied"] = ("Copié !", "Copied!"),
+
+            // 2.2.0 — parcours « déjà acheté ».
+            //
+            // Le défaut constaté : un acheteur recevait licence.key par email,
+            // ne lisait pas le LISEZMOI, ne comprenait pas pourquoi le premium
+            // restait absent, et pouvait conclure à une arnaque. Ces chaînes
+            // rendent l'activation faisable DEPUIS l'application, sans savoir
+            // où copier un fichier.
+            ["premium.alreadyBoughtTitle"] = ("Déjà acheté ?", "Already bought?"),
+            ["premium.alreadyBoughtNote"] = (
+                "Tu as reçu un fichier licence.key ? Installe-le ici : les fonctions Pro s'activent tout de suite, sans redémarrer l'application. Rien reçu ? Demande ta licence ci-dessous, ton identifiant d'installation est ajouté automatiquement.",
+                "Got a licence.key file? Install it here: Pro features activate right away, without restarting the application. Nothing yet? Request your licence below, your installation ID is added automatically."),
+            ["premium.installLicence"] = ("Installer ma licence…", "Install my licence…"),
+            ["premium.requestLicence"] = ("Recevoir ma licence", "Get my licence"),
+            ["premium.choisirLicence"] = ("Choisir le fichier licence.key", "Choose the licence.key file"),
+            ["premium.filtreLicence"] = (
+                "Fichier de licence (*.key)|*.key|Tous les fichiers (*.*)|*.*",
+                "Licence file (*.key)|*.key|All files (*.*)|*.*"),
+            ["premium.installOk"] = (
+                "Licence installée pour {0}. Les fonctions Pro sont actives, sans redémarrage.",
+                "Licence installed for {0}. Pro features are active, no restart needed."),
+            ["premium.installRefusee"] = (
+                "Licence refusée. Vérifie que le fichier vient bien de nous et qu'il correspond à cette installation.",
+                "Licence refused. Check that the file comes from us and matches this installation."),
+            ["premium.installMachine"] = (
+                "Cette licence est liée à une autre installation. Envoie ton identifiant d'installation actuel au support avec « Recevoir ma licence » : le transfert est gratuit.",
+                "This licence is tied to another installation. Send your current installation ID to support with “Get my licence”: the transfer is free."),
+            ["premium.installSource"] = (
+                "Le fichier choisi est introuvable, vide ou trop volumineux.",
+                "The selected file is missing, empty, or too large."),
+            ["premium.installErreur"] = (
+                "L'installation a échoué (droits d'écriture ou antivirus ?). Le détail est dans le journal.",
+                "Installation failed (write permissions or antivirus?). Details are in the log."),
+
+            // Activation en ligne (2.2.0) — le chemin le plus court pour un
+            // acheteur qui ne lit rien : il colle la clé de téléchargement
+            // itch.io, l'application fait le reste.
+            ["premium.onlineButton"] = ("Activer en ligne", "Activate online"),
+            ["premium.onlineTitle"] = ("Activation en ligne", "Online activation"),
+            ["premium.onlineIntro"] = (
+                "Colle la clé de téléchargement reçue d'itch.io. Elle sert à vérifier ton achat ; l'application installe ensuite la licence automatiquement, sans redémarrage.",
+                "Paste the download key you received from itch.io. It verifies your purchase; the application then installs the licence automatically, without restarting."),
+            ["premium.onlineKeyLabel"] = ("Clé de téléchargement itch.io", "itch.io download key"),
+            ["premium.onlineKeyHelp"] = (
+                "C'est la longue suite de caractères à la fin du lien de téléchargement reçu par email. Tu peux coller le lien entier.",
+                "It's the long string at the end of the download link in your email. You can paste the whole link."),
+            ["premium.onlineIdLabel"] = ("Identifiant d'installation", "Installation ID"),
+            ["premium.onlineActivate"] = ("Activer maintenant", "Activate now"),
+            ["premium.onlineActivating"] = ("Vérification de l'achat…", "Checking your purchase…"),
+            ["premium.onlineKeyRequired"] = (
+                "Colle d'abord ta clé de téléchargement.",
+                "Paste your download key first."),
+            ["premium.onlineInvalidKey"] = (
+                "Cette clé de téléchargement n'est pas reconnue. Vérifie que tu as bien acheté Stream Recorder Pro avec ce compte itch.io, et colle la clé entière.",
+                "This download key is not recognised. Check that you bought Stream Recorder Pro with this itch.io account, and paste the whole key."),
+            ["premium.onlineTransfer"] = (
+                "Cette clé a atteint le nombre maximum d'installations. Écris au support pour un transfert gratuit, en précisant ton identifiant d'installation.",
+                "This key has reached the maximum number of installations. Write to support for a free transfer, including your installation ID."),
+            ["premium.onlineRateLimited"] = (
+                "Trop de tentatives en peu de temps. Réessaie dans une heure, ou installe ta licence avec « Installer ma licence… ».",
+                "Too many attempts in a short time. Try again in an hour, or install your licence with “Install my licence….”"),
+            ["premium.onlineUnavailable"] = (
+                "Le service d'activation est momentanément indisponible. Tu peux installer ta licence manuellement, ou réessayer plus tard.",
+                "The activation service is temporarily unavailable. You can install your licence manually, or try again later."),
+            ["premium.onlineNetwork"] = (
+                "Impossible de joindre le service d'activation. Vérifie ta connexion Internet, ou installe ta licence manuellement.",
+                "Could not reach the activation service. Check your Internet connection, or install your licence manually."),
+            ["premium.onlineOpenPage"] = ("Ouvrir la page d'activation", "Open the activation page"),
+            ["premium.onlineKeySecretNote"] = (
+                "Cette clé prouve ton achat : ne la partage pas.",
+                "This key proves your purchase: don't share it."),
+            ["premium.onlinePageNote"] = (
+                "Si l'activation échoue ici, la page web fait exactement la même chose dans ton navigateur.",
+                "If activation fails here, the web page does exactly the same thing in your browser."),
+            ["premium.requestSubject"] = (
+                "Stream Recorder Pro — demande de licence",
+                "Stream Recorder Pro — licence request"),
+            ["premium.requestBody"] = (
+                "Bonjour,\n\nJ'ai acheté Stream Recorder Pro, mais je n'ai pas encore reçu ma licence.\n\nIdentifiant d'installation : {0}\n\nMerci !",
+                "Hello,\n\nI bought Stream Recorder Pro, but I haven't received my licence yet.\n\nInstallation ID: {0}\n\nThanks!"),
+
+            // Bannière de la fenêtre principale, affichée UNIQUEMENT quand un
+            // licence.key existe mais a été refusé : un utilisateur qui n'a
+            // jamais acheté ne doit pas voir d'avertissement permanent.
+            ["premium.bannerTitle"] = ("Licence Pro non activée", "Pro licence not activated"),
+            ["premium.bannerRefused"] = (
+                "Une licence est présente mais n'a pas été acceptée. Ouvre l'activation pour réessayer ou demander de l'aide.",
+                "A licence file is present but was not accepted. Open activation to try again or ask for help."),
+            ["premium.bannerMachine"] = (
+                "Ta licence est liée à une autre installation. Demande un transfert gratuit avec ton identifiant actuel.",
+                "Your licence is tied to another installation. Request a free transfer with your current ID."),
+            ["premium.bannerAction"] = ("Activer", "Activate"),
         };
 
         /// <summary>
@@ -532,7 +839,28 @@ namespace ChaturbateRecorderApp.UI
         /// compromis. Tenu à jour par Program.Main et par MainForm
         /// (constructeur + HandleLanguageChangedFromSettings).
         /// </summary>
-        public static AppLanguage Current { get; set; } = AppLanguage.French;
+        private static AppLanguage _current = AppLanguage.French;
+
+        public static AppLanguage Current
+        {
+            get => _current;
+            set
+            {
+                if (_current == value) return;
+                _current = value;
+                LanguageChanged?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Levé quand la langue change. `LocalizationSource` s'y abonne pour
+        /// réévaluer toutes les liaisons du XAML d'un coup.
+        ///
+        /// Un ÉVÈNEMENT et non un appel direct : cette classe ne connaît pas
+        /// WPF et ne doit pas l'apprendre — elle sert aussi Program.Main, qui
+        /// s'exécute avant toute fenêtre.
+        /// </summary>
+        public static event Action? LanguageChanged;
 
         public static string Get(string key) => Get(key, Current);
 

@@ -1,4 +1,4 @@
-﻿name: Publish Release
+name: Publish Release
 
 on:
   push:
@@ -36,18 +36,18 @@ jobs:
 
       - name: Build + tests
         run: |
-          dotnet build ChaturbateRecorderApp.csproj -c Release
-          dotnet test Tests/ChaturbateRecorderApp.Tests.csproj -c Release
+          dotnet build ChaturbateRecorderApp.Wpf.csproj -c Release
+          dotnet test Tests/ChaturbateRecorderApp.Wpf.Tests.csproj -c Release
           dotnet test SentinelGuard.Tests/SentinelGuard.Tests.csproj -c Release
 
       # Tools/ (yt-dlp.exe, ffmpeg.exe) est gitignored : absent sur le runner,
       # donc jamais copié dans publish/ (voir Condition="Exists(...)" du .csproj).
       # C'est ce qui garantit que ces binaires ne se retrouvent jamais dans les ZIP.
       - name: Publish - standard (framework-dependent)
-        run: dotnet publish ChaturbateRecorderApp.csproj -c Release -r win-x64 --self-contained false -o publish/standard
+        run: dotnet publish ChaturbateRecorderApp.Wpf.csproj -c Release -r win-x64 --self-contained false -o publish/standard
 
       - name: Publish - portable (self-contained, single-file)
-        run: dotnet publish ChaturbateRecorderApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/portable
+        run: dotnet publish ChaturbateRecorderApp.Wpf.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/portable
 
       - name: Créer les archives ZIP
         shell: pwsh
@@ -94,7 +94,7 @@ jobs:
         run: |
           dotnet tool install --global CycloneDX
           $env:PATH += ";" + (Join-Path $env:USERPROFILE ".dotnet" "tools")
-          dotnet CycloneDX ChaturbateRecorderApp.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
+          dotnet CycloneDX ChaturbateRecorderApp.Wpf.csproj -o . -fn "ChaturbateRecorder-v${{ steps.version.outputs.version }}-sbom.json" -t
 
       - name: Publier la release GitHub
         uses: softprops/action-gh-release@v3
@@ -134,8 +134,7 @@ jobs:
           # workflow_dispatch (rattraper les ZIP d'une vieille release, par ex.)
           # désigne cette vieille release comme "latest" — et update-latest-json,
           # qui lit /releases/latest, fait aussitôt régresser le site et le
-          # vérificateur de mise à jour de l'app vers cette version. Observé le
-          # 2026-08-03 : le site est repassé de 1.17.0 à 1.16.0.
+          # vérificateur de mise à jour de l'app vers cette version.
           # Pour qu'une exécution manuelle devienne quand même "latest" :
           # cocher "Set as the latest release" sur la page de la release.
           # La condition sur le suffixe reprend celle de prerelease ci-dessus :
@@ -191,8 +190,8 @@ jobs:
           # L'installateur d'abord, et c'est voulu : le ZIP portable NE CONTIENT
           # PAS yt-dlp ni ffmpeg (licence GPL), il est donc inutilisable seul.
           # Seul setup.exe va les chercher. Sur une plateforme ou personne ne lit
-          # les notes de version, proposer le portable en premier livrerait un
-          # logiciel qui ne demarre pas.
+          # les notes, proposer le portable en premier livrerait un logiciel qui
+          # ne demarre pas.
           & $butler push "installer\ChaturbateRecorder-v$v-setup.exe" "${target}:windows-installer" --userversion $v
           if ($LASTEXITCODE -ne 0) { throw "Envoi de l'installateur refuse par itch.io." }
 

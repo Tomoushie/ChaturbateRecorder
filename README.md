@@ -15,8 +15,7 @@
   [![Stars](https://img.shields.io/github/stars/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/stargazers)
   [![Forks](https://img.shields.io/github/forks/Tomoushie/ChaturbateRecorder?color=0078D4)](https://github.com/Tomoushie/ChaturbateRecorder/forks)
   ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
-  ![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows11&logoColor=white)
-  ![Langage principal](https://img.shields.io/github/languages/top/Tomoushie/ChaturbateRecorder?color=0078D4)
+  ![WPF](https://img.shields.io/badge/UI-WPF-0078D4?logo=windows11&logoColor=white)
 
   📚 [Documentation](https://tomoushie.github.io/ChaturbateRecorder/documentation.html) ·
   🌐 [Site du projet](https://tomoushie.github.io/ChaturbateRecorder/) ·
@@ -24,9 +23,7 @@
   📖 [Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki) ·
   🛡️ [SentinelGuard sur NuGet](https://www.nuget.org/packages/SentinelGuard) ·
   ❤️ [Sponsoriser le projet](https://github.com/sponsors/Tomoushie) ·
-  📜 [Version PowerShell d'origine](legacy-powershell/)
-
-  🇫🇷 **Français** · 🇬🇧 [English](README.en.md)
+  📜 [Version PowerShell d'origine](https://github.com/Tomoushie/ChaturbateRecorder/tree/winforms-legacy/legacy-powershell)
 </div>
 
 <br>
@@ -59,13 +56,13 @@ détaillés dans [Installation](#installation-utilisateurs).
 - 🗂️ **Fenêtre Paramètres dédiée** et réduction dans la zone de notification (les enregistrements continuent en arrière-plan).
 - 🐞 **Signaler un bug** en un clic, directement vers un ticket GitHub pré-rempli.
 
-Historique complet des versions dans le dialogue "Nouveautés" de l'application, ou [`Config/Changelog.cs`](Config/Changelog.cs).
+Historique complet des versions dans le dialogue "Nouveautés" de l'application.
 
 ## Pourquoi ce projet existe
 
-Chaturbate Recorder est né d'un [script PowerShell](legacy-powershell/)
-personnel, réécrit en application WinForms .NET 10 pour gagner en
-fiabilité, en ergonomie et en maintenabilité.
+Chaturbate Recorder est né d'un [script PowerShell](https://github.com/Tomoushie/ChaturbateRecorder/tree/winforms-legacy/legacy-powershell)
+personnel — réécrit en application .NET 10, d'abord en WinForms, puis portée
+en **WPF** (2026) pour gagner en fiabilité, en ergonomie et en maintenabilité.
 
 **Ce qui le distingue** : la plupart des enregistreurs de ce type sont
 de simples wrappers autour de `yt-dlp`, sans se soucier de ce qu'ils
@@ -80,9 +77,9 @@ des dossiers sensibles sont surveillées. Le détail complet est sur la
 page [Sécurité du wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki/Securite)
 et la [page Fonctionnalités du site](https://tomoushie.github.io/ChaturbateRecorder/features.html).
 
-**Pourquoi il est fiable** : suite de tests xUnit (build+tests exécutés
-automatiquement sur chaque changement, voir les badges plus haut), un
-watchdog anti-freeze surveille `yt-dlp`/`ffmpeg` en continu, et chaque
+**Pourquoi il est fiable** : suite de tests xUnit (241 tests, build+tests
+exécutés automatiquement sur chaque changement, voir les badges plus haut),
+un watchdog anti-freeze surveille `yt-dlp`/`ffmpeg` en continu, et chaque
 enregistrement est identifié par un nom de fichier déterministe (pas
 d'heuristique fragile) pour que miniature/réencodage retrouvent toujours
 le bon fichier.
@@ -118,11 +115,11 @@ Sécurité plus bas).
 Les deux ZIP restent attachés à chaque release, pour une installation hors ligne
 ou si tu préfères garder la main :
 
-1. Télécharge **Standard** (~550 Ko, nécessite le
+1. Télécharge **Standard** (nécessite le
    [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0))
-   ou **Portable** (~46 Mo, autonome).
+   ou **Portable** (autonome, aucun runtime requis).
 2. Extrais-le où tu veux.
-3. Place `yt-dlp.exe` et `ffmpeg.exe` à côté de l'exécutable (non inclus, voir [Prérequis](#prérequis-développeurs)).
+3. Place `yt-dlp.exe` et `ffmpeg.exe` à côté de l'exécutable (non inclus, voir [Prérequis](#prérequis)).
 4. Lance `ChaturbateRecorder.exe`.
 
 Guide détaillé (première configuration, sécurité, dépannage) : voir le **[Wiki](https://github.com/Tomoushie/ChaturbateRecorder/wiki)**.
@@ -158,25 +155,12 @@ Rien n'est journalisé, rien n'est levé dans ton dos — tu décides quoi en fa
 Cible `net8.0-windows` et `net10.0-windows`, sous double licence MIT ou
 Apache-2.0. Détails et exemples : [`SentinelGuard/README.md`](SentinelGuard/README.md).
 
-**L'application utilise ce package, elle n'en garde pas de copie.** Les six
-validateurs vivaient en double, dans `Security/` et dans le package : le
-correctif de l'issue #16 (`ComputeSha256`, confiance à la première utilisation)
-n'a jamais atteint la copie publiée, et rien ne l'a signalé — les deux
-compilaient, les deux suites de tests passaient. Il n'y a plus qu'un exemplaire.
-
-**Ce qui reste dans l'application, et pourquoi** : `DownloadEngine` et `Logger`.
-La partie réutilisable du moteur — lancer un binaire, capturer sa sortie,
-surveiller son inactivité, tuer tout l'arbre de processus — est passée dans
-`GuardedProcessRunner`. Ce qui reste ne concerne que yt-dlp (ses arguments, sa
-regex de progression, son fichier de log) ou que cette application-ci (le chemin
-de ses logs) : ça n'aurait aucune valeur pour un projet tiers, et un
-enregistreur de lives n'a rien à faire dans une bibliothèque de sécurité
-généraliste.
+**L'application utilise ce package, elle n'en garde pas de copie.**
 
 ## 🔒 Sécurité — ce qui est en place, et ce qui ne l'est pas
 
 Cette liste est volontairement vérifiable : chaque ligne correspond à du code
-présent dans le dépôt, et la seconde moitié dit ce qui **manque**.
+présent dans le dépôt.
 
 **En place :**
 
@@ -192,15 +176,12 @@ présent dans le dépôt, et la seconde moitié dit ce qui **manque**.
 | Watchdog anti-freeze | yt-dlp/ffmpeg bloqués sans fin |
 | Noms de fichiers déterministes | Miniature ou réencodage associés au mauvais enregistrement |
 | CodeQL + audit des dépendances en CI | Vulnérabilités connues et code à risque |
-| SBOM CycloneDX attaché à chaque release | Chaîne de dépendances non vérifiable |
 
 **Pas en place, et pourquoi :**
 
 - **Signature Authenticode de l'exécutable** — bloquée sur l'obtention d'un
   certificat de signature de code, qui est payant. Rien ne le contourne côté
   logiciel.
-- **Vérification d'intégrité du dossier `Tools`** — prévue, pas encore écrite.
-- **Isolation de yt-dlp en bac à sable** — envisagée, pas commencée.
 
 L'application ne collecte rien, n'a pas de compte, et le seul appel réseau
 qu'elle effectue d'elle-même est la recherche de mise à jour, désactivable dans
@@ -208,152 +189,67 @@ les Paramètres.
 
 ## Pour les développeurs
 
-### Prérequis (développeurs)
+Documentation technique complète (architecture, décisions, pièges WPF
+mesurés) dans [`CLAUDE.md`](CLAUDE.md), la référence de ce dépôt.
+
+### Prérequis
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (Windows)
-- `yt-dlp.exe` et `ffmpeg.exe` placés dans `Tools\` à la racine du projet (voir
-  `ChaturbateRecorderApp.csproj` — copiés à côté de l'exécutable à chaque
-  build ; ajuste `AppConfig.YtDlpPath` / `AppConfig.FFmpegPath` si tu préfères
-  un autre emplacement)
-- `donate_qr.png` dans `Assets\` (déjà inclus) — sera copié à côté de l'exe au build
-- (optionnel) `ffprobe.exe` à côté de l'exécutable, pour afficher la durée des
-  vidéos dans l'historique des enregistrements
+- `yt-dlp.exe` et `ffmpeg.exe` placés dans `Tools\` à la racine du projet —
+  copiés à côté de l'exécutable à chaque build
+- `NuGet.Config` local requis (déjà présent) : la config NuGet globale de
+  certaines machines n'a aucune source configurée, ce qui bloque `restore`
+  sans lui (`NU1100`)
 
 ### Build
 
 ```powershell
-cd ChaturbateRecorderApp
-dotnet build -c Release
+dotnet build ChaturbateRecorderApp.Wpf.csproj -c Release
 ```
-
-L'exécutable se trouve ensuite dans `bin\Release\net10.0-windows\ChaturbateRecorder.exe`.
-
-> Si `dotnet build`/`publish` échoue avec `NU1100` (impossible de résoudre un
-> package), vérifie que `NuGet.Config` à la racine du projet est bien présent —
-> le `NuGet.Config` global de certaines machines n'a aucune source configurée,
-> ce qui bloque toute dépendance externe.
 
 ### Tests
 
-Suite xUnit (`Tests/ChaturbateRecorderApp.Tests.csproj`) couvrant la sandbox
-URL, la sandbox de chemins, la vérification de hash binaire, le parsing de
-progression yt-dlp, et la correspondance SAN (Subject Alternative Name) TLS :
+Suite xUnit (241 tests) couvrant la sandbox URL, la sandbox de chemins, la
+vérification de hash binaire, le parsing de progression yt-dlp, la
+correspondance SAN (TLS), et le rendu visuel réel des vues WPF :
 
 ```powershell
-dotnet test Tests/ChaturbateRecorderApp.Tests.csproj
+dotnet test Tests\ChaturbateRecorderApp.Wpf.Tests.csproj
 ```
 
 ### Publier un .exe autonome (single-file, sans dépendre du runtime .NET installé)
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish ChaturbateRecorderApp.Wpf.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
-Résultat dans `bin\Release\net10.0-windows\win-x64\publish\ChaturbateRecorder.exe`
-(~115 Mo, runtime .NET inclus — n'a besoin de rien d'installé sur la machine
-cible). Copie aussi `donate_qr.png` (et tes propres `yt-dlp.exe`/`ffmpeg.exe`
-si tu veux les distribuer avec) depuis ce même dossier `publish\`.
-
-<details>
-<summary><strong>Avant le premier lancement (hash yt-dlp/ffmpeg)</strong></summary>
-
-Comme pour la version PowerShell, `AppConfig.YtDlpExpectedSha256` et
-`AppConfig.FfmpegExpectedSha256` sont vides — la vérification d'intégrité
-binaire refusera donc de démarrer tant qu'ils ne sont pas renseignés :
-
-```powershell
-Get-FileHash Tools\yt-dlp.exe -Algorithm SHA256
-Get-FileHash Tools\ffmpeg.exe -Algorithm SHA256
-```
-
-Colle les valeurs obtenues dans `Config/AppConfig.cs`.
-
-</details>
-
-<details>
-<summary><strong>Signer l'EXE (Authenticode)</strong></summary>
-
-Signer un exécutable nécessite un **certificat de signature de code que tu
-possèdes** — je ne peux ni t'en fournir un, ni signer quoi que ce soit à ta
-place (aucune clé privée, aucun accès à ta machine).
-
-#### Option 1 — certificat commercial (recommandé pour diffusion publique)
-
-Achète un certificat de signature de code auprès d'une autorité reconnue
-(DigiCert, Sectigo, SSL.com...), puis :
-
-```powershell
-signtool sign /fd SHA256 /a /f "moncert.pfx" /p "motdepasse" `
-    /t http://timestamp.digicert.com `
-    bin\Release\net10.0-windows\ChaturbateRecorder.exe
-```
-
-`signtool.exe` fait partie du Windows SDK (souvent déjà présent si tu as
-Visual Studio installé, sinon installable séparément).
-
-#### Option 2 — certificat auto-signé (usage personnel uniquement)
-
-Utile seulement sur **ta propre machine** (Windows ne fera pas confiance à ce
-certificat ailleurs, SmartScreen continuera d'avertir sur d'autres postes) :
-
-```powershell
-$cert = New-SelfSignedCertificate -Type CodeSigning -Subject "CN=TonNom" `
-    -CertStoreLocation Cert:\CurrentUser\My
-
-signtool sign /fd SHA256 /sha1 $cert.Thumbprint `
-    bin\Release\net10.0-windows\ChaturbateRecorder.exe
-```
-
-C'est ce même thumbprint que tu peux ensuite renseigner dans
-`AppConfig.TrustedCaThumbprint` / `AppConfig.YtDlpExpectedSignerThumbprint`
-etc. si tu veux réutiliser ce certificat pour re-signer yt-dlp/ffmpeg et
-activer `EnableCaPinning`.
-
-</details>
+`--self-contained true` n'exige aucun runtime installé sur la machine cible ;
+`false` exige le **.NET 10 Desktop Runtime**.
 
 <details>
 <summary><strong>Structure du projet</strong></summary>
 
 ```
-ChaturbateRecorderApp/
-├── ChaturbateRecorderApp.csproj
-├── NuGet.Config                    (source nuget.org explicite, voir plus haut)
-├── Program.cs                      (point d'entrée)
-├── MainForm.cs                     (UI + câblage des événements)
-├── Properties/
-│   └── AssemblyInfo.cs             (InternalsVisibleTo pour les tests)
-├── Config/
-│   ├── AppConfig.cs                 (config centralisée, équiv. $Config PS1)
-│   └── Changelog.cs                 (historique de versions, affiché en local)
-│                                    (les validateurs de sécurité vivent
-│                                     désormais dans SentinelGuard/, que
-│                                     l'application référence)
-├── Services/
-│   ├── Logger.cs                    (logs JSON structurés)
-│   ├── FavoritesManager.cs
-│   ├── SettingsManager.cs           (paramètres persistés, settings.json)
-│   ├── RecordingJob.cs              (métadonnées d'un enregistrement)
-│   ├── DownloadEngine.cs            (process yt-dlp, watchdog anti-freeze)
-│   ├── UpdateChecker.cs             (vérification des releases GitHub)
-│   └── UpdateInstaller.cs           (téléchargement + remplacement de l'exe)
-├── UI/
-│   ├── ThemeManager.cs               (thème clair/sombre, animations boutons)
-│   ├── IconManager.cs               (icônes vectorielles, rendu SVG->Bitmap)
-│   ├── Localization.cs              (traductions FR/EN de l'UI principale)
-│   ├── RoundedGroupPanel.cs          (panneaux à bordure arrondie)
-│   ├── SettingsForm.cs               (fenêtre Paramètres séparée)
-│   ├── ThemedProgressBar.cs          (barre de progression dessinée à la main)
-│   └── TutorialForm.cs              (guide de démarrage)
-├── Assets/
-│   ├── donate_qr.png
-│   ├── logo.png / screenshot*.png   (utilisés par ce README)
-│   └── app.ico
-├── Tools/                           (yt-dlp.exe / ffmpeg.exe — non versionnés, voir Prérequis)
-├── Tests/
-│   └── ChaturbateRecorderApp.Tests.csproj  (suite xUnit, voir section Tests)
-├── docs/
-│   └── index.html                   (site du projet, GitHub Pages, FR/EN)
-└── legacy-powershell/                (version d'origine avant migration, voir son propre README)
+ChaturbateRecorderApp WPF/
+├── ChaturbateRecorderApp.Wpf.csproj
+├── NuGet.Config                     (source nuget.org explicite, voir Prérequis)
+├── App.xaml / App.xaml.cs           (point d'entrée)
+├── Views/                           (fenêtres et vues XAML)
+├── ViewModels/                      (logique de présentation, MVVM)
+├── Converters/                      (convertisseurs de binding XAML)
+├── Themes/                          (thème clair/sombre, styles de contrôles)
+├── UI/                              (localisation, gestion de thème)
+├── Config/                          (configuration centralisée, changelog)
+├── Services/                        (moteur de téléchargement, historique,
+│                                     mise à jour, pont vers le module premium)
+├── SentinelGuard/                   (garde-fous de sécurité, aussi publiés
+│                                     séparément sur NuGet — voir plus haut)
+├── SentinelGuard.Tests/
+├── Tests/                           (suite xUnit, 241 tests)
+├── Tools/                           (yt-dlp.exe / ffmpeg.exe — non versionnés)
+├── Assets/                          (logo, captures d'écran, QR de don)
+├── installer/                       (script de l'installateur)
+└── docs/                            (site du projet, GitHub Pages)
 ```
 
 </details>
@@ -405,6 +301,11 @@ L'utilisateur est seul responsable de l'usage qu'il fait des enregistrements. Il
 ## Licence
 
 Double licence, au choix : [MIT](LICENSE-MIT) ou [Apache License 2.0](LICENSE-APACHE).
+
+**Exception : `Premium/StreamRecorderPro.dll`** (Stream Recorder Pro, le
+complément payant) est un composant **propriétaire**, fourni en binaire et
+**non couvert** par cette double licence. Il est livré avec l'application mais
+ne s'active qu'avec une licence achetée — voir [`Premium/LISEZMOI.txt`](Premium/LISEZMOI.txt).
 
 Sauf mention contraire explicite de ta part, toute contribution soumise pour
 inclusion dans ce projet est placée sous cette double licence, sans condition

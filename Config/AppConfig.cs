@@ -8,8 +8,10 @@ namespace ChaturbateRecorderApp.Config
     /// Équivalent du hashtable $Config et des variables de toggles de sécurité
     /// du script PowerShell d'origine.
     ///
-    /// A REMPLIR avant utilisation : YtDlpExpectedSha256, FfmpegExpectedSha256,
-    /// et éventuellement les valeurs de pinning CA/TLS si tu actives ces toggles.
+    /// A REMPLIR avant utilisation : éventuellement les valeurs de pinning
+    /// CA/TLS si tu actives ces toggles. YtDlpExpectedSha256 et
+    /// FfmpegExpectedSha256 ne sont PLUS à remplir depuis 2.1.1 — voir le
+    /// commentaire qui les précède.
     /// </summary>
     public static class AppConfig
     {
@@ -82,6 +84,10 @@ namespace ChaturbateRecorderApp.Config
         /// - une mise a jour qui remplace le dossier de l'application effacait
         ///   la liste de salons de l'utilisateur.
         ///
+        /// Trouve autrement : l'aperçu WPF affichait une liste de salons VIDE
+        /// alors que le WinForms en avait onze, chacun lisant le `rooms.json`
+        /// de SON dossier.
+        ///
         /// `trusted-binaries.json` reste volontairement a cote de l'exe : il
         /// decrit les binaires INSTALLES et non l'utilisateur, et deux
         /// installations qui partageraient ce fichier se declareraient
@@ -98,7 +104,9 @@ namespace ChaturbateRecorderApp.Config
 
         /// <summary>
         /// Chemin d'ECRITURE d'un fichier de donnees : toujours le nouveau
-        /// dossier, dont l'existence est assuree ici.
+        /// dossier, dont l'existence est assuree ici. Un appelant qui n'y
+        /// penserait pas echouerait au tout premier enregistrement, sur une
+        /// machine neuve uniquement — le pire moment pour s'en apercevoir.
         /// </summary>
         public static string DataFile(string nom)
         {
@@ -112,8 +120,10 @@ namespace ChaturbateRecorderApp.Config
         /// l'exe. C'est toute la migration — elle se fait a la premiere lecture,
         /// et le prochain enregistrement depose la version neuve.
         ///
-        /// **L'ancien fichier n'est jamais supprime** : quelqu'un qui revient a
-        /// une version anterieure doit retrouver ses donnees.
+        /// **L'ancien fichier n'est jamais supprime**, comme pour la migration
+        /// favoris → salons : quelqu'un qui revient a une version anterieure
+        /// doit retrouver ses donnees. Les effacer rendrait la mise a jour
+        /// irreversible pour un gain nul.
         /// </summary>
         public static string DataFileToRead(string nom)
         {
@@ -126,8 +136,12 @@ namespace ChaturbateRecorderApp.Config
             // RECOPIER, et pas seulement lire ailleurs. Sans cette copie la
             // reprise n'atteindrait le nouvel emplacement qu'au prochain
             // ENREGISTREMENT — donc jamais pour quelqu'un qui se contente de
-            // consulter sa liste, et le fichier resterait a la merci de la mise
-            // a jour qui remplace le dossier de l'application.
+            // consulter sa liste, et le fichier resterait a la merci de la
+            // mise a jour qui remplace le dossier de l'application. C'est tout
+            // l'objet du changement.
+            //
+            // On rend le chemin NEUF apres coup : c'est desormais lui qui fait
+            // foi, et le lecteur travaillera sur la copie qu'il ecrira.
             try
             {
                 Directory.CreateDirectory(DataDir);
@@ -136,15 +150,19 @@ namespace ChaturbateRecorderApp.Config
             }
             catch
             {
-                // Echec sans gravite : on lit l'ancien et la reprise se rejoue
-                // au prochain demarrage. PAS DE TRACE ICI : `Logger` vit dans
-                // `Services` et depend lui-meme d'`AppConfig.LogDir` —
-                // journaliser d'ici inverserait la couche basse.
+                // Echec sans gravite : on lit l'ancien, comme avant, et la
+                // reprise se rejouera au prochain demarrage.
+                //
+                // PAS DE TRACE ICI, volontairement : `Logger` vit dans
+                // `Services` et depend lui-meme d'`AppConfig.LogDir`.
+                // Journaliser d'ici inverserait la couche basse, pour un echec
+                // qui ne fait rien perdre — l'appelant lit et journalise deja
+                // ses propres problemes de lecture.
                 return ancien;
             }
         }
-
-        // Ancien fichier, LU seulement (RoomStore le migre vers rooms.json).
+        // Ancien fichier, LU seulement (RoomStore le migre vers rooms.json) :
+        // il passe donc par la resolution de lecture, pas d'ecriture.
         public static string FavoritesFile     = DataFileToRead("favorites.json");
         public static string DonateQrPath      = Path.Combine(AppDir, "donate_qr.png");
         public static string DonateQrExpectedSha256 = "FD21762BBE7C23A1CBDB5AB18210FDC2F6466B6840E20D2E795548D80F73CB71";
@@ -156,6 +174,42 @@ namespace ChaturbateRecorderApp.Config
         // itch.io de l'application libre : un compte qui encaisse ne doit pas
         // porter le nom d'une plateforme adulte, sous peine de gel.
         public static string ProUrl            = "https://tomoushie.itch.io/stream-recorder-pro";
+        // 2.2.0 — adresse de support pour les acheteurs Pro. C'est la même que
+        // celle des fichiers LISEZMOI-ACHETEUR / README-BUYER : une seule
+        // adresse à surveiller, et le bouton « Recevoir ma licence » de la
+        // fenêtre Premium l'ouvre avec l'identifiant d'installation déjà
+        // rempli. Donnée, pas libellé : ne pas la mettre dans Localization.
+        public static string SupportEmail     = "nowaktombe@protonmail.com";
+        // 2.2.0 — service d'activation en ligne (Cloudflare Worker, code dans
+        // StreamRecorderPro/LicenceWorker). Chaîne VIDE = bouton masqué : une
+        // version compilée sans service déployé reste cohérente au lieu
+        // d'offrir un chemin qui échoue.
+        //
+        // Ce nom de Worker doit correspondre à celui de wrangler.toml. Si le
+        // service est déployé sous un autre nom, changer UNIQUEMENT cette
+        // ligne (et ActivationPageUrl ci-dessous).
+        public static string ActivationEndpoint =
+            "https://stream-recorder-pro-licences.tom-nowak.workers.dev/activate";
+        // Page publique de secours, ouverte si l'activation dans l'application
+        // échoue. L'identifiant d'installation y est ajouté en paramètre.
+        public static string ActivationPageUrl =
+            "https://tomoushie.github.io/ChaturbateRecorder/activer.html";
+        // 120.0 — deux comptes bancaires, alternative directe à itch.io pour
+        // payer StreamRecorderPro. VOLONTAIREMENT PAS PayPal.me/GitHub
+        // Sponsors ici (voir le commentaire de ProUrl juste au-dessus, même
+        // motif) : un virement bancaire n'a aucune politique de contenu, ce
+        // risque ne s'applique donc qu'aux deux comptes déjà utilisés par le
+        // panneau "Soutenir" (dons généraux à l'app gratuite), qui restent
+        // hors de ce circuit. Livraison MANUELLE dans les deux cas — DLL +
+        // licence envoyées à la main après réception, aucune automatisation
+        // comme itch.io. Nom du bénéficiaire à CONFIRMER auprès du mainteneur
+        // avant publication : le QR EPC le porte, un nom faux n'empêche pas
+        // le virement (les banques matchent surtout sur l'IBAN) mais peut
+        // déclencher un avertissement dans l'appli bancaire du payeur.
+        public static string PremiumBeneficiaire = "Tomoushie";
+        public static string PremiumIban1      = "BE91377089117876";
+        public static string PremiumIban2      = "BE18650637740065";
+        public static string PremiumIban2Bic   = "REVOBEB2";
         // 102.0 — relais qui crée l'issue à la place de l'utilisateur, pour
         // qui n'a pas de compte GitHub. Le code source du service est dans
         // report-worker/. Chaîne VIDE = fonctionnalité désactivée : la fenêtre
@@ -212,12 +266,28 @@ namespace ChaturbateRecorderApp.Config
         public static readonly string[] Whitelist = Services.Platforms.AllowedDomains;
 
         // --- Vérification binaire (hash + Authenticode) ---
-        public static string YtDlpExpectedSha256           = "52FE3C26DCF71FBDC85B528589020BB0B8E383155CFA81B64DD447BBE35E24B8";
+        //
+        // 2.1.1 — CES DEUX EMPREINTES SONT VIDES À DESSEIN, elles ne sont plus
+        // qu'un repli. L'ancre réelle est `trusted-binaries.json`, écrit par
+        // l'installateur avec ce qu'il a VRAIMENT posé après l'avoir vérifié
+        // contre la somme publiée par l'auteur du binaire. Une empreinte figée
+        // ici ne peut pas suivre deux cibles mouvantes — ffmpeg vient de l'URL
+        // « release-essentials » de gyan.dev (toujours la dernière build) et
+        // yt-dlp publie presque chaque semaine — et celle de ffmpeg, héritée du
+        // portage WinForms, affichait « INATTENDU » chez tout le monde pour un
+        // fichier conforme à sa source (constaté chez le mainteneur le 21-09).
+        // En l'absence des deux, le Diagnostic dit « non vérifié » et montre
+        // l'empreinte : c'est le cas de la variante PORTABLE, qui ne livre ni
+        // yt-dlp ni ffmpeg (ffmpeg est sous GPL) et n'a donc aucune référence
+        // à opposer. Remplir une de ces valeurs reste possible pour épingler
+        // une build précise : elle l'emporte alors sur tout, y compris sur le
+        // fichier d'installation.
+        public static string YtDlpExpectedSha256           = "";
         public static bool   YtDlpRequireAuthenticode       = false;
         public static string YtDlpExpectedSignerThumbprint  = "";
         public static string YtDlpExpectedSignerSubject     = "";
 
-        public static string FfmpegExpectedSha256           = "AD8F211BC894755E0061C55AB280AE00E8D3D4F15A8CC4372B24CFA247B5942E";
+        public static string FfmpegExpectedSha256           = "";
         public static bool   FfmpegRequireAuthenticode       = false;
         public static string FfmpegExpectedSignerThumbprint  = "";
         public static string FfmpegExpectedSignerSubject     = "";

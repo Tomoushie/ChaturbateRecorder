@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,18 +25,19 @@ namespace ChaturbateRecorderApp.Services
     {
         public List<string> Rooms { get; private set; } = new();
 
-        // Voir AppConfig.DataFileToRead : lecture la ou le fichier est,
-        // ecriture toujours dans le dossier de donnees.
+        // Voir AppConfig.DataFileToRead : on lit la ou le fichier est, on ecrit
+        // toujours dans le dossier de donnees.
         private static string FichierALire => AppConfig.DataFileToRead("watchlist.json");
         private static string FichierAEcrire => AppConfig.DataFile("watchlist.json");
 
         public void Load()
         {
-            if (!File.Exists(FichierALire)) return;
+            var WatchFile = FichierALire;
+            if (!File.Exists(WatchFile)) return;
 
             try
             {
-                var raw = File.ReadAllText(FichierALire);
+                var raw = File.ReadAllText(WatchFile);
                 if (string.IsNullOrWhiteSpace(raw)) return;
                 Rooms = JsonSerializer.Deserialize<List<string>>(raw) ?? new List<string>();
             }
