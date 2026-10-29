@@ -2,9 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
 using ChaturbateRecorderApp.Config;
-using ChaturbateRecorderApp.UI;
 
 namespace ChaturbateRecorderApp.Services
 {
@@ -24,12 +22,35 @@ namespace ChaturbateRecorderApp.Services
         // d'echouer — et le rapport de crash n'aurait toujours pas pu s'ecrire.
         private static string CrashDir => Path.Combine(AppConfig.LogDir, "crashes");
 
+        /// <summary>
+        /// Posé par la couche d'interface au démarrage. Le service ne connaît
+        /// plus la fenêtre qu'il affiche : en WinForms il instanciait
+        /// `CrashReportForm` directement, ce qui l'aurait fait dépendre d'un
+        /// type WPF ici — et de WinForms là-bas. Le point d'accroche laisse la
+        /// capture d'exception utilisable sans interface du tout, donc testable.
+        /// Nul = le rapport est écrit sur disque et journalisé, sans dialogue.
+        /// </summary>
+        public static Action<Exception, string?, bool>? ShowCrashDialog { get; set; }
+
+        /// <summary>
+        /// N'installe QUE le filet AppDomain. En WinForms, `Install` posait
+        /// aussi `Application.ThreadException` pour le thread d'interface ;
+        /// l'équivalent WPF est `DispatcherUnhandledException`, qui se déclare
+        /// dans App.xaml et non par abonnement — d'où `HandleDispatcher`
+        /// ci-dessous, que le gestionnaire d'App.xaml.cs appelle.
+        /// </summary>
         public static void Install()
         {
-            Application.ThreadException += (s, e) => Handle(e.Exception, isTerminating: false);
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
                 Handle(e.ExceptionObject as Exception ?? new Exception("Exception non-.NET inconnue : " + e.ExceptionObject), e.IsTerminating);
         }
+
+        /// <summary>
+        /// Pendant WPF de `Application.ThreadException` : à appeler depuis le
+        /// gestionnaire `DispatcherUnhandledException` d'App.xaml.cs, qui doit
+        /// ensuite poser `e.Handled = true` s'il veut que l'application survive.
+        /// </summary>
+        public static void HandleDispatcher(Exception ex) => Handle(ex, isTerminating: false);
 
         private static void Handle(Exception ex, bool isTerminating)
         {
@@ -56,8 +77,7 @@ namespace ChaturbateRecorderApp.Services
 
             try
             {
-                using var form = new CrashReportForm(ex, crashFile, isTerminating);
-                form.ShowDialog();
+                ShowCrashDialog?.Invoke(ex, crashFile, isTerminating);
             }
             catch
             {
@@ -95,7 +115,11 @@ namespace ChaturbateRecorderApp.Services
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = Application.ExecutablePath,
+                    // `Application.ExecutablePath` était du WinForms. Le pendant
+                    // sans dépendance de bureau est `Environment.ProcessPath`,
+                    // qui rend bien le chemin de l'apphost — y compris pour la
+                    // variante portable publiée en PublishSingleFile.
+                    FileName = Environment.ProcessPath ?? string.Empty,
                     UseShellExecute = true,
                 });
             }

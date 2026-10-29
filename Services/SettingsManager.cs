@@ -15,6 +15,21 @@ namespace ChaturbateRecorderApp.Services
         public bool? AdvancedMode { get; set; }
         // "fr" ou "en" (20.0) — absent/inconnu -> français par défaut.
         public string? Language { get; set; }
+
+        /// <summary>
+        /// « dark » ou « light ». Nul = clair, valeur par defaut historique.
+        ///
+        /// **CHAMP AJOUTE PAR LA VERSION WPF, ABSENT DU WINFORMS.** Le theme
+        /// choisi dans les Parametres ne survivait a aucune fermeture : le
+        /// WinForms n'a jamais eu ou le ranger. L'ajout est RETROCOMPATIBLE
+        /// dans les deux sens — un settings.json ecrit par la version WPF est
+        /// lu sans erreur par la WinForms, qui ignore simplement la cle, et
+        /// l'inverse retombe sur clair.
+        ///
+        /// Consequence assumee : les deux copies de ce fichier DIVERGENT tant
+        /// que la migration dure. Tranche avec le mainteneur le 2026-08-16.
+        /// </summary>
+        public string? Theme { get; set; }
         // Déplacée dans la fenêtre Paramètres (19.0) : désormais mémorisée
         // entre les lancements (ne l'était pas quand la case vivait dans le
         // formulaire principal).
@@ -47,6 +62,17 @@ namespace ChaturbateRecorderApp.Services
         // composant a l'enum ne decale pas silencieusement les reglages
         // existants.
         public List<string> DisabledComponents { get; set; } = new();
+
+        /// <summary>
+        /// Motif de nommage intelligent (premium). Nul/vide = comportement
+        /// GRATUIT inchangé (« salon-date_heure »). N'a d'effet qu'avec une
+        /// licence active — le réglage peut exister sans elle (rien ne
+        /// l'empêche), mais ne fait alors rien : la valeur payée est la
+        /// PERSONNALISATION, pas la donnée elle-même.
+        ///
+        /// Jetons reconnus : {salon}, {date}, {heure}, {qualite}.
+        /// </summary>
+        public string? SmartNamingPattern { get; set; }
     }
 
     /// <summary>
@@ -56,18 +82,20 @@ namespace ChaturbateRecorderApp.Services
     /// </summary>
     public static class SettingsManager
     {
-        // Voir AppConfig.DataFileToRead : lecture la ou le fichier est,
-        // ecriture toujours dans le dossier de donnees.
+        // Lecture et ecriture ne visent PAS le meme chemin le temps d'une
+        // migration : on lit la ou le fichier se trouve, on ecrit toujours dans
+        // le dossier de donnees. Voir AppConfig.DataFileToRead.
         private static string FichierALire => AppConfig.DataFileToRead("settings.json");
         private static string FichierAEcrire => AppConfig.DataFile("settings.json");
 
         public static UserSettings Load()
         {
-            if (!File.Exists(FichierALire)) return new UserSettings();
+            var SettingsFile = FichierALire;
+            if (!File.Exists(SettingsFile)) return new UserSettings();
 
             try
             {
-                var raw = File.ReadAllText(FichierALire);
+                var raw = File.ReadAllText(SettingsFile);
                 if (string.IsNullOrWhiteSpace(raw)) return new UserSettings();
                 return JsonSerializer.Deserialize<UserSettings>(raw) ?? new UserSettings();
             }

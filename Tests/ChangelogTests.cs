@@ -291,129 +291,89 @@ namespace ChaturbateRecorderApp.Tests
             }
         }
 
-        // --- Mise en forme du dialogue (ChangelogForm.BuildLines) ---
+        // --- Mise en forme du dialogue ---
         //
-        // Assertions volontairement structurelles (en-têtes, puces, ordre) et
-        // jamais sur du texte traduit : Localization.Current est un état
-        // statique global qu'un autre test peut basculer en parallèle.
+        // Le WinForms testait `ChangelogForm.BuildLines`, qui produisait une
+        // liste de lignes. En WPF la mise en page est en XAML et n'a plus de
+        // fonction a tester : la surface equivalente est ChangelogViewModel,
+        // qui compose les entetes et regroupe les changements.
+        //
+        // Assertions volontairement STRUCTURELLES (nombre d'entrees, ordre,
+        // presence d'un repli) et jamais sur du texte traduit :
+        // Localization.Current est un etat statique global qu'un autre test
+        // peut basculer en parallele.
 
         /// <summary>
-        /// Cas courant (mise à jour d'une version à la suivante) : une simple
-        /// liste de puces. Un en-tête ne ferait que répéter le numéro de
-        /// version déjà présent dans le titre de la fenêtre.
+        /// Chaque version annoncee donne UNE entree, portant son entete et ses
+        /// changements.
         /// </summary>
         [Fact]
-        public void ASingleAnnouncedVersionIsRenderedWithoutAVersionHeader()
+        public void EachAnnouncedVersionBecomesOneEntry()
         {
-            var lines = ChangelogForm.BuildLines(new[]
-            {
-                ("1.17.0", new[] { "Première nouveauté.", "Seconde nouveauté." }),
-            });
+            var vm = new ViewModels.ChangelogViewModel("1.15.0", "1.16.0");
 
-            Assert.Equal(
-                new[] { ("• Première nouveauté.", false), ("• Seconde nouveauté.", false) },
-                lines);
+            Assert.NotEmpty(vm.Versions);
+            Assert.All(vm.Versions, v => Assert.False(string.IsNullOrWhiteSpace(v.Titre)));
+            Assert.All(vm.Versions, v => Assert.NotEmpty(v.Changements));
         }
 
         /// <summary>
-        /// Plusieurs versions : chaque groupe est précédé de son numéro, en
-        /// gras, sinon l'utilisateur voit une liste de puces sans savoir
-        /// laquelle vient de quelle version.
+        /// L'ordre suit celui de GetChangesSince — plus recent en premier.
+        /// L'inverser mettrait les nouveautes les plus anciennes en tete de la
+        /// fenetre, c'est-a-dire exactement ce que personne ne cherche.
         /// </summary>
         [Fact]
-        public void SeveralAnnouncedVersionsAreGroupedUnderTheirVersionHeader()
+        public void TheNewestVersionComesFirst()
         {
-            var lines = ChangelogForm.BuildLines(new[]
+            var attendu = Changelog.GetChangesSince("1.10.0", "1.36.0", english: false);
+            var vm = new ViewModels.ChangelogViewModel("1.10.0", "1.36.0");
+
+            Assert.Equal(attendu.Length, vm.Versions.Count);
+            for (var i = 0; i < attendu.Length; i++)
             {
-                ("1.17.0", new[] { "Nouveauté récente." }),
-                ("1.16.0", new[] { "Nouveauté intermédiaire." }),
-            });
-
-            Assert.Equal(
-                new[]
-                {
-                    (Localization.Format("changelog.versionHeader", "1.17.0"), true),
-                    ("• Nouveauté récente.", false),
-                    (Localization.Format("changelog.versionHeader", "1.16.0"), true),
-                    ("• Nouveauté intermédiaire.", false),
-                },
-                lines);
-        }
-
-        /// <summary>
-        /// L'ordre du rendu suit celui de GetChangesSince (plus récent en
-        /// premier) : c'est ce que voit l'utilisateur, et l'inverser mettrait
-        /// les nouveautés les plus anciennes en tête de la fenêtre.
-        /// </summary>
-        [Fact]
-        public void TheRenderedLinesKeepTheNewestVersionFirst()
-        {
-            var headers = ChangelogForm
-                .BuildLines(Changelog.GetChangesSince("1.14.0", "1.17.0", english: false))
-                .Where(l => l.IsHeader)
-                .Select(l => l.Text)
-                .ToArray();
-
-            Assert.Equal(
-                new[] { "1.17.0", "1.16.0", "1.15.1", "1.15.0", "1.14.1" }
-                    .Select(v => Localization.Format("changelog.versionHeader", v))
-                    .ToArray(),
-                headers);
-        }
-
-        /// <summary>
-        /// Rendu anglais d'une plage à cheval sur 1.16.0 : les entrées non
-        /// traduites doivent apparaître telles quelles (en français) au lieu de
-        /// laisser un groupe vide sous son en-tête.
-        /// </summary>
-        [Fact]
-        public void AMixedLanguageAnnouncementRendersEveryVersionWithItsBullets()
-        {
-            var announced = Changelog.GetChangesSince("1.14.0", "1.17.0", english: true);
-            var lines = ChangelogForm.BuildLines(announced);
-
-            foreach (var (version, changes) in announced)
-            {
-                Assert.Contains((Localization.Format("changelog.versionHeader", version), true), lines);
-                foreach (var change in changes)
-                    Assert.Contains(("• " + change, false), lines);
+                Assert.Contains(attendu[i].Version, vm.Versions[i].Titre);
             }
-
-            // Aucune puce en trop ni en moins : une ligne par changement, plus
-            // une par en-tête de version.
-            Assert.Equal(
-                announced.Sum(e => e.Changes.Length) + announced.Length,
-                lines.Length);
-        }
-
-        [Fact]
-        public void AnEmptyAnnouncementRendersTheNoDetailsMessageInsteadOfNothing()
-        {
-            var lines = ChangelogForm.BuildLines(Array.Empty<(string, string[])>());
-
-            var line = Assert.Single(lines);
-            Assert.False(line.IsHeader);
-            Assert.False(string.IsNullOrWhiteSpace(line.Text));
-            Assert.DoesNotContain("•", line.Text);
         }
 
         /// <summary>
-        /// Une version sans aucune puce (entrée ajoutée au changelog mais
-        /// laissée vide) ne doit pas produire un en-tête suivi de rien.
+        /// LA FENETRE N'EST JAMAIS VIDE pour une version connue, et c'est un
+        /// REPLI EXPLICITE du code : quand aucune version n'entre dans la
+        /// plage, `GetChangesSince` rend l'entree de `upToVersion` elle-meme.
+        ///
+        /// **Deux premisses fausses ont ete essayees avant de lire la regle** :
+        /// « since == upTo n'annonce rien », puis « upTo anterieur a since
+        /// n'annonce rien ». Les deux rendent quand meme la version courante.
+        /// Ce test verrouille le comportement REEL, qui est aussi le bon : une
+        /// fenetre « Nouveautes » ouverte sur du vide se lirait comme un defaut.
         /// </summary>
         [Fact]
-        public void AVersionWithoutBulletsStillSaysSomethingUnderItsHeader()
+        public void TheListIsNeverEmptyForAKnownVersion()
         {
-            var lines = ChangelogForm.BuildLines(new[]
-            {
-                ("1.17.0", new[] { "Une nouveauté." }),
-                ("1.16.0", Array.Empty<string>()),
-            });
+            Assert.NotEmpty(new ViewModels.ChangelogViewModel("1.36.0", "1.36.0").Versions);
+            Assert.NotEmpty(new ViewModels.ChangelogViewModel("1.36.0", "1.15.0").Versions);
+            Assert.NotEmpty(new ViewModels.ChangelogViewModel(null, "1.36.0").Versions);
+        }
 
-            Assert.Equal(4, lines.Length);
-            Assert.True(lines[2].IsHeader);
-            Assert.False(lines[3].IsHeader);
-            Assert.False(string.IsNullOrWhiteSpace(lines[3].Text));
+        /// <summary>
+        /// Une version INCONNUE ne declenche pas le repli : il n'y a rien a
+        /// quoi retomber. C'est le seul chemin qui laisse la liste vide, et
+        /// c'est pour lui que `Vide` existe.
+        ///
+        /// `CurrentVersion`, pas un littéral : un littéral fige la version
+        /// APRÈS laquelle "rien n'existe encore" au jour où le test a été
+        /// écrit — chaque nouvelle entrée de changelog l'a rendu faux à deux
+        /// reprises (1.37.0 puis 1.38.0), pour la même raison à chaque fois.
+        /// `CurrentVersion` reste vrai par construction : c'est justement la
+        /// dernière version dont `TheCurrentAssemblyVersionHasAChangelogEntry`
+        /// garantit l'existence.
+        /// </summary>
+        [Fact]
+        public void AnUnknownVersionLeavesTheListEmpty()
+        {
+            var vm = new ViewModels.ChangelogViewModel(CurrentVersion, "99.99.99");
+
+            Assert.Empty(vm.Versions);
+            Assert.True(vm.Vide);
         }
     }
 }

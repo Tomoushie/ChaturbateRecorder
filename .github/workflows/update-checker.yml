@@ -104,23 +104,17 @@ jobs:
   # le fichier est bien régénéré dans le dépôt mais jamais publié : le push
   # ci-dessus est fait avec le GITHUB_TOKEN, qui ne déclenche aucun workflow,
   # donc le "paths: docs/**" de Pages Build ne part jamais (voir l'en-tête de
-  # pages-build.yml). Même correctif que 38.0, un cran plus bas : 38.0 a réparé
-  # la régénération du fichier, ceci répare sa publication.
+  # pages-build.yml).
   #
   # Conditionné au changement réel : ce workflow tourne aussi par cron
   # quotidien, et redéployer le site tous les jours pour un fichier identique
   # ne sert à rien.
   #
   # Le SHA du commit est transmis explicitement plutôt que de laisser le
-  # déploiement suivre « la pointe de main ». Observé le 2026-08-04 à la
-  # v1.21.0 : le job de déploiement s'est terminé en SUCCÈS tout en publiant le
-  # latest.json d'AVANT sa régénération, alors qu'il démarrait 10 secondes après
-  # le push ci-dessus — vraisemblablement une fenêtre de propagation entre le
-  # push et ce que voit le checkout suivant. Le défaut est intermittent : les
-  # releases suivantes (1.22.0, 1.22.1, 1.26.1) ont publié correctement, ce qui
-  # le rend impossible à reproduire à volonté.
-  # Figer le SHA supprime la course quelle que soit sa cause réelle — c'est ce
-  # qui compte, l'hypothèse ci-dessus n'ayant jamais pu être démontrée.
+  # déploiement suivre « la pointe de main » : une fenêtre de propagation entre
+  # le push et ce que voit le checkout suivant a déjà fait publier une version
+  # périmée par le passé (côté WinForms). Figer le SHA supprime la course quelle
+  # que soit sa cause réelle.
   deploy-pages:
     needs: update-latest-json
     if: needs.update-latest-json.outputs.changed == 'true'
