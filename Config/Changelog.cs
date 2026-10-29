@@ -349,6 +349,11 @@ namespace ChaturbateRecorderApp.Config
                 "Stream Recorder Pro est désormais livré avec l'application : plus aucun fichier à télécharger ni à copier. Il reste inactif sans licence — l'achat sert uniquement à obtenir ta licence, à déposer à côté de l'application.",
                 "Le panneau Diagnostic indique « Inclus, non activé » tant qu'aucune licence n'est en place.",
             }),
+            ("2.1.1", new[]
+            {
+                "Le panneau Diagnostic ne signale plus à tort ffmpeg comme modifié. Il comparait le fichier à une empreinte figée dans l'application, alors que l'installateur télécharge toujours la dernière version publiée : la référence est désormais l'empreinte vérifiée au moment de l'installation.",
+                "Le panneau Diagnostic ne dit plus « api.github.com : injoignable » sur une machine parfaitement connectée. La vérification des mises à jour, elle, n'était pas affectée.",
+            }),
         };
 
         /// <summary>
@@ -575,6 +580,11 @@ namespace ChaturbateRecorderApp.Config
             {
                 "Stream Recorder Pro now ships with the application: no more file to download or copy. It stays inactive without a licence — buying it only gets you your licence, to drop next to the application.",
                 "The Diagnostics panel shows \"Included, not activated\" as long as no licence is in place.",
+            },
+            ["2.1.1"] = new[]
+            {
+                "The Diagnostics panel no longer reports ffmpeg as altered when it is not. It compared the file against a fingerprint frozen into the application, while the installer always downloads the latest published build: the reference is now the fingerprint verified at install time.",
+                "The Diagnostics panel no longer says \"api.github.com: unreachable\" on a perfectly connected machine. Update checking itself was never affected.",
             },
         };
 

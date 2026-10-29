@@ -28,8 +28,47 @@
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <!-- ===================== PRÉSENTATION ===================== -->
+                <!-- ===================== DÉJÀ ACHETÉ ? =====================
+                     2.2.0 — première carte, volontairement : un acheteur qui a
+                     déjà payé ouvre cet écran pour ACTIVER, pas pour racheter.
+                     Le fichier est choisi ici et copié au bon endroit par
+                     l'application (Services/LicenceInstaller.cs) ; plus besoin
+                     de savoir où se trouve ChaturbateRecorder.exe. -->
                 <Border Style="{StaticResource Surface.Card}">
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Fg}"
+                                   Text="{ui:Str premium.alreadyBoughtTitle}" />
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Style="{StaticResource Text.Caption}"
+                                   Text="{ui:Str premium.alreadyBoughtNote}" />
+
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button x:Name="BoutonInstallerLicence"
+                                    Style="{StaticResource Button.Primary}"
+                                    Content="{ui:Str premium.installLicence}"
+                                    Click="InstallerLicence_Click" />
+                            <Button x:Name="BoutonActiverEnLigne" Margin="8,0,0,0"
+                                    Style="{StaticResource Button.Secondary}"
+                                    Content="{ui:Str premium.onlineButton}"
+                                    Click="ActiverEnLigne_Click" />
+                            <Button x:Name="BoutonDemanderLicence" Margin="8,0,0,0"
+                                    Style="{StaticResource Button.Secondary}"
+                                    Content="{ui:Str premium.requestLicence}"
+                                    Click="DemanderLicence_Click" />
+                        </WrapPanel>
+
+                        <!-- Résultat de l'installation. Masqué au repos : un
+                             texte vide laisserait un trou dans la carte. -->
+                        <TextBlock x:Name="TexteInstallation" Margin="0,10,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"
+                                   Style="{StaticResource Text.Caption}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ===================== PRÉSENTATION ===================== -->
+                <Border Margin="0,16,0,0" Style="{StaticResource Surface.Card}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource Text.Body}"
                                    TextWrapping="Wrap"

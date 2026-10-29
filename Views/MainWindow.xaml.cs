@@ -18,6 +18,13 @@ namespace ChaturbateRecorderApp.Views
     {
         private readonly TrayIcon? _zoneDeNotification;
 
+        /// <summary>
+        /// Bouton flottant « Passer à Premium », gardé pour pouvoir le RETIRER
+        /// quand une licence est installée à chaud (2.2.0). Voir
+        /// <see cref="MettreAJourLicence"/>.
+        /// </summary>
+        private PremiumButton? _boutonPremium;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -47,8 +54,17 @@ namespace ChaturbateRecorderApp.Views
                     VerticalAlignment = System.Windows.VerticalAlignment.Bottom,
                     Margin = new Thickness(0, 0, 16, 16),
                 };
+                // Ligne 1 : la ligne 0 est réservée à la bannière de licence.
+                System.Windows.Controls.Grid.SetRow(boutonPremium, 1);
                 GrilleRacine.Children.Add(boutonPremium);
+                _boutonPremium = boutonPremium;
             }
+
+            // Une licence installée depuis la fenêtre Premium doit se voir
+            // TOUT DE SUITE : retirer le bouton d'achat et la bannière, sans
+            // redémarrer. Voir PremiumBridge.LicenceChanged.
+            App.Premium.LicenceChanged += MettreAJourLicence;
+            MettreAJourLicence();
 
             // La fenetre principale EST la duree de vie de l'application ici :
             // sa fermeture doit arreter la surveillance, sinon la boucle
@@ -60,6 +76,7 @@ namespace ChaturbateRecorderApp.Views
 
             Closed += (s, e) =>
             {
+                App.Premium.LicenceChanged -= MettreAJourLicence;
                 _zoneDeNotification?.Dispose();
                 (DataContext as System.IDisposable)?.Dispose();
             };
@@ -73,6 +90,55 @@ namespace ChaturbateRecorderApp.Views
                 AfficherLeGuide();
                 AfficherLesNouveautes();
             };
+        }
+
+        /// <summary>
+        /// Met l'interface en accord avec l'état de licence : retire le bouton
+        /// d'achat quand elle est acceptée, et n'affiche la bannière que dans
+        /// le cas INJUSTE — un fichier présent mais refusé.
+        ///
+        /// **Pas de bannière pour qui n'a jamais acheté.** Le bouton flottant
+        /// suffit, et un rappel permanent dans une application gratuite se lit
+        /// comme du harcèlement. En revanche, quelqu'un qui a payé, posé son
+        /// fichier et vu le premium rester absent n'a aujourd'hui AUCUN signe
+        /// explicite : c'est ce silence qui fait croire à une arnaque.
+        /// </summary>
+        private void MettreAJourLicence()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(MettreAJourLicence);
+                return;
+            }
+
+            if (App.Premium.IsLicensed)
+            {
+                if (_boutonPremium != null)
+                {
+                    GrilleRacine.Children.Remove(_boutonPremium);
+                    _boutonPremium = null;
+                }
+                BanniereLicence.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (!App.Premium.LicenceFilePresent)
+            {
+                BanniereLicence.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            TexteBanniereLicence.Text = ChaturbateRecorderApp.UI.Localization.Get(
+                App.Premium.IsMachineMismatch ? "premium.bannerMachine" : "premium.bannerRefused");
+            BanniereLicence.Visibility = Visibility.Visible;
+        }
+
+        private void BanniereLicence_Click(object sender, RoutedEventArgs e)
+        {
+            new PremiumUpgradeWindow { Owner = this }.ShowDialog();
+            // L'événement a normalement déjà rafraîchi l'état ; cet appel
+            // couvre le cas d'une fenêtre fermée sans installation.
+            MettreAJourLicence();
         }
 
         /// <summary>

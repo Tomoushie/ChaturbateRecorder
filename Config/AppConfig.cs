@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace ChaturbateRecorderApp.Config
@@ -8,8 +8,10 @@ namespace ChaturbateRecorderApp.Config
     /// Équivalent du hashtable $Config et des variables de toggles de sécurité
     /// du script PowerShell d'origine.
     ///
-    /// A REMPLIR avant utilisation : YtDlpExpectedSha256, FfmpegExpectedSha256,
-    /// et éventuellement les valeurs de pinning CA/TLS si tu actives ces toggles.
+    /// A REMPLIR avant utilisation : éventuellement les valeurs de pinning
+    /// CA/TLS si tu actives ces toggles. YtDlpExpectedSha256 et
+    /// FfmpegExpectedSha256 ne sont PLUS à remplir depuis 2.1.1 — voir le
+    /// commentaire qui les précède.
     /// </summary>
     public static class AppConfig
     {
@@ -172,6 +174,26 @@ namespace ChaturbateRecorderApp.Config
         // itch.io de l'application libre : un compte qui encaisse ne doit pas
         // porter le nom d'une plateforme adulte, sous peine de gel.
         public static string ProUrl            = "https://tomoushie.itch.io/stream-recorder-pro";
+        // 2.2.0 — adresse de support pour les acheteurs Pro. C'est la même que
+        // celle des fichiers LISEZMOI-ACHETEUR / README-BUYER : une seule
+        // adresse à surveiller, et le bouton « Recevoir ma licence » de la
+        // fenêtre Premium l'ouvre avec l'identifiant d'installation déjà
+        // rempli. Donnée, pas libellé : ne pas la mettre dans Localization.
+        public static string SupportEmail     = "nowaktombe@protonmail.com";
+        // 2.2.0 — service d'activation en ligne (Cloudflare Worker, code dans
+        // StreamRecorderPro/LicenceWorker). Chaîne VIDE = bouton masqué : une
+        // version compilée sans service déployé reste cohérente au lieu
+        // d'offrir un chemin qui échoue.
+        //
+        // Ce nom de Worker doit correspondre à celui de wrangler.toml. Si le
+        // service est déployé sous un autre nom, changer UNIQUEMENT cette
+        // ligne (et ActivationPageUrl ci-dessous).
+        public static string ActivationEndpoint =
+            "https://stream-recorder-pro-licences.tom-nowak.workers.dev/activate";
+        // Page publique de secours, ouverte si l'activation dans l'application
+        // échoue. L'identifiant d'installation y est ajouté en paramètre.
+        public static string ActivationPageUrl =
+            "https://tomoushie.github.io/ChaturbateRecorder/activer.html";
         // 120.0 — deux comptes bancaires, alternative directe à itch.io pour
         // payer StreamRecorderPro. VOLONTAIREMENT PAS PayPal.me/GitHub
         // Sponsors ici (voir le commentaire de ProUrl juste au-dessus, même
@@ -244,12 +266,28 @@ namespace ChaturbateRecorderApp.Config
         public static readonly string[] Whitelist = Services.Platforms.AllowedDomains;
 
         // --- Vérification binaire (hash + Authenticode) ---
-        public static string YtDlpExpectedSha256           = "52FE3C26DCF71FBDC85B528589020BB0B8E383155CFA81B64DD447BBE35E24B8";
+        //
+        // 2.1.1 — CES DEUX EMPREINTES SONT VIDES À DESSEIN, elles ne sont plus
+        // qu'un repli. L'ancre réelle est `trusted-binaries.json`, écrit par
+        // l'installateur avec ce qu'il a VRAIMENT posé après l'avoir vérifié
+        // contre la somme publiée par l'auteur du binaire. Une empreinte figée
+        // ici ne peut pas suivre deux cibles mouvantes — ffmpeg vient de l'URL
+        // « release-essentials » de gyan.dev (toujours la dernière build) et
+        // yt-dlp publie presque chaque semaine — et celle de ffmpeg, héritée du
+        // portage WinForms, affichait « INATTENDU » chez tout le monde pour un
+        // fichier conforme à sa source (constaté chez le mainteneur le 21-09).
+        // En l'absence des deux, le Diagnostic dit « non vérifié » et montre
+        // l'empreinte : c'est le cas de la variante PORTABLE, qui ne livre ni
+        // yt-dlp ni ffmpeg (ffmpeg est sous GPL) et n'a donc aucune référence
+        // à opposer. Remplir une de ces valeurs reste possible pour épingler
+        // une build précise : elle l'emporte alors sur tout, y compris sur le
+        // fichier d'installation.
+        public static string YtDlpExpectedSha256           = "";
         public static bool   YtDlpRequireAuthenticode       = false;
         public static string YtDlpExpectedSignerThumbprint  = "";
         public static string YtDlpExpectedSignerSubject     = "";
 
-        public static string FfmpegExpectedSha256           = "AD8F211BC894755E0061C55AB280AE00E8D3D4F15A8CC4372B24CFA247B5942E";
+        public static string FfmpegExpectedSha256           = "";
         public static bool   FfmpegRequireAuthenticode       = false;
         public static string FfmpegExpectedSignerThumbprint  = "";
         public static string FfmpegExpectedSignerSubject     = "";
