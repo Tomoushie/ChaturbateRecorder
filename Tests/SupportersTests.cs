@@ -142,14 +142,25 @@ namespace ChaturbateRecorderApp.Tests
         }
 
         /// <summary>
-        /// Le fichier du dépôt doit rester lisible par le code qui le
-        /// consomme : c'est le seul lien entre les deux, et il n'est vérifié
-        /// nulle part ailleurs.
+        /// Le fichier du SITE doit rester lisible par le code qui le consomme :
+        /// c'est le seul lien entre le JSON servi aux utilisateurs et
+        /// <see cref="SupportersProvider"/>, et rien d'autre ne le vérifie.
+        ///
+        /// Le fichier lu est celui de CE dépôt (`docs/supporters.json`) : c'est
+        /// exactement lui que le workflow Pages déploie sur
+        /// https://tomoushie.github.io/ChaturbateRecorder/supporters.json,
+        /// l'URL que l'application interroge. L'ancien test lisait la copie du
+        /// dépôt WinForms voisin ; ça marchait sur la machine de Tom, où les
+        /// deux dépôts sont côte à côte, mais jamais sur un runner CI, où ce
+        /// dossier voisin n'existe pas — le test échouait donc à coup sûr, et
+        /// c'est lui qui gardait Build + Test rouge (voir run 181). La copie
+        /// WinForms reste acceptée en repli pour un checkout qui n'aurait pas
+        /// encore le dossier docs/.
         /// </summary>
         [Fact]
         public void RepositoryJsonFileIsParseable()
         {
-            var path = System.IO.Path.Combine(TestPaths.RepoRoot, "docs", "supporters.json");
+            var path = TestPaths.DocumentationFile("supporters.json");
             Assert.True(System.IO.File.Exists(path), $"Fichier introuvable : {path}");
             Assert.NotNull(SupportersProvider.ParseJson(System.IO.File.ReadAllText(path)));
         }
@@ -158,20 +169,46 @@ namespace ChaturbateRecorderApp.Tests
     internal static class TestPaths
     {
         /// <summary>
-        /// Remonte depuis le dossier de sortie des tests
-        /// (Tests/bin/Debug/net10.0-windows) jusqu'à la racine du dépôt.
-        /// Cherché plutôt que compté : le nombre de niveaux change avec la
-        /// configuration et le TFM.
+        /// Racine de CE dépôt, cherchée en remontant depuis le dossier de
+        /// sortie des tests (Tests/bin/&lt;config&gt;/&lt;tfm&gt;) : le nombre de
+        /// niveaux change avec la configuration et le TFM, donc on cherche le
+        /// marqueur au lieu de compter.
         /// </summary>
-        internal static string RepoRoot
+        internal static string WpfRepoRoot
         {
             get
             {
                 var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
-                while (dir is not null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "ChaturbateRecorderApp.csproj")))
+                while (dir is not null &&
+                       !System.IO.File.Exists(System.IO.Path.Combine(
+                           dir.FullName, "ChaturbateRecorderApp.Wpf.csproj")))
                     dir = dir.Parent;
+
                 return dir?.FullName ?? System.AppContext.BaseDirectory;
             }
+        }
+
+        /// <summary>
+        /// Fichier du site (`docs/…`), celui que GitHub Pages déploie.
+        ///
+        /// Cherché d'abord dans CE dépôt — c'est le fichier réellement servi.
+        /// Repli sur la copie du dépôt WinForms voisin, qui n'existe que sur la
+        /// machine de Tom (deux dépôts côte à côte) et jamais sur un runner CI.
+        /// </summary>
+        internal static string DocumentationFile(string name)
+        {
+            var dansCeDepot = System.IO.Path.Combine(WpfRepoRoot, "docs", name);
+            if (System.IO.File.Exists(dansCeDepot)) return dansCeDepot;
+
+            var dir = new System.IO.DirectoryInfo(WpfRepoRoot);
+            while (dir is not null &&
+                   !System.IO.File.Exists(System.IO.Path.Combine(
+                       dir.FullName, "ChaturbateRecorderApp", "ChaturbateRecorderApp.csproj")))
+                dir = dir.Parent;
+
+            return dir is null
+                ? dansCeDepot
+                : System.IO.Path.Combine(dir.FullName, "ChaturbateRecorderApp", "docs", name);
         }
     }
 }

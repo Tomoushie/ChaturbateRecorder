@@ -1,6 +1,7 @@
 # Build outputs
 bin/
 obj/
+TestResults/
 
 # Binaires tiers (yt-dlp.exe, ffmpeg.exe) — trop volumineux pour Git
 # (ffmpeg.exe dépasse la limite de 100 Mo de GitHub), à fournir soi-même
@@ -18,6 +19,4 @@ Tools/
 # État local généré au runtime (copié dans bin/ de toute façon)
 settings.json
 favorites.json
-
-# Installateur compile (23.0) : produit par la CI, jamais versionne.
-installer/*.exe
+Images/

@@ -15,13 +15,13 @@ namespace ChaturbateRecorderApp.Tests
     /// jour qui remplace son dossier effaçait la liste de l'utilisateur.
     ///
     /// C'est une capture d'écran qui l'a révélé — l'aperçu WPF montrait une
-    /// liste VIDE alors que cette application-ci en avait onze, chacune lisant
+    /// liste VIDE alors que la version WinForms en avait onze, chacune lisant
     /// le `rooms.json` de SON dossier.
     ///
     /// Ce fichier éprouve la règle de reprise, parce que c'est le seul endroit
     /// du changement où des données peuvent être perdues.
     /// </summary>
-    [Collection("DataLocation")]
+    [Collection("EtatDeProcessus")]
     public class DataLocationTests : IDisposable
     {
         private readonly string _dossierNeuf;
@@ -162,10 +162,4 @@ namespace ChaturbateRecorderApp.Tests
         }
     }
 
-    /// <summary>
-    /// `AppConfig.DataDir` est un état statique que ces tests déplacent : la
-    /// collection les sérialise pour qu'aucune autre classe ne le voie bouger.
-    /// </summary>
-    [CollectionDefinition("DataLocation")]
-    public class CollectionEmplacementDonnees { }
 }
