@@ -53,6 +53,132 @@ namespace ChaturbateRecorderApp.Views
 
             ImageQrIban1.Source = QrPour(AppConfig.PremiumIban1, bic: null);
             ImageQrIban2.Source = QrPour(AppConfig.PremiumIban2, AppConfig.PremiumIban2Bic);
+
+            // Le service d'activation est une commodité : sans endpoint
+            // configuré (build local, service retiré), le bouton disparaît
+            // plutôt que d'offrir un chemin qui échoue.
+            BoutonActiverEnLigne.Visibility = string.IsNullOrWhiteSpace(AppConfig.ActivationEndpoint)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+            // La fenêtre peut s'ouvrir alors que la licence vient d'être
+            // installée (bouton « Activer » de la bannière, resté ouvert) :
+            // ne pas proposer une seconde installation comme si de rien
+            // n'était.
+            if (App.Premium.IsLicensed)
+            {
+                BoutonInstallerLicence.IsEnabled = false;
+                BoutonActiverEnLigne.IsEnabled = false;
+                AfficherInstallation(
+                    ChaturbateRecorderApp.UI.Localization.Format("premium.installOk", App.Premium.LicensedTo),
+                    succes: true);
+            }
+        }
+
+        /// <summary>
+        /// Choisit un licence.key et l'installe au bon endroit. Le service
+        /// sauvegarde l'ancienne licence et la restaure si la nouvelle est
+        /// refusée — voir Services/LicenceInstaller.cs.
+        /// </summary>
+        private void InstallerLicence_Click(object sender, RoutedEventArgs e)
+        {
+            var dialogue = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = ChaturbateRecorderApp.UI.Localization.Get("premium.choisirLicence"),
+                Filter = ChaturbateRecorderApp.UI.Localization.Get("premium.filtreLicence"),
+                CheckFileExists = true,
+                Multiselect = false,
+                RestoreDirectory = true,
+            };
+
+            if (dialogue.ShowDialog(this) != true) return;
+
+            var resultat = LicenceInstaller.Installer(
+                dialogue.FileName,
+                () =>
+                {
+                    App.Premium.Reload();
+                    return App.Premium.IsLicensed;
+                });
+
+            switch (resultat.Issue)
+            {
+                case IssueInstallation.Aucune:
+                    BoutonInstallerLicence.IsEnabled = false;
+                    AfficherInstallation(
+                        ChaturbateRecorderApp.UI.Localization.Format("premium.installOk", App.Premium.LicensedTo),
+                        succes: true);
+                    break;
+
+                case IssueInstallation.LicenceRefusee:
+                    Logger.Log($"Premium : licence choisie refusée — {App.Premium.LicenceProblem}.", LogLevel.WARN);
+                    AfficherInstallation(
+                        ChaturbateRecorderApp.UI.Localization.Get(
+                            App.Premium.IsMachineMismatch ? "premium.installMachine" : "premium.installRefusee"),
+                        succes: false);
+                    break;
+
+                case IssueInstallation.FichierSource:
+                    Logger.Log($"Premium : fichier de licence inutilisable — {resultat.Detail}.", LogLevel.WARN);
+                    AfficherInstallation(
+                        ChaturbateRecorderApp.UI.Localization.Get("premium.installSource"),
+                        succes: false);
+                    break;
+
+                default:
+                    Logger.Log($"Premium : installation de licence impossible — {resultat.Detail}.", LogLevel.ERROR);
+                    AfficherInstallation(
+                        ChaturbateRecorderApp.UI.Localization.Get("premium.installErreur"),
+                        succes: false);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Ouvre l'activation en ligne. La fenêtre installe elle-même la
+        /// licence ; au retour, on reflète l'état pour ne pas laisser un
+        /// bouton actif sur un produit déjà activé.
+        /// </summary>
+        private void ActiverEnLigne_Click(object sender, RoutedEventArgs e)
+        {
+            new OnlineActivationWindow { Owner = this }.ShowDialog();
+
+            if (!App.Premium.IsLicensed) return;
+
+            BoutonInstallerLicence.IsEnabled = false;
+            BoutonActiverEnLigne.IsEnabled = false;
+            AfficherInstallation(
+                ChaturbateRecorderApp.UI.Localization.Format("premium.installOk", App.Premium.LicensedTo),
+                succes: true);
+        }
+
+        /// <summary>
+        /// Ouvre le client mail avec l'identifiant d'installation déjà rempli.
+        /// C'est le chemin de secours quand aucune licence n'a été reçue, ou
+        /// pour demander un transfert après un changement d'ordinateur.
+        /// </summary>
+        private void DemanderLicence_Click(object sender, RoutedEventArgs e)
+        {
+            var identifiant = MachineId.Obtenir();
+            var sujet = ChaturbateRecorderApp.UI.Localization.Get("premium.requestSubject");
+            var corps = ChaturbateRecorderApp.UI.Localization.Format(
+                "premium.requestBody",
+                string.IsNullOrWhiteSpace(identifiant) ? "(indisponible)" : identifiant);
+
+            Ouvrir($"mailto:{AppConfig.SupportEmail}"
+                   + $"?subject={Uri.EscapeDataString(sujet)}"
+                   + $"&body={Uri.EscapeDataString(corps)}");
+        }
+
+        private void AfficherInstallation(string texte, bool succes)
+        {
+            TexteInstallation.Text = texte;
+            TexteInstallation.Visibility = Visibility.Visible;
+            // SetResourceReference et non une couleur figée : le thème peut
+            // changer pendant que la fenêtre est ouverte.
+            TexteInstallation.SetResourceReference(
+                System.Windows.Controls.TextBlock.ForegroundProperty,
+                succes ? "Brush.Success" : "Brush.Danger");
         }
 
         /// <summary>

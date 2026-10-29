@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stream Recorder Pro — Activation</title>
+<meta name="description" content="Générez votre licence Stream Recorder Pro à partir de votre clé de téléchargement itch.io.">
+<!--
+  connect-src est volontairement limité au service d'activation : cette page
+  manipule une clé de téléchargement (un secret). Si l'adresse du Worker
+  change, la mettre à jour ICI et dans la constante WORKER du script.
+-->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://stream-recorder-pro-licences.tom-nowak.workers.dev">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #262b36;
+    --text: #e6e8eb;
+    --muted: #9aa3b2;
+    --accent: #dc2828;
+    --accent-dark: #a91f1f;
+    --ok: #2e9e5b;
+    --danger: #e05252;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 0.9em;
+    background: rgba(127, 127, 127, 0.15);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  header {
+    position: relative;
+    padding: 48px 24px 36px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(220,40,40,0.14), transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { display: block; width: 64px; height: 64px; margin: 0 auto 14px; }
+  h1 { font-size: 1.7rem; margin: 0 0 6px; }
+  header p.tagline { color: var(--muted); margin: 0; }
+
+  .lang-toggle {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .lang-toggle:hover { border-color: var(--muted); color: var(--text); }
+
+  main { max-width: 820px; margin: 0 auto; padding: 44px 24px 56px; }
+
+  .note {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0 0 32px;
+  }
+  .note strong { color: var(--text); }
+
+  h2 { font-size: 1.25rem; margin: 0 0 16px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 0.98rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+  form {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-bottom: 6px;
+  }
+  .field { margin-bottom: 18px; }
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 0.9rem;
+    padding: 11px 12px;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  .help { margin: 6px 0 0; color: var(--muted); font-size: 0.82rem; }
+  .required { color: var(--accent); }
+
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--accent-dark); }
+  button.primary:disabled { opacity: 0.55; cursor: default; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button.secondary:hover { border-color: var(--muted); }
+
+  .status {
+    margin-top: 16px;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.92rem;
+    display: none;
+  }
+  .status.visible { display: block; }
+  .status.error { border: 1px solid rgba(224, 82, 82, 0.45); background: rgba(224, 82, 82, 0.08); }
+  .status.info { border: 1px solid var(--border); color: var(--muted); }
+  .status.success { border: 1px solid rgba(46, 158, 91, 0.45); background: rgba(46, 158, 91, 0.08); }
+  .status h3 { margin: 0 0 6px; font-size: 1rem; }
+  .status p { margin: 0 0 12px; }
+  .status p:last-child { margin-bottom: 0; }
+  .status strong { color: var(--text); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+
+  .troubleshoot { margin-top: 36px; }
+  .troubleshoot summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 10px 0;
+  }
+  .troubleshoot ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 0.9rem; }
+  .troubleshoot li { margin-bottom: 8px; }
+
+  .help-box {
+    margin-top: 36px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .help-box h2 { color: var(--text); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--text); }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --border: #e3e5e8;
+      --text: #1b1e24;
+      --muted: #5c6370;
+    }
+    code { background: rgba(0, 0, 0, 0.06); }
+    input[type="text"] { background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="lang-toggle" id="langToggle" type="button"></button>
+  <img class="logo" src="assets/logo.png" alt="Chaturbate Recorder" width="64" height="64">
+  <h1 id="pageTitle"></h1>
+  <p class="tagline" id="tagline"></p>
+</header>
+
+<main>
+  <div class="note">
+    <strong id="introTitle"></strong>
+    <span id="introText"></span>
+  </div>
+
+  <section>
+    <h2 id="stepsTitle"></h2>
+    <div class="grid">
+      <div class="card">
+        <h3 id="step1Title"></h3>
+        <p id="step1Desc"></p>
+      </div>
+      <div class="card">
+        <h3 id="step2Title"></h3>
+        <p id="step2Desc"></p>
+      </div>
+      <div class="card">
+        <h3 id="step3Title"></h3>
+        <p id="step3Desc"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <form id="activationForm" novalidate>
+      <div class="field">
+        <label for="downloadKey"><span id="keyLabel"></span> <span class="required" aria-hidden="true">*</span></label>
+        <input type="text" id="downloadKey" name="downloadKey"
+               autocomplete="off" autocapitalize="off" spellcheck="false"
+               aria-describedby="keyHelp">
+        <p class="help" id="keyHelp"></p>
+      </div>
+
+      <div class="field">
+        <label for="machineId"><span id="idLabel"></span> <span class="required" aria-hidden="true">*</span></label>
+        <input type="text" id="machineId" name="machineId"
+               autocomplete="off" autocapitalize="off" spellcheck="false"
+               aria-describedby="idHelp">
+        <p class="help" id="idHelp"></p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="submitButton"></button>
+      </div>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <details class="troubleshoot">
+    <summary id="troubleSummary"></summary>
+    <ul>
+      <li id="troubleInvalid"></li>
+      <li id="troubleTransfer"></li>
+      <li id="troubleRate"></li>
+      <li id="troubleUnavailable"></li>
+      <li id="troubleNetwork"></li>
+    </ul>
+  </details>
+
+  <div class="help-box">
+    <h2 id="helpTitle"></h2>
+    <p id="helpText"></p>
+  </div>
+</main>
+
+<footer>
+  <p id="footerText"></p>
+</footer>
+
+<script>
+  // Adresse du service d'activation. Doit rester identique à
+  // AppConfig.ActivationEndpoint (application) et à la balise CSP ci-dessus.
+  var WORKER = "https://stream-recorder-pro-licences.tom-nowak.workers.dev/activate";
+  var SUPPORT_EMAIL = "nowaktombe@protonmail.com";
+
+  var STRINGS = {
+    fr: {
+      langToggle: "English",
+      pageTitle: "Activer Stream Recorder Pro",
+      tagline: "Votre clé de téléchargement itch.io suffit — aucun fichier à demander par email.",
+      introTitle: "Vous avez acheté Stream Recorder Pro ? ",
+      introText: "Cette page génère votre fichier <code>licence.key</code> à partir de votre clé de téléchargement itch.io. Utilisez-la si vous n'avez pas reçu de licence, ou si vous changez d'ordinateur.",
+      stepsTitle: "Trois étapes",
+      step1Title: "1. Votre clé itch.io",
+      step1Desc: "Sur votre page d'achat itch.io, ouvrez le lien de téléchargement : la clé est le code après <code>/download/</code>. Vous pouvez coller le lien entier.",
+      step2Title: "2. Votre identifiant d'installation",
+      step2Desc: "Dans l'application : « Passer à Premium » → « Activer en ligne ». L'identifiant y est affiché et copiable. Si vous êtes arrivé ici depuis l'application, il est déjà rempli.",
+      step3Title: "3. Votre licence",
+      step3Desc: "Générez la licence, téléchargez <code>licence.key</code>, puis installez-le dans l'application avec « Installer ma licence… ».",
+      keyLabel: "Clé de téléchargement itch.io",
+      keyHelp: "Dans l'email de confirmation itch.io ou sur votre page d'achat. C'est un secret : ne la partagez pas.",
+      idLabel: "Identifiant d'installation",
+      idHelp: "Visible dans la fenêtre Premium. Il ne contient aucune information personnelle.",
+      submit: "Générer ma licence",
+      working: "Vérification de l'achat…",
+      successTitle: "Licence générée",
+      successBody: "Téléchargez le fichier, puis dans l'application : « Passer à Premium » → « Installer ma licence… » → choisissez le fichier. Aucun redémarrage n'est nécessaire.",
+      successName: "Licence au nom de {0}.",
+      download: "Télécharger licence.key",
+      again: "Recommencer",
+      remaining: "Installations encore disponibles pour cet achat : {0}.",
+      errorTitle: "La licence n'a pas pu être générée",
+      errInvalidKey: "Cette clé n'a pas pu être vérifiée. Vérifiez qu'elle correspond bien à Stream Recorder Pro et qu'elle n'a pas été révoquée, puis réessayez.",
+      errTransfer: "Cet achat a atteint le nombre maximal d'installations. Écrivez-moi : le transfert est gratuit.",
+      errRate: "Trop de tentatives en peu de temps. Patientez une heure, puis réessayez.",
+      errUnavailable: "Le service d'activation est momentanément indisponible. Réessayez plus tard, ou écrivez-moi.",
+      errNetwork: "Impossible de joindre le service. Vérifiez votre connexion, puis réessayez.",
+      errId: "L'identifiant d'installation est invalide. Copiez-le à nouveau depuis la fenêtre Premium.",
+      errServer: "Le service a rencontré une erreur. Réessayez dans quelques minutes.",
+      errUnknown: "Réponse inattendue du service. Réessayez, ou écrivez-moi.",
+      troubleSummary: "L'activation ne marche pas ?",
+      troubleInvalid: "<strong>« Clé non reconnue »</strong> — vérifiez que vous avez copié la clé du bon achat, et non le lien de la page itch.io elle-même. Une clé révoquée ne peut plus être utilisée.",
+      troubleTransfer: "<strong>« Nombre maximal d'installations atteint »</strong> — le plafond est de 5 machines par achat. Écrivez-moi avec votre identifiant d'installation : le transfert est gratuit.",
+      troubleRate: "<strong>« Trop de tentatives »</strong> — la limite est d'une vingtaine de requêtes par heure. Attendez une heure avant de réessayer.",
+      troubleUnavailable: "<strong>« Service indisponible »</strong> — réessayez plus tard. Une licence déjà installée continue de fonctionner hors ligne : l'activation n'est nécessaire qu'une fois.",
+      troubleNetwork: "<strong>Rien ne se passe</strong> — un bloqueur de publicités ou un pare-feu peut bloquer le service. Essayez un autre réseau ou désactivez le bloqueur pour cette page.",
+      helpTitle: "Besoin d'aide ?",
+      helpText: "Écrivez à <a href=\"mailto:nowaktombe@protonmail.com\">nowaktombe@protonmail.com</a> en précisant votre identifiant d'installation (jamais votre clé itch.io). Réponse généralement sous 48 h. Si l'activation échoue, écrivez-moi avant de laisser un avis : je vous aide à la régler.",
+      footerText: "Stream Recorder Pro — complément payant de <a href=\"https://tomoushie.github.io/ChaturbateRecorder/\">Chaturbate Recorder</a>."
+    },
+    en: {
+      langToggle: "Français",
+      pageTitle: "Activate Stream Recorder Pro",
+      tagline: "Your itch.io download key is all you need — no file to request by email.",
+      introTitle: "Bought Stream Recorder Pro? ",
+      introText: "This page generates your <code>licence.key</code> file from your itch.io download key. Use it if you did not receive a licence, or if you are changing computers.",
+      stepsTitle: "Three steps",
+      step1Title: "1. Your itch.io key",
+      step1Desc: "On your itch.io purchase page, open the download link: the key is the code after <code>/download/</code>. You can paste the whole link.",
+      step2Title: "2. Your installation ID",
+      step2Desc: "In the app: \"Upgrade to Premium\" → \"Activate online\". The ID is shown there and can be copied. If you came here from the app, it is already filled in.",
+      step3Title: "3. Your licence",
+      step3Desc: "Generate the licence, download <code>licence.key</code>, then install it in the app with \"Install my licence…\".",
+      keyLabel: "itch.io download key",
+      keyHelp: "In the itch.io confirmation email or on your purchase page. It is a secret: do not share it.",
+      idLabel: "Installation ID",
+      idHelp: "Shown in the Premium window. It contains no personal information.",
+      submit: "Generate my licence",
+      working: "Checking your purchase…",
+      successTitle: "Licence generated",
+      successBody: "Download the file, then in the app: \"Upgrade to Premium\" → \"Install my licence…\" → choose the file. No restart needed.",
+      successName: "Licensed to {0}.",
+      download: "Download licence.key",
+      again: "Start over",
+      remaining: "Installations left for this purchase: {0}.",
+      errorTitle: "The licence could not be generated",
+      errInvalidKey: "This key could not be verified. Check that it belongs to Stream Recorder Pro and has not been revoked, then try again.",
+      errTransfer: "This purchase has reached its maximum number of installations. Write to me: transfers are free.",
+      errRate: "Too many attempts in a short time. Wait an hour, then try again.",
+      errUnavailable: "The activation service is temporarily unavailable. Try again later, or write to me.",
+      errNetwork: "Could not reach the service. Check your connection, then try again.",
+      errId: "The installation ID is invalid. Copy it again from the Premium window.",
+      errServer: "The service ran into an error. Try again in a few minutes.",
+      errUnknown: "Unexpected response from the service. Try again, or write to me.",
+      troubleSummary: "Activation not working?",
+      troubleInvalid: "<strong>\"Key not recognised\"</strong> — check that you copied the key from the right purchase, not the itch.io page link itself. A revoked key can no longer be used.",
+      troubleTransfer: "<strong>\"Maximum installations reached\"</strong> — the limit is 5 machines per purchase. Write to me with your installation ID: transfers are free.",
+      troubleRate: "<strong>\"Too many attempts\"</strong> — the limit is about twenty requests per hour. Wait an hour before trying again.",
+      troubleUnavailable: "<strong>\"Service unavailable\"</strong> — try again later. An installed licence keeps working offline: activation is needed only once.",
+      troubleNetwork: "<strong>Nothing happens</strong> — an ad blocker or firewall may be blocking the service. Try another network or disable the blocker for this page.",
+      helpTitle: "Need help?",
+      helpText: "Write to <a href=\"mailto:nowaktombe@protonmail.com\">nowaktombe@protonmail.com</a> with your installation ID (never your itch.io key). I usually reply within 48 hours. If activation fails, write to me before leaving a review: I will help you fix it.",
+      footerText: "Stream Recorder Pro — paid add-on to <a href=\"https://tomoushie.github.io/ChaturbateRecorder/\">Chaturbate Recorder</a>."
+    }
+  };
+
+  // Distinction volontaire : ces chaînes sont insérées en textContent, donc
+  // une balise <code> y apparaîtrait littéralement. Les descriptions qui en
+  // contiennent passent par la liste HTML ci-dessous.
+  var TEXT_IDS = [
+    "pageTitle", "tagline", "introTitle", "stepsTitle",
+    "step1Title", "step2Title", "step2Desc", "step3Title",
+    "keyLabel", "keyHelp", "idLabel", "idHelp", "troubleSummary",
+    "helpTitle"
+  ];
+  var HTML_IDS = [
+    "introText", "step1Desc", "step3Desc", "troubleInvalid", "troubleTransfer",
+    "troubleRate", "troubleUnavailable", "troubleNetwork", "helpText", "footerText"
+  ];
+
+  var form = document.getElementById("activationForm");
+  var keyInput = document.getElementById("downloadKey");
+  var idInput = document.getElementById("machineId");
+  var submitButton = document.getElementById("submitButton");
+  var statusBox = document.getElementById("status");
+  var licenceJson = "";
+  // Dernier état affiché, pour le réafficher dans la nouvelle langue quand
+  // l'acheteur bascule FR/EN après une erreur ou un succès.
+  var lastState = null;
+
+  function applyLanguage(lang) {
+    var s = STRINGS[lang];
+    document.documentElement.lang = lang;
+    document.getElementById("langToggle").textContent = s.langToggle;
+
+    TEXT_IDS.forEach(function (id) { document.getElementById(id).textContent = s[id]; });
+    HTML_IDS.forEach(function (id) { document.getElementById(id).innerHTML = s[id]; });
+
+    keyInput.placeholder = lang === "fr"
+      ? "Collez la clé, ou le lien de téléchargement complet"
+      : "Paste the key, or the full download link";
+    idInput.placeholder = lang === "fr"
+      ? "Ex. 3f2a9c… (32 caractères)"
+      : "E.g. 3f2a9c… (32 characters)";
+
+    // Le statut (erreur, succès, vérification) est construit par du code :
+    // sans ce réaffichage, basculer la langue laisserait le message précédent
+    // dans l'autre langue au-dessus d'un bouton traduit.
+    if (lastState && lastState.kind === "success") showSuccess(lastState.data);
+    else if (lastState && lastState.kind === "error") showError(lastState.key);
+    else if (lastState && lastState.kind === "info") showStatus("info", "", s.working);
+
+    submitButton.textContent = s.submit;
+
+    localStorage.setItem("lang", lang);
+  }
+
+  // Même clé localStorage("lang") que le reste du site.
+  var saved = localStorage.getItem("lang");
+  var initial = saved || (navigator.language && navigator.language.toLowerCase().indexOf("fr") === 0 ? "fr" : "en");
+  applyLanguage(initial);
+
+  document.getElementById("langToggle").addEventListener("click", function () {
+    applyLanguage(document.documentElement.lang === "fr" ? "en" : "fr");
+  });
+
+  // L'application ouvre cette page avec ?id=<identifiant> : l'acheteur n'a
+  // plus qu'à coller sa clé itch.io.
+  var params = new URLSearchParams(window.location.search);
+  var prefill = (params.get("id") || "").trim();
+  if (prefill) idInput.value = prefill;
+
+  // Le Worker accepte la clé seule ou le lien complet ; on extrait la même
+  // chose ici pour valider avant d'envoyer, sans jamais envoyer l'URL à sa
+  // place. La validation finale reste côté serveur.
+  function extractKey(raw) {
+    var text = (raw || "").trim();
+    var match = text.match(/\/download\/([A-Za-z0-9]+)/);
+    return match ? match[1] : text;
+  }
+
+  function t(key) {
+    return STRINGS[document.documentElement.lang][key];
+  }
+
+  function showStatus(kind, title, bodyHtml) {
+    statusBox.className = "status visible " + kind;
+    statusBox.innerHTML = "";
+
+    if (title) {
+      var heading = document.createElement("h3");
+      heading.textContent = title;
+      statusBox.appendChild(heading);
+    }
+
+    if (bodyHtml) {
+      var paragraph = document.createElement("p");
+      // Contenu construit par NOUS uniquement (jamais une valeur saisie par
+      // l'acheteur) : le nom renvoyé par le serveur est inséré via textContent.
+      paragraph.innerHTML = bodyHtml;
+      statusBox.appendChild(paragraph);
+    }
+  }
+
+  function setWorking(working) {
+    submitButton.disabled = working;
+    submitButton.textContent = working ? t("working") : t("submit");
+    keyInput.disabled = working;
+    idInput.disabled = working;
+  }
+
+  function saveLicence() {
+    if (!licenceJson) return;
+    var blob = new Blob([licenceJson], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "licence.key";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+  }
+
+  function showSuccess(data) {
+    var name = typeof data.name === "string" ? data.name : "";
+    licenceJson = data.licence;
+    lastState = { kind: "success", data: data };
+
+    showStatus("success", t("successTitle"), t("successBody"));
+    if (name) {
+      // textContent : le nom vient d'itch.io, il ne doit jamais être interprété
+      // comme du HTML.
+      var who = document.createElement("p");
+      who.textContent = t("successName").replace("{0}", name);
+      statusBox.appendChild(who);
+    }
+
+    if (typeof data.remaining === "number" && data.remaining >= 0) {
+      var remaining = document.createElement("p");
+      remaining.textContent = t("remaining").replace("{0}", String(data.remaining));
+      statusBox.appendChild(remaining);
+    }
+
+    var actions = document.createElement("div");
+    actions.className = "actions";
+
+    var download = document.createElement("button");
+    download.type = "button";
+    download.className = "primary";
+    download.textContent = t("download");
+    download.addEventListener("click", saveLicence);
+
+    var again = document.createElement("button");
+    again.type = "button";
+    again.className = "secondary";
+    again.textContent = t("again");
+    again.addEventListener("click", resetForm);
+
+    actions.appendChild(download);
+    actions.appendChild(again);
+    statusBox.appendChild(actions);
+
+    // La clé est un secret : on ne la laisse pas traîner dans le champ une
+    // fois qu'elle a servi.
+    keyInput.value = "";
+    keyInput.disabled = true;
+    idInput.disabled = true;
+    submitButton.style.display = "none";
+  }
+
+  function showError(key) {
+    lastState = { kind: "error", key: key };
+    showStatus("error", t("errorTitle"), t(key));
+    submitButton.style.display = "";
+  }
+
+  function resetForm() {
+    licenceJson = "";
+    lastState = null;
+    statusBox.className = "status";
+    statusBox.innerHTML = "";
+    keyInput.value = "";
+    keyInput.disabled = false;
+    idInput.disabled = false;
+    submitButton.style.display = "";
+    submitButton.disabled = false;
+    submitButton.textContent = t("submit");
+    keyInput.focus();
+  }
+
+  function codeToMessage(code) {
+    switch (code) {
+      case "invalid_key": return "errInvalidKey";
+      case "invalid_request": return "errId";
+      case "transfer_required": return "errTransfer";
+      case "rate_limited": return "errRate";
+      case "itch_unavailable": return "errUnavailable";
+      case "signing_unavailable": return "errUnavailable";
+      case "origin_forbidden": return "errUnavailable";
+      case "server_error": return "errServer";
+      default: return "errUnknown";
+    }
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (submitButton.disabled) return;
+
+    var key = extractKey(keyInput.value);
+    var machine = idInput.value.trim();
+
+    if (!/^[A-Za-z0-9]{8,128}$/.test(key)) {
+      showError("errInvalidKey");
+      keyInput.focus();
+      return;
+    }
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(machine)) {
+      showError("errId");
+      idInput.focus();
+      return;
+    }
+
+    licenceJson = "";
+    lastState = { kind: "info" };
+    setWorking(true);
+    showStatus("info", "", t("working"));
+
+    fetch(WORKER, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ downloadKey: key, machineId: machine })
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+        return { ok: response.ok, status: response.status, data: data };
+      });
+    }).then(function (result) {
+      if (result.ok && result.data && typeof result.data.licence === "string") {
+        showSuccess(result.data);
+        return;
+      }
+
+      var code = result.data && typeof result.data.error === "string" ? result.data.error : "";
+      if (!code && result.status === 429) code = "rate_limited";
+      showError(codeToMessage(code));
+    }).catch(function () {
+      showError("errNetwork");
+    }).then(function () {
+      // En cas de succès, les champs restent désactivés : la clé itch.io ne
+      // doit pas retraîner à l'écran. « Recommencer » les réactive.
+      if (!licenceJson) setWorking(false);
+    });
+  });
+</script>
+
+</body>
+</html>
