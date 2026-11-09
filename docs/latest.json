@@ -7,13 +7,13 @@
     {
       "name": "ChaturbateRecorder-v2.3.0-portable.zip",
       "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v2.3.0/ChaturbateRecorder-v2.3.0-portable.zip",
-      "sha256": "BEF140A1A96994029153DCA8C00B1750B9A5A764FB9DB2DC68D7BB40E8A29E8A",
+      "sha256": "CFAEE57756361812FC5255EABD86B6E54E5CFD100662F56D575BB7204EE573E9",
       "variant": "portable"
     },
     {
       "name": "ChaturbateRecorder-v2.3.0-standard.zip",
       "url": "https://github.com/Tomoushie/ChaturbateRecorder/releases/download/v2.3.0/ChaturbateRecorder-v2.3.0-standard.zip",
-      "sha256": "BEF140A1A96994029153DCA8C00B1750B9A5A764FB9DB2DC68D7BB40E8A29E8A",
+      "sha256": "6D892B30CDF8EC3EF84679F059BE2F553985BAB64A51CFCE66562B6F48C4D3BA",
       "variant": "standard"
     }
   ]
